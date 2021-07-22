@@ -5,12 +5,15 @@ import Metashape
 # Define
 GROUP_UP: [int] = [2, 3]
 GROUP_ORIGIN: [int] = [4, 5]
-GROUP_LEFT: [int] = [12, 13]
-Z_OFFSET = 0.3
+GROUP_HORIZON: [int] = [12, 13]
+GROUP_DISTANCE: [int] = [5, 12]
+CAMERA_REFERENCE_DISTANCE = 0.5564
+CENTER_OFFSET = (0.0, -0.5, 0.65)
 
 
 def get_camera_number(camera: Metashape.Camera) -> int:
     return int(camera.label.split('_')[1])
+
 
 def get_average_position(camera_list: [Metashape.Camera]) -> Metashape.Vector:
     position = Metashape.Vector((0, 0, 0))
@@ -28,47 +31,66 @@ cameras: [Metashape.Camera] = chunk.cameras
 
 cameras_up: [Metashape.Camera] = []
 cameras_origin: [Metashape.Camera] = []
-cameras_left: [Metashape.Camera] = []
+cameras_horizon: [Metashape.Camera] = []
+cameras_distance: [Metashape.Camera] = []
 
 # Get groups
-for camera in cameras:
-    camera_number = get_camera_number(camera)
+for cam in cameras:
+    camera_number = get_camera_number(cam)
     if camera_number in GROUP_UP:
-        cameras_up.append(camera)
+        cameras_up.append(cam)
     elif camera_number in GROUP_ORIGIN:
-        cameras_origin.append(camera)
-    elif camera_number in GROUP_LEFT:
-        cameras_left.append(camera)
+        cameras_origin.append(cam)
+    elif camera_number in GROUP_HORIZON:
+        cameras_horizon.append(cam)
+    if camera_number in GROUP_DISTANCE:
+        cameras_distance.append(cam)
+
+# Get scale ratio
+scale_vector = cameras_distance[0].transform.translation()\
+               - cameras_distance[1].transform.translation()
+camera_distance = scale_vector.norm()
+scale_ratio = CAMERA_REFERENCE_DISTANCE / camera_distance
 
 # Get positions
 position_up = get_average_position(cameras_up)
 position_origin = get_average_position(cameras_origin)
-position_left = get_average_position(cameras_left)
+position_left = get_average_position(cameras_horizon)
 
-# Calculate vectors
+# Get vectors for rotation matrix
 vector_up: Metashape.Vector = (position_up - position_origin).normalized()
-vector_left: Metashape.Vector = (position_left - position_origin).normalized()
-vector_forward = Metashape.Vector.cross(vector_left, vector_up)
-position_pivot = position_left + (position_origin - position_left) / 2
+vector_horizon: Metashape.Vector = (
+        position_left - position_origin
+).normalized()
+vector_forward = Metashape.Vector.cross(vector_horizon, vector_up)
 
-# Create matrix
-vector_left.size = 4
-vector_left.w = 0
+# Get pivot_center
+pivot_center = position_left + (position_origin - position_left) / 2
+pivot_offset = Metashape.Vector(CENTER_OFFSET)
+
+# Create matrix_target
+vector_horizon.size = 4
+vector_horizon.w = 0
 vector_up.size = 4
 vector_up.w = 0
 vector_forward.size = 4
 vector_forward.w = 0
 matrix_target = Metashape.Matrix((
-    vector_left, vector_up, vector_forward, (0.0, 0.0, 0.0, 1.0)
+    vector_horizon, vector_up, vector_forward, (0.0, 0.0, 0.0, 1.0)
 ))
 
-# Apply transform
+# Apply Chunk transform
 chunk.transform.matrix = matrix_target
-position_pivot = matrix_target.mulp(position_pivot)
-chunk.transform.translation = -position_pivot
+chunk.transform.scale = scale_ratio
+chunk.transform.translation = -matrix_target.mulp(
+    pivot_center * scale_ratio
+)
+chunk.transform.translation += pivot_offset * scale_ratio
 
-# Region
+# Apply Region transform
 region = chunk.region
-region.center = matrix_target.inv().mulp(position_pivot)
+region.center = pivot_center - matrix_target.inv().mulp(
+    pivot_offset
+)
 region.rot = matrix_target.rotation().inv()
-region.size = Metashape.Vector((1, 1, 1))
+region.size = Metashape.Vector((1.0, 1.0, 1.0)) / scale_ratio
