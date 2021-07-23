@@ -7,28 +7,26 @@ from common.fourd_frame import FourdFrameManager
 
 
 class MetashapeProject:
-    _psx_name = 'project'
-    _cameras_name = 'cameras'
-    _masks_name = 'masks'
-    _chunk_prefix_name = 'frame_'
-    _export_name = 'export'
+    PSX_NAME = 'project'
+    EXPORT_FOLDER_NAME = 'export'
+    CHUNK_NAME = 'MainChunk'
 
+    # Resolve parameters
     SENSOR_PIXEL_WIDTH = 0.00345
     SENSOR_FOCAL_LENGTH = 12
-
+    FEATURE_INTERVAL = 5
     COMPONENT_REMOVE_THRESHOLD = 10000
     SMOOTH_MODEL = 1.0
     TEXTURE_SIZE = 8192
+    REGION_SIZE = (0.5, 0.5, 0.5)
 
-    CHUNK_NAME = 'MainChunk'
+    # Chunk normalized transform
     GROUP_UP = [2, 3]
     GROUP_ORIGIN = [4, 5]
     GROUP_HORIZON = [12, 13]
     GROUP_DISTANCE = [5, 12]
     CENTER_OFFSET = (0.0, -0.2, 0.3)
     CAMERA_REFERENCE_DISTANCE = 0.5564
-    REGION_SIZE = (0.5, 0.5, 0.5)
-    FEATURE_INTERVAL = 5
 
     def __init__(self):
         self._start_frame = int(os.environ['start_frame'])
@@ -38,15 +36,13 @@ class MetashapeProject:
         self._shot_path = Path(os.environ['shot_path'])
         self._job_path = Path(os.environ['job_path'])
 
-        self._project_path = self._job_path / f'{self._psx_name}.psx'
-        self._files_path = self._job_path / f'{self._psx_name}.files'
-        self._cameras_path = self._job_path / f'{self._cameras_name}.out'
-        self._masks_path = self._shot_path / self._masks_name
-        self._export_path = self._job_path / f'{self._export_name}'
+        self._project_path = self._job_path / f'{self.PSX_NAME}.psx'
+        self._files_path = self._job_path / f'{self.PSX_NAME}.files'
+        self._export_path = self._job_path / f'{self.EXPORT_FOLDER_NAME}'
 
         self._doc = self._initial_doc()
 
-    def _initial_doc(self):
+    def _initial_doc(self) -> Metashape.Document:
         doc = Metashape.Document()
         if self._project_path.exists():
             doc.open(
@@ -59,13 +55,13 @@ class MetashapeProject:
             doc.save(self._project_path.__str__())
         return doc
 
-    def _export_4df(self, chunk):
+    def _export_4df(self, chunk: Metashape.Chunk):
         # Get model
-        model = chunk.model
+        model: Metashape.Model = chunk.model
 
         # Geo
-        vtx_idxs = []
-        uv_idxs = []
+        vtx_idxs: [int] = []
+        uv_idxs: [int] = []
         for face in model.faces:
             vtx_idxs += face.vertices
             uv_idxs += face.tex_vertices
@@ -102,6 +98,9 @@ class MetashapeProject:
         )
 
     def initial(self):
+        assert self._doc.chunk is None
+
+        # Add Chunk
         chunk = self._doc.addChunk()
         chunk.label = self.CHUNK_NAME
 
@@ -116,7 +115,7 @@ class MetashapeProject:
             camera.label = camera.label[:-5]
 
         # Camera calibration sensor
-        ref_sensor = chunk.sensors[0]
+        ref_sensor: Metashape.Sensor = chunk.sensors[0]
         ref_sensor.focal_length = self.SENSOR_FOCAL_LENGTH
         ref_sensor.pixel_width = self.SENSOR_PIXEL_WIDTH
         ref_sensor.pixel_height = self.SENSOR_PIXEL_WIDTH
@@ -131,7 +130,7 @@ class MetashapeProject:
         self.save()
 
     def calibrate(self):
-        chunk = self._doc.chunk
+        chunk: Metashape.Chunk = self._doc.chunk
 
         # Build points
         interval = self.FEATURE_INTERVAL
@@ -179,7 +178,6 @@ class MetashapeProject:
         # Export 4df
         self._export_4df(frame)
 
-        # Save
         self.save()
 
     def save(self):
