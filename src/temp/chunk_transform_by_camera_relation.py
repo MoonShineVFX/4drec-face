@@ -8,7 +8,8 @@ GROUP_ORIGIN: [int] = [4, 5]
 GROUP_HORIZON: [int] = [12, 13]
 GROUP_DISTANCE: [int] = [5, 12]
 CAMERA_REFERENCE_DISTANCE = 0.5564
-CENTER_OFFSET = (0.0, -0.5, 0.65)
+CENTER_OFFSET = (0.0, -0.2, 0.3)
+REGION_SIZE = (0.5, 0.5, 0.5)
 
 
 def get_camera_number(camera: Metashape.Camera) -> int:
@@ -85,12 +86,12 @@ chunk.transform.scale = scale_ratio
 chunk.transform.translation = -matrix_target.mulp(
     pivot_center * scale_ratio
 )
-chunk.transform.translation += pivot_offset * scale_ratio
+chunk.transform.translation += pivot_offset
 
 # Apply Region transform
 region = chunk.region
 region.center = pivot_center - matrix_target.inv().mulp(
-    pivot_offset
+    pivot_offset / scale_ratio
 )
 region.rot = matrix_target.rotation().inv()
-region.size = Metashape.Vector((1.0, 1.0, 1.0)) / scale_ratio
+region.size = Metashape.Vector(REGION_SIZE) / scale_ratio

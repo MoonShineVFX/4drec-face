@@ -1,24 +1,32 @@
 import os
+from time import perf_counter
 
 os.environ.update({
-    'agisoft_LICENSE': 'D:\\',
-    'shot_path': r'C:\Users\eli\Desktop\export\near4d',
-    'job_path': r'C:\Users\eli\Desktop\metashape\auto',
+    'shot_path': r'D:\4dface\export\near4d',
+    'job_path': r'D:\4dface\metashape\auto',
     'start_frame': '0',
     'end_frame': '119',
-    'current_frame': '0'
+    'current_frame': '2'
 })
+
+class Timelogger:
+    def __init__(self):
+        self._time = perf_counter()
+
+    def tick(self, name='tick'):
+        duration = perf_counter() - self._time
+        with open(f'{os.environ["job_path"]}\\timelog.txt', 'a') as f:
+            f.write(f'{name}: {duration}\n')
+        self._time = perf_counter()
 
 
 if __name__ == '__main__':
     from common.metashape_manager import MetashapeProject
     project = MetashapeProject()
-    # project.initial()
+    t = Timelogger()
+    project.initial()
+    t.tick('initial')
     project.calibrate()
-    # project.resolve()
-
-    # for f in range(5981, 6012):
-    #     print(f'=================== {f} =================== ')
-    #     os.environ['current_frame'] = str(f)
-    #     project = MetashapeProject()
-    #     project.resolve()
+    t.tick('calibrate')
+    project.resolve()
+    t.tick('resolve')

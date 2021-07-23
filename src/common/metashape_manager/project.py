@@ -5,8 +5,6 @@ import numpy as np
 
 from common.fourd_frame import FourdFrameManager
 
-from .keying import keying_images
-
 
 class MetashapeProject:
     _psx_name = 'project'
@@ -15,25 +13,22 @@ class MetashapeProject:
     _chunk_prefix_name = 'frame_'
     _export_name = 'export'
 
-    _sensor_pixel_width = 0.00345
-    _sensor_focal_length = 12
-    _region_size_large = (12, 7, 12)
-    _region_size_small = (5, 4, 5)
+    SENSOR_PIXEL_WIDTH = 0.00345
+    SENSOR_FOCAL_LENGTH = 12
 
-    _marker_reference = {
-        'target 1': (0, 0.18, 0),
-        'target 2': (0.133, 0.18, 0),
-        'target 5': (0, 0.424, 0)
-    }
+    COMPONENT_REMOVE_THRESHOLD = 10000
+    SMOOTH_MODEL = 1.0
+    TEXTURE_SIZE = 8192
 
     CHUNK_NAME = 'MainChunk'
     GROUP_UP = [2, 3]
     GROUP_ORIGIN = [4, 5]
     GROUP_HORIZON = [12, 13]
     GROUP_DISTANCE = [5, 12]
-    CENTER_OFFSET = (0.0, -0.5, 0.65)
+    CENTER_OFFSET = (0.0, -0.2, 0.3)
     CAMERA_REFERENCE_DISTANCE = 0.5564
-    REGION_SIZE = (1.0, 1.0, 1.0)
+    REGION_SIZE = (0.5, 0.5, 0.5)
+    FEATURE_INTERVAL = 5
 
     def __init__(self):
         self._start_frame = int(os.environ['start_frame'])
@@ -64,31 +59,11 @@ class MetashapeProject:
             doc.save(self._project_path.__str__())
         return doc
 
-    def _create_chunk(self, chunk_name) -> Metashape.Chunk:
-        new_chunk = self._doc.addChunk()
-        new_chunk.label = chunk_name
-        return new_chunk
-
-    def _import_images_to_chunk(self, chunk, path, frame):
-        photos = [p.__str__() for p in path.glob(f'*_{frame:06d}.jpg')]
-        chunk.addPhotos(photos)
-        for camera in chunk.cameras:
-            camera.label = camera.label.split('_')[0]
-
-    def _log_progress(self, title, progress):
-        print(f'{title}: {progress:.2f}%')
-
-    def _get_chunk(self, chunk_name: str) -> Metashape.Chunk:
-        for chunk in self._doc.chunks:
-            if chunk.label == chunk_name:
-                return chunk
-        raise ValueError(f'No chunk named {chunk_name}')
-
-    def _export(self, chunk):
-        # get model
+    def _export_4df(self, chunk):
+        # Get model
         model = chunk.model
 
-        # geo
+        # Geo
         vtx_idxs = []
         uv_idxs = []
         for face in model.faces:
@@ -112,13 +87,13 @@ class MetashapeProject:
 
         geo_arr = np.hstack((vtx_arr, uv_arr))
 
-        # texture
+        # Texture
         image = model.textures[0].image()
         tex_arr = np.fromstring(image.tostring(), dtype=np.uint8)
         tex_arr = tex_arr.reshape((image.width, image.height, 4))
         tex_arr = tex_arr[:, :, :3]
 
-        # make dir
+        # Make dir
         self._export_path.mkdir(parents=True, exist_ok=True)
         export_4df_path = self._export_path / f'{self._current_frame:06d}.4df'
 
@@ -127,157 +102,90 @@ class MetashapeProject:
         )
 
     def initial(self):
-        chunk = self._create_chunk(self.CHUNK_NAME)
+        chunk = self._doc.addChunk()
+        chunk.label = self.CHUNK_NAME
 
-        # import images
+        # Import images
         camera_folders = self._shot_path.glob('*')
         for camera_folder in camera_folders:
             photos = [str(p) for p in camera_folder.glob('*.jpg')]
             chunk.addPhotos(photos, layout=Metashape.MultiframeLayout)
 
-        # camera labels
+        # Camera labels
         for camera in chunk.cameras:
             camera.label = camera.label[:-5]
+
+        # Camera calibration sensor
+        ref_sensor = chunk.sensors[0]
+        ref_sensor.focal_length = self.SENSOR_FOCAL_LENGTH
+        ref_sensor.pixel_width = self.SENSOR_PIXEL_WIDTH
+        ref_sensor.pixel_height = self.SENSOR_PIXEL_WIDTH
+
+        # Apply sensor data to all cameras
+        for camera in chunk.cameras:
+            sensor = chunk.addSensor(ref_sensor)
+            sensor.label = f'sensor_{camera.label}'
+            camera.sensor = sensor
+        chunk.remove([ref_sensor])
 
         self.save()
 
     def calibrate(self):
         chunk = self._doc.chunk
 
-        # camera calibration sensor
-        ref_sensor = chunk.sensors[0]
-        ref_sensor.focal_length = self._sensor_focal_length
-        ref_sensor.pixel_width = self._sensor_pixel_width
-        ref_sensor.pixel_height = self._sensor_pixel_width
+        # Build points
+        interval = self.FEATURE_INTERVAL
+        for frame in chunk.frames:
+            if interval != self.FEATURE_INTERVAL:
+                interval += 1
+                continue
+            frame.matchPhotos()
+            interval = 1
 
-        # camera calibration all
-        for camera in chunk.cameras:
-            sensor = chunk.addSensor(ref_sensor)
-            sensor.label = f'sensor_{camera.label}'
-            camera.sensor = sensor
-        chunk.remove([ref_sensor])
+        # Align photos
+        chunk.alignCameras()
 
-        # build points
-        chunk.matchPhotos(
-            reference_preselection=False
-        )
+        # Align chunk
+        self._normalize_chunk_transform()
 
-        # align photos
-        chunk.alignCameras(chunk.cameras)
-
-        # align chunk
-        self.calibrate_chunk_transform()
-
-        # save
         self.save()
 
     def resolve(self):
-        # get chunk
-        chunk = self._get_chunk(self._current_frame)
+        chunk = self._doc.chunk
+        frame = chunk.frames[self._current_frame]
 
-        # add photos
-        self._import_images_to_chunk(
-            chunk, self._shot_path, self._current_frame
-        )
+        # Build points
+        if frame.point_cloud is None:
+            frame.matchPhotos()
+            frame.triangulatePoints()
 
-        # detect markers
-        # chunk.detectMarkers()
-
-        # keying image
-        mask_path_list = keying_images(
-            self._shot_path,
-            self._masks_path,
-            self._current_frame
-        )
-
-        # import masks
-        for camera, mask_path in zip(chunk.cameras, mask_path_list):
-            print(camera.label)
-            print(mask_path)
-            mask = Metashape.Mask()
-            mask.load(mask_path)
-            camera.mask = mask
-
-        # import cameras
-        ref_sensor = self._import_camera_to_chunk(chunk)
-
-        # camera calibration all
-        chunk.importCameras(
-            self._cameras_path.__str__(),
-            format=Metashape.CamerasFormatBundler
-        )
-
-        for camera in chunk.cameras:
-            sensor = chunk.addSensor(ref_sensor)
-            sensor.label = f'sensor_{camera.label}'
-            calibration = sensor.calibration.copy()
-            calibration.load(
-                (self._job_path / f'{camera.label}.xml').__str__()
-            )
-            sensor.calibration = calibration
-            camera.sensor = sensor
-
-        chunk.remove([ref_sensor])
-
-        # # build points
-        # chunk.matchPhotos(
-        #     filter_mask=True,
-        #     reference_preselection=False,
-        #     mask_tiepoints=False,
-        #     keypoint_limit=0,
-        #     tiepoint_limit=0
-        # )
-        # chunk.triangulatePoints()
-
-        # # optimize cameras
-        # chunk.optimizeCameras()
-        #
-
-        # build dense
-        chunk.resetRegion()
-        chunk.region.size = Metashape.Vector(
-            self._region_size_large
-        )
-        chunk.buildDepthMaps(
-          downscale=2
-        )
-        chunk.region.size = Metashape.Vector(
-            self._region_size_small
-        )
-        chunk.buildDenseCloud(
+        # Build dense
+        frame.buildDepthMaps()
+        frame.buildDenseCloud(
             point_colors=False,
             keep_depth=False
         )
 
-        # build mesh
-        chunk.buildModel(
-            face_count=Metashape.FaceCount.MediumFaceCount
-        )
-        chunk.smoothModel()
+        # Build mesh
+        frame.buildModel()
+        frame.model.removeComponents(self.COMPONENT_REMOVE_THRESHOLD)
+        frame.smoothModel(self.SMOOTH_MODEL)
 
-        # build texture
-        chunk.buildUV()
-        chunk.buildTexture()
+        # Build texture
+        frame.buildUV()
+        frame.buildTexture(texture_size=self.TEXTURE_SIZE)
         self.save()
 
-        # align chunk
-        # cali_chunk = self._get_chunk(5981)
-        # self._doc.alignChunks(
-        #     chunks=[cali_chunk.key, chunk.key],
-        #     reference=cali_chunk.key,
-        #     method=1
-        # )
+        # Export 4df
+        self._export_4df(frame)
 
-        # export 4df
-        self._export(chunk)
-
-        # save
+        # Save
         self.save()
 
     def save(self):
         self._doc.save(str(self._project_path), self._doc.chunks)
 
-    def calibrate_chunk_transform(self):
+    def _normalize_chunk_transform(self):
         chunk = self._doc.chunk
         cameras: [Metashape.Camera] = chunk.cameras
 
@@ -338,12 +246,12 @@ class MetashapeProject:
         chunk.transform.translation = -matrix_target.mulp(
             pivot_center * scale_ratio
         )
-        chunk.transform.translation += pivot_offset * scale_ratio
+        chunk.transform.translation += pivot_offset
 
         # Apply Region transform
         region = chunk.region
         region.center = pivot_center - matrix_target.inv().mulp(
-            pivot_offset
+            pivot_offset / scale_ratio
         )
         region.rot = matrix_target.rotation().inv()
         region.size = Metashape.Vector(self.REGION_SIZE) / scale_ratio
