@@ -11,9 +11,9 @@ os.environ.update({
 })
 
 if __name__ == '__main__':
-    from common.metashape_manager import MetashapeProject
+    from resolve import ResolveProject
 
-    project = MetashapeProject()
+    project = ResolveProject()
     # project.initial()
     # project.calibrate()
     # project.resolve()

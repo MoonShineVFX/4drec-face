@@ -21,10 +21,10 @@ class Timelogger:
 
 
 if __name__ == '__main__':
-    from common.metashape_manager import MetashapeProject
-    project = MetashapeProject()
+    from resolve import ResolveProject
+    project = ResolveProject()
     t = Timelogger()
-    project.initial()
+    project.initialize()
     t.tick('initial')
     project.calibrate()
     t.tick('calibrate')
