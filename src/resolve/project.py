@@ -1,6 +1,8 @@
 import Metashape
 import numpy as np
 import logging
+from time import perf_counter
+from datetime import datetime
 
 from common.fourd_frame import FourdFrameManager
 
@@ -124,6 +126,11 @@ class ResolveProject:
         self.__doc.save(str(SETTINGS.project_path), self.__doc.chunks)
 
     def run(self):
+        # Timestamp
+        start_time = perf_counter()
+        now = datetime.now()
+
+        # Maim
         if SETTINGS.resolve_stage is ResolveStage.INITIALIZE:
             logging.info('Project run: INITIAL')
             self.initialize()
@@ -135,6 +142,15 @@ class ResolveProject:
             error_message = f'ResolveStage {SETTINGS.resolve_stage} not implemented'
             logging.critical(error_message)
             raise ValueError(error_message)
+
+        logging.info('Finish')
+        # Record elapsed time
+        duration = perf_counter() - start_time
+        time_label = f'[{SETTINGS.resolve_stage}]'
+        if SETTINGS.resolve_stage is ResolveStage.RESOLVE:
+            time_label += f'({SETTINGS.current_frame})'
+        with open(str(SETTINGS.timelog_path), 'a') as f:
+            f.write(f'{now:%Y-%m-%d %H:%M:%S} {time_label}: {duration}s\n')
 
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk

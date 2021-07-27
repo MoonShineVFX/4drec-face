@@ -23,6 +23,7 @@ class ResolveSettings:
         self.metashape_project_name = 'metashape_project'
         self.output_folder_name = 'output'
         self.chunk_name = 'MainChunk'
+        self.timelog_name = 'timelog'
 
         # Camera
         self.sensor_pixel_width = 0.00345
@@ -46,7 +47,7 @@ class ResolveSettings:
         # Job
         self.start_frame = 0
         self.end_frame = 0
-        self.shot_path = Path(r'D"\shot\a1b2c3d4')
+        self.shot_path = Path(r'D:\shot\a1b2c3d4')
         self.job_path = Path(r'D:\jobs\a1b2c3d4')
 
     def initialize(self,
@@ -54,6 +55,8 @@ class ResolveSettings:
                    resolve_stage: ResolveStage,
                    yaml_path: Optional[str] = None,
                    extra_settings: Optional[dict] = None):
+        logging.debug('Initialize')
+
         self.current_frame = current_frame
         self.resolve_stage = resolve_stage
 
@@ -86,6 +89,7 @@ class ResolveSettings:
         self.project_path = self.job_path / f'{self.metashape_project_name}.psx'
         self.files_path = self.job_path / f'{self.metashape_project_name}.files'
         self.export_path = self.job_path / f'{self.output_folder_name}'
+        self.timelog_path = self.job_path / f'{self.timelog_name}.txt'
 
         self.is_initialized = True
 
