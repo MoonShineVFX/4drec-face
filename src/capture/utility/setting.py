@@ -1,8 +1,14 @@
 import yaml
 import os
 import platform
-import glob
+import sys
+from pathlib import Path
+import json
+
 from common.camera_structure.camera_structure import CameraStructure
+
+
+SETTINGS_YAML_PATH = Path(__file__) / '../../settings'
 
 
 class SettingManager(CameraStructure):
@@ -18,18 +24,25 @@ class SettingManager(CameraStructure):
         self._settings = {}  # 設定資料
 
         # 蒐集所有 settings 資料夾的 yaml 檔案
-        files = list(glob.glob('settings/*.yaml'))
+        files = list(SETTINGS_YAML_PATH.glob('*.yaml'))
         for file in files:
-            with open(file, 'r') as f:
+            with open(str(file), 'r') as f:
                 self._settings.update(yaml.load(f, Loader=yaml.FullLoader))
-
-        # resolve setting
-        with open('../resolve/setting.yaml', 'r') as f:
-            self._settings['resolve'] = yaml.load(f, Loader=yaml.FullLoader)
 
         # 如果是 slave 就建立錄製資料夾
         if not self.is_master():
             self._make_record_folder()
+        # 如果是 master 以及有 conda 環境變數的狀況，assign 環境變數
+        else:
+            python_path = Path(sys.executable).parents[0]
+            state_path = python_path / 'conda-meta/state'
+            if state_path.is_file():
+                with open(str(state_path), 'r') as f:
+                    data = json.load(f)
+                envs = data.get('env_vars', None)
+                if envs is not None:
+                    for key, value in envs.items():
+                        os.environ[key] = value
 
     def __getattr__(self, attr):
         """取得設定檔資訊，是字典的話會以 SettingProperty 包裝回傳"""
@@ -109,7 +122,7 @@ class SettingManager(CameraStructure):
 
     def save_camera_parameters(self, parms):
         save_parms = {'camera_user_parameters': parms}
-        with open('settings/user_parameters.yaml', 'w') as f:
+        with open(str(SETTINGS_YAML_PATH / 'user_parameters.yaml'), 'w') as f:
             yaml.dump(save_parms, f)
         self._settings.update(save_parms)
 
