@@ -36,7 +36,7 @@ def submit_deadline(project_name, shot, job):
     """
     is_cali = shot.is_cali()
 
-    shot_path = f'{setting.submit_shot_path}{shot.get_id()}/'
+    shot_path = f'{setting.submit.shot_path}{shot.get_id()}/'
 
     if is_cali:
         job_path = f'{setting.submit_cali_path}{job.get_id()}/'

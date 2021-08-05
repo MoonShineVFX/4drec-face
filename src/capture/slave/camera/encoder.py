@@ -205,7 +205,7 @@ class CameraShotSubmitter(MixThread):
             )
 
             # 創建資料夾
-            submit_image_path = f'{setting.submit_shot_path}{shot_id}/'
+            submit_image_path = f'{setting.submit.shot_path}{shot_id}/'
             os.makedirs(submit_image_path, exist_ok=True)
             self._log.debug(f'Save to {submit_image_path}')
 

@@ -60,7 +60,7 @@ class ResolvePackage:
 
         # open file
         load_path = (
-            f'{setting.submit_job_path}{self._job_id}/export/'
+            f'{setting.submit.job_path}{self._job_id}/export/'
         )
 
         file_path = f'{load_path}{self._frame:06d}'

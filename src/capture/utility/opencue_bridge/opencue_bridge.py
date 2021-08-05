@@ -1,12 +1,13 @@
-import opencue.exception
-
 from capture.utility.setting import setting
 
+import opencue.exception
 from outline import Outline, cuerun
 from outline.modules.shell import Shell, ShellCommand
 from opencue import api
 from opencue.wrappers.service import Service
 from opencue.wrappers.show import Show
+
+from utility.logger import log
 
 
 class MetashapeInitialLayer(ShellCommand):
@@ -36,8 +37,9 @@ class OpenCueBridge:
     @staticmethod
     def check_server() -> str:
         try:
-            api.getSystemStats()
+            log.debug(api.getSystemStats())
         except opencue.exception.ConnectionException as error:
+            log.warning('OpenCue server not found.')
             return str(error)
         return ''
 
@@ -45,8 +47,10 @@ class OpenCueBridge:
     def ensure_service():
         check_service = api.getService(setting.opencue.service_name)
         if check_service is not None:
+            log.info(f'Service {setting.opencue.service_name} exists.')
             return
 
+        log.info(f'Create service {setting.opencue.service_name}.')
         service: Service = api.createService(None)
         service.setName(setting.opencue.service_name)
         service.setThreadable(True)
@@ -59,19 +63,21 @@ class OpenCueBridge:
 
     @staticmethod
     def ensure_show(show_name: str):
-        is_created = False
         for show in api.getShows():
             if show_name == show.data.name:
-                is_created = True
-                break
-        if not is_created:
-            new_show: Show = api.createShow(show_name)
-            alloc = api.getAllocation(setting.opencue.allocation_name)
-            new_show.createSubscription(alloc, 1000, 1000)
+                log.info(f'Show {show_name} exists.')
+                return
+
+        log.info(f'Create show {show_name}.')
+        new_show: Show = api.createShow(show_name)
+        alloc = api.getAllocation(setting.opencue.allocation_name)
+        new_show.createSubscription(alloc, 1000, 1000)
 
     @staticmethod
     def submit(show_name: str, shot_name: str, job_name: str,
-               frame_range: str, yaml_path: str):
+               frame_range: (int, int), parameters: dict) -> [str]:
+        # TODO: Add parameters update and yaml file creation
+
         # Ensure
         OpenCueBridge.ensure_service()
         OpenCueBridge.ensure_show(show_name)
@@ -95,3 +101,5 @@ class OpenCueBridge:
         jobs = cuerun.launch(outline, use_pycuerun=False)
         for job in jobs:
             job.setPriority(100)
+
+        return [job.id() for job in jobs]

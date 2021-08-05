@@ -66,7 +66,7 @@ class MultiExecutor(threading.Thread):
 
         folder_name, job_id, frames, export_path = tasks
         load_path = (
-            f'{setting.submit_job_path}{job_id}/export/'
+            f'{setting.submit.job_path}{job_id}/export/'
         )
         offset_frame = frames[0] - 1
 

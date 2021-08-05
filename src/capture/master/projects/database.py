@@ -7,10 +7,11 @@ from utility.logger import log
 from utility.define import EntityEvent, CameraCacheType, TaskState, UIEventType
 from utility.setting import setting
 from utility.repeater import Repeater
+from utility.opencue_bridge import OpenCueBridge
 
 from master.ui import ui
 
-from .deadline import get_task_list, submit_deadline
+from .deadline import get_task_list
 
 
 # 資料庫設定
@@ -45,10 +46,6 @@ def get_projects(include_archived=False, callback=None):
     projects = list(DB_PROJECTS.find(query).sort([('_id', -1)]))
 
     return [ProjectEntity(d, callback) for d in projects]
-
-
-def get_calibrations():
-    return list(DB_JOBS.find({'cali': True}).sort([('_id', -1)]))
 
 
 class Entity():
@@ -231,7 +228,7 @@ class ProjectEntity(Entity):
 
         return [ShotEntity(self, s) for s in shots]
 
-    def create_shot(self, is_cali, name=None):
+    def create_shot(self, name=None):
         """創建 Shot
 
         Args:
@@ -247,8 +244,7 @@ class ProjectEntity(Entity):
             self,
             {
                 'project_id': self._doc_id,
-                'name': name,
-                'cali': is_cali
+                'name': name
             },
         )
 
@@ -343,7 +339,6 @@ class ShotEntity(Entity):
         'missing_frames': None,
         'camera_parameters': None,
         'state': 0,  # created, recorded, submitted
-        'cali': False
     }
 
     def __init__(self, parent, doc):
@@ -375,7 +370,7 @@ class ShotEntity(Entity):
 
         return [JobEntity(self, j) for j in jobs]
 
-    def create_job(self, name, frames, parameters, is_cali):
+    def create_job(self, name, frame_range, parameters):
         # 名稱
         if name is None or name == '':
             name = f'submit {len(self.jobs) + 1}'
@@ -386,9 +381,8 @@ class ShotEntity(Entity):
             {
                 'shot_id': self._doc_id,
                 'name': name,
-                'frames': frames,
-                'parameters': parameters,
-                'cali': is_cali
+                'frame_range': frame_range,
+                'parameters': parameters
             }
         )
 
@@ -435,27 +429,31 @@ class ShotEntity(Entity):
     def get_cache_size(self):
         return self._memory
 
-    def submit(self, name, frames, parameters={}):
-        job = self.create_job(name, frames, parameters, self.is_cali())
+    def submit(self, name, frame_range, parameters=None):
+        if parameters is None:
+            parameters = {}
+        job = self.create_job(name, frame_range, parameters)
 
-        # Deadline integration
-        log.info(f'Deadline submit shot: {self}')
+        # OpenCue integration
+        log.info(f'OpenCue submit shot: {self}')
+        opencue_ids = OpenCueBridge.submit(
+            self._parent.name, self.name, job.name,
+            frame_range, parameters
+        )
 
-        deadline_ids = submit_deadline(self._parent.name, self, job)
-
-        if deadline_ids is None:
-            log.error('Deadline submit server error!')
+        if opencue_ids is None:
+            log.error('OpenCue submit server error!')
             job.remove()
             return
 
-        log.info(f'Deadline submit done: {self}')
+        log.info(f'OpenCue submit done: {self}')
 
         ui.dispatch_event(
             UIEventType.NOTIFICATION,
             {
                 'title': f'[{self.name}] Submit Success',
                 'description': (
-                    f'Shot [{self.name}] submitted with {len(frames)} frames.'
+                    f'Shot [{self.name}] submitted frames {frame_range[0]}-{frame_range[1]}.'
                 )
             }
         )
@@ -463,12 +461,7 @@ class ShotEntity(Entity):
         if self.state != 2:
             self.update({'state': 2})
 
-        job.update({'deadline_ids': deadline_ids})
-
-    def is_cali(self):
-        if 'cali' in self._doc:
-            return self.cali
-        return False
+        job.update({'opencue_ids': opencue_ids})
 
 
 class JobEntity(Entity):
@@ -478,13 +471,12 @@ class JobEntity(Entity):
     # 專案資料範本
     _template = {
         'shot_id': None,
-        'deadline_ids': [],
+        'opencue_ids': [],
         'name': None,
-        'frames': None,
+        'frame_range': None,
         'parameters': {},
         'state': 0,  # created, resolved
-        'task_list': {},
-        'cali': False
+        'task_list': {}
     }
 
     def __init__(self, parent, doc):
@@ -542,13 +534,3 @@ class JobEntity(Entity):
                 if t is TaskState.COMPLETED
             ]
         )
-
-    def is_cali(self):
-        if 'cali' in self._doc:
-            return self.cali
-        return False
-
-    def get_cali_id(self):
-        if self.is_cali():
-            return self.get_id()
-        return self.parameters['cali'][0]
