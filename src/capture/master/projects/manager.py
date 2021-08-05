@@ -1,6 +1,7 @@
 from utility.logger import log
 from utility.message import message_manager
 from utility.define import EntityEvent, UIEventType, MessageType
+from utility.opencue_bridge import OpenCueBridge
 
 from master.ui import ui
 
@@ -8,7 +9,6 @@ from .database import (
     get_projects, ProjectEntity, ShotEntity,
     JobEntity, get_calibrations
 )
-from .deadline import check_deadline_server
 
 
 class ProjectManager():
@@ -206,19 +206,19 @@ class ProjectManager():
             memory += job.get_cache_size()
         return memory / (1024 ** 3)
 
-    def check_deadline_server(self):
-        check_result = check_deadline_server()
+    def check_opencue_server(self):
+        check_result = OpenCueBridge.check_server()
         if check_result != '':
             ui.dispatch_event(
                 UIEventType.NOTIFICATION,
                 {
-                    'title': 'Deadline Connection Error',
+                    'title': 'OpenCue Connection Error',
                     'description': check_result
                 }
             )
 
         ui.dispatch_event(
-            UIEventType.DEADLINE_STATUS,
+            UIEventType.OPENCUE_STATUS,
             check_result == ''
         )
 

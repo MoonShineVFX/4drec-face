@@ -1,3 +1,5 @@
+import opencue.exception
+
 from capture.utility.setting import setting
 
 from outline import Outline, cuerun
@@ -31,6 +33,14 @@ class MetashapeResolveLayer(Shell):
 
 
 class OpenCueBridge:
+    @staticmethod
+    def check_server() -> str:
+        try:
+            api.getSystemStats()
+        except opencue.exception.ConnectionException as error:
+            return str(error)
+        return ''
+
     @staticmethod
     def ensure_service():
         check_service = api.getService(setting.opencue.service_name)

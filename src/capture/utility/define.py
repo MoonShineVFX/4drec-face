@@ -36,7 +36,7 @@ class UIEventType(Enum):
     RECORDING = auto()
     NOTIFICATION = auto()
     RESOLVE_GEOMETRY = auto()
-    DEADLINE_STATUS = auto()
+    OPENCUE_STATUS = auto()
     HAS_ARDUINO = auto()
     CALI_LIST = auto()
     TICK_EXPORT = auto()

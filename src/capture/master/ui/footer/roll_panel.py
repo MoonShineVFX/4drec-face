@@ -56,18 +56,18 @@ class SubmitButton(PushButton):
         self._is_server_on = False
         self.clicked.connect(self._submit)
 
-        state.on_changed('deadline_status', self._update)
+        state.on_changed('opencue_status', self._update)
         state.on_changed('current_shot', self._update_shot)
 
         self._check_server()
 
     def _check_server(self):
         state.cast(
-            'project', 'check_deadline_server'
+            'project', 'check_opencue_server'
         )
 
     def _update(self):
-        check_result = state.get('deadline_status')
+        check_result = state.get('opencue_status')
         self.setText(self._submit_text if check_result else self._connect_text)
         self._is_server_on = check_result
 
