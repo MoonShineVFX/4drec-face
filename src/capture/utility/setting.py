@@ -81,13 +81,6 @@ class SettingManager(CameraStructure):
             self.host_address.port
         )
 
-    def get_deadline_address(self):
-        """取得 Deadline Webservice 連線地址"""
-        return (
-            self.deadline_address.ip,
-            self.deadline_address.port
-        )
-
     def get_record_folder_path(self, camera_index):
         """取得錄製路徑
 

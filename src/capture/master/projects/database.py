@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from datetime import datetime
 import pytz
 from bson.codec_options import CodecOptions
+from secrets import token_hex
 
 from utility.logger import log
 from utility.define import EntityEvent, CameraCacheType, TaskState, UIEventType
@@ -10,8 +11,6 @@ from utility.repeater import Repeater
 from utility.opencue_bridge import OpenCueBridge
 
 from master.ui import ui
-
-from .deadline import get_task_list
 
 
 # 資料庫設定
@@ -48,7 +47,7 @@ def get_projects(include_archived=False, callback=None):
     return [ProjectEntity(d, callback) for d in projects]
 
 
-class Entity():
+class Entity:
     """文件實體
 
     資料庫的文件實體
@@ -83,8 +82,15 @@ class Entity():
         template = self._template.copy()
         template.update(doc)
 
-        # 取得文件ID並返回資料庫文件
-        _doc_id = self._db.insert_one(template).inserted_id
+        # 生成文件ID並創建文件
+        duplicated_doc = 'dummy'
+        _doc_id = 'temp'
+        while duplicated_doc is not None:
+            _doc_id = token_hex(3)
+            duplicated_doc = self._db.find_one({'_id': _doc_id})
+
+        template['_id'] = _doc_id
+        self._db.insert_one(template)
         new_doc = self._db.find_one({'_id': _doc_id})
         return new_doc
 
@@ -373,7 +379,7 @@ class ShotEntity(Entity):
     def create_job(self, name, frame_range, parameters):
         # 名稱
         if name is None or name == '':
-            name = f'submit {len(self.jobs) + 1}'
+            name = f'submit_{len(self.jobs) + 1}'
 
         # 創建
         job = JobEntity(
@@ -436,12 +442,13 @@ class ShotEntity(Entity):
 
         # OpenCue integration
         log.info(f'OpenCue submit shot: {self}')
-        opencue_ids = OpenCueBridge.submit(
+        opencue_job_id = OpenCueBridge.submit(
             self._parent.name, self.name, job.name,
+            self.get_folder_name(), job.get_folder_name(),
             frame_range, parameters
         )
 
-        if opencue_ids is None:
+        if opencue_job_id is None:
             log.error('OpenCue submit server error!')
             job.remove()
             return
@@ -461,7 +468,10 @@ class ShotEntity(Entity):
         if self.state != 2:
             self.update({'state': 2})
 
-        job.update({'opencue_ids': opencue_ids})
+        job.update({'opencue_job_id': opencue_job_id})
+
+    def get_folder_name(self) -> str:
+        return f'{self._parent.get_id()}/{self.get_id()}'
 
 
 class JobEntity(Entity):
@@ -471,12 +481,12 @@ class JobEntity(Entity):
     # 專案資料範本
     _template = {
         'shot_id': None,
-        'opencue_ids': [],
+        'opencue_job_id': None,
         'name': None,
         'frame_range': None,
         'parameters': {},
         'state': 0,  # created, resolved
-        'task_list': {}
+        'frame_list': {}
     }
 
     def __init__(self, parent, doc):
@@ -486,32 +496,32 @@ class JobEntity(Entity):
 
         # caches
         self._cache_progress = []
-        self._deadline_tasks = self._get_deadline_tasks()
+        self._opencue_frames = self._get_opencue_frames()
         self._memory = 0
 
         if self.state == 0:
-            self._repeater = Repeater(self._update_deadline_tasks, 60, True)
+            self._repeater = Repeater(self._update_opencue_frames, 60, True)
 
-    def _get_deadline_tasks(self):
+    def _get_opencue_frames(self):
         return {
-            int(key): TaskState(value) for key, value in self.task_list.items()
+            int(key): TaskState(value) for key, value in self.frame_list.items()
         }
 
-    def _update_deadline_tasks(self):
-        if len(self.deadline_ids) == 0:
+    def _update_opencue_frames(self):
+        if not isinstance(self.opencue_job_id, str) or self.opencue_job_id == '':
             return
 
-        task_list = get_task_list(self.deadline_ids[-1])
-        if task_list == self.task_list:
+        frame_list = OpenCueBridge.get_frame_list(self.opencue_job_id)
+        if frame_list == self.frame_list:
             return
 
-        self.update({'task_list': task_list})
+        self.update({'frame_list': frame_list})
 
-        self._deadline_tasks = self._get_deadline_tasks()
+        self._opencue_frames = self._get_opencue_frames()
         self.emit(EntityEvent.PROGRESS, self)
 
         if all(
-            [s is TaskState.COMPLETED for s in self._deadline_tasks.values()]
+            [s is TaskState.SUCCEEDED for s in self._opencue_frames.values()]
         ):
             self._repeater.stop()
             self.update({'state': 1})
@@ -522,7 +532,7 @@ class JobEntity(Entity):
         self.emit(EntityEvent.PROGRESS, self)
 
     def get_cache_progress(self):
-        return self._cache_progress, self._deadline_tasks
+        return self._cache_progress, self._opencue_frames
 
     def get_cache_size(self):
         return self._memory
@@ -530,7 +540,10 @@ class JobEntity(Entity):
     def get_completed_count(self):
         return len(
             [
-                t for t in self._deadline_tasks.values()
-                if t is TaskState.COMPLETED
+                t for t in self._opencue_frames.values()
+                if t is TaskState.SUCCEEDED
             ]
         )
+
+    def get_folder_name(self) -> str:
+        return f'{self._parent.get_folder_name()}/{self.get_id()}'

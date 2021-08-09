@@ -1,3 +1,6 @@
+import yaml
+from pathlib import Path
+
 from capture.utility.setting import setting
 
 import opencue.exception
@@ -75,8 +78,21 @@ class OpenCueBridge:
 
     @staticmethod
     def submit(show_name: str, shot_name: str, job_name: str,
+               shot_folder: str, job_folder: str,
                frame_range: (int, int), parameters: dict) -> [str]:
-        # TODO: Add parameters update and yaml file creation
+        # Build yaml file
+        yaml_data = setting.submit.copy()
+        yaml_data['start_frame'] = frame_range[0]
+        yaml_data['end_frame'] = frame_range[1]
+        yaml_data['shot_path'] += shot_folder
+        yaml_data['job_path'] += job_folder
+        yaml_data.update(parameters)
+        yaml_path = f'{yaml_data["job_path"]}/job.yml'
+
+        Path(yaml_data["job_path"]).mkdir(exist_ok=True, parents=True)
+
+        with open(yaml_path, 'w') as f:
+            yaml.dump(yaml_data, f)
 
         # Ensure
         OpenCueBridge.ensure_service()
@@ -102,4 +118,19 @@ class OpenCueBridge:
         for job in jobs:
             job.setPriority(100)
 
-        return [job.id() for job in jobs]
+        assert len(jobs) == 1
+
+        return jobs[0].id()
+
+    @staticmethod
+    def get_frame_list(job_id):
+        job = api.getJob(job_id)
+        layer = job.getLayers()[-1]
+        frames = layer.getFrames()
+
+        task_list = {}
+
+        for frame in frames:
+            task_list[frame.data.number] = frame.data.state
+
+        return task_list

@@ -112,9 +112,9 @@ class MessageType(Enum):
 
 
 class TaskState(Enum):
-    QUEUED = 2
-    SUSPENDED = 3
-    RENDERING = 4
-    COMPLETED = 5
-    FAILED = 6
-    PENDDING = 8
+    WAITING = 0
+    EATEN = 6
+    RUNNING = 2
+    SUCCEEDED = 3
+    DEAD = 5
+    DEPEND = 4

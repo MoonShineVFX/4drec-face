@@ -420,7 +420,7 @@ class CameraManager():
             )
 
     def submit_shot(self, name, frames, parameters):
-        """到 deadline 放算"""
+        """到 opencue 放算"""
         shot = project_manager.current_shot
         log.info(f'Preparing to submit shot: {shot}')
 
