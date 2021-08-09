@@ -5,6 +5,7 @@ from capture.utility.setting import setting
 
 import opencue.exception
 from outline import Outline, cuerun
+from outline.depend import DependType
 from outline.modules.shell import Shell, ShellCommand
 from opencue import api
 from opencue.wrappers.service import Service
@@ -79,14 +80,15 @@ class OpenCueBridge:
     @staticmethod
     def submit(show_name: str, shot_name: str, job_name: str,
                shot_folder: str, job_folder: str,
-               frame_range: (int, int), parameters: dict) -> [str]:
+               frame_range: (int, int), parameters: dict=None) -> [str]:
         # Build yaml file
         yaml_data = setting.submit.copy()
         yaml_data['start_frame'] = frame_range[0]
         yaml_data['end_frame'] = frame_range[1]
         yaml_data['shot_path'] += shot_folder
         yaml_data['job_path'] += job_folder
-        yaml_data.update(parameters)
+        if parameters is not None:
+            yaml_data.update(parameters)
         yaml_path = f'{yaml_data["job_path"]}/job.yml'
 
         Path(yaml_data["job_path"]).mkdir(exist_ok=True, parents=True)
@@ -101,11 +103,11 @@ class OpenCueBridge:
         # Layers
         initial_layer = MetashapeInitialLayer(yaml_path)
         resolve_layer = MetashapeResolveLayer(yaml_path)
-        resolve_layer.depend_on(initial_layer)
+        resolve_layer.depend_on(initial_layer, depend_type=DependType.LayerOnLayer)
 
         # Outline
         outline = Outline(job_name,
-                          frame_range=frame_range,
+                          frame_range=f'{frame_range[0]}-{frame_range[1]}',
                           show=show_name,
                           shot=shot_name,
                           user=setting.opencue.user_name,
@@ -128,9 +130,9 @@ class OpenCueBridge:
         layer = job.getLayers()[-1]
         frames = layer.getFrames()
 
-        task_list = {}
+        frame_list = {}
 
         for frame in frames:
-            task_list[frame.data.number] = frame.data.state
+            frame_list[frame.data.number] = frame.data.state
 
-        return task_list
+        return frame_list

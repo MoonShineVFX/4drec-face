@@ -24,6 +24,8 @@ pywin32==227
 PyYAML==5.4
 tokenize-rt==4.0.0
 Werkzeug==1.0.1
+packaging==21.0
+
 
 # Local Files
 ../../4drec-face-resource/Metashape-1.7.3-cp35.cp36.cp37.cp38-none-win_amd64.whl

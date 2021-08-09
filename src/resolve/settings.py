@@ -47,6 +47,7 @@ class ResolveSettings:
         # Job
         self.start_frame = 0
         self.end_frame = 0
+        self.offsetted_current_frame = -1
         self.shot_path = Path(r'D:\shot\a1b2c3d4')
         self.job_path = Path(r'D:\jobs\a1b2c3d4')
 
@@ -82,6 +83,7 @@ class ResolveSettings:
 
         # Format properties
         self.current_frame = int(self.current_frame)
+        self.offsetted_current_frame = self.current_frame - self.start_frame + 1
         self.shot_path = Path(self.shot_path)
         self.job_path = Path(self.job_path)
 

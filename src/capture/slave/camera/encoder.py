@@ -205,15 +205,19 @@ class CameraShotSubmitter(MixThread):
             )
 
             # 創建資料夾
-            submit_image_path = f'{setting.submit.shot_path}{shot_id}/'
-            os.makedirs(submit_image_path, exist_ok=True)
-            self._log.debug(f'Save to {submit_image_path}')
+            shot_id_path = f'{setting.submit.shot_path}{shot_id}/'
+            os.makedirs(shot_id_path, exist_ok=True)
+            self._log.debug(f'Save to {shot_id_path}')
 
             # 取出圖像
             for camera_id, shot_file_path in shot_file_paths.items():
                 file_loader = CameraShotFileLoader(
                     shot_file_path, self._log
                 )
+
+                # 創建 camera_id 資料夾
+                shot_id_camera_path = f'{shot_id_path}{camera_id}/'
+                os.makedirs(shot_id_camera_path, exist_ok=True)
 
                 # 進度定義
                 current_count = 0
@@ -224,7 +228,7 @@ class CameraShotSubmitter(MixThread):
 
                     if camera_image is not None:
                         image_path = (
-                            f'{submit_image_path}{camera_id}_{frame:06d}.jpg'
+                            f'{shot_id_camera_path}{camera_id}_{frame:06d}.jpg'
                         )
 
                         # 檢查是否有存在的檔案並大小差不多

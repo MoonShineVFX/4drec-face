@@ -1,20 +1,13 @@
 import os
 os.environ['4DREC_TYPE'] = 'MASTER'
-# from utility.opencue_bridge import OpenCueBridge
-from capture.utility.setting import setting
-from opencue import api
-from opencue.wrappers.frame import Frame
+from utility.opencue_bridge import OpenCueBridge
 
-# OpenCueBridge.ensure_service()
-# OpenCueBridge.ensure_show('mi_dance')
 
-# os.environ['CUEBOT_HOSTS'] = 'localhost'
+job_id = OpenCueBridge.submit(
+    'mi_dance', '2-min', 'depend_fix', 'shottoken', 'show_t/shot_t/job_t', (13, 27)
+)
 
-job_id = '3f83d145-256e-4879-bcbc-f9a6ca592c65'
-job = api.getJob(job_id)
+print(job_id)
 
-layer = job.getLayers()[-1]
-frames = layer.getFrames()
-for frame in frames:
-    state = Frame.FrameState(frame.data.state)
-    print(state.name.__class__)
+# job_id = 'e3ec1f66-2da4-4e3c-abdc-bda290cbfd17'
+# print(OpenCueBridge.get_frame_list(job_id))

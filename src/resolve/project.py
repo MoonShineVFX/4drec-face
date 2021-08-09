@@ -50,7 +50,7 @@ class ResolveProject:
 
         # Camera labels
         for camera in chunk.cameras:
-            camera.label = camera.label[:-5]
+            camera.label = camera.label[:-7]
 
         # Camera calibration sensor
         ref_sensor: Metashape.Sensor = chunk.sensors[0]
@@ -92,7 +92,7 @@ class ResolveProject:
     def resolve(self):
         logging.info('Resolve')
         chunk = self.__doc.chunk
-        frame = chunk.frames[SETTINGS.current_frame]
+        frame = chunk.frames[SETTINGS.offsetted_current_frame]
 
         # Build points
         if frame.point_cloud is None:
