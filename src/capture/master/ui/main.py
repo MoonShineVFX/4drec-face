@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
         elif event.type is UIEventType.NOTIFICATION:
             payload = event.get_payload()
             from .popup import notify
-            notify(**payload)
+            notify(self, **payload)
 
         elif event.type is UIEventType.RESOLVE_GEOMETRY:
             state.set('opengl_data', event.get_payload())

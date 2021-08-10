@@ -1,7 +1,6 @@
-from win10toast import ToastNotifier
 from PyQt5.Qt import (
     Qt, QDialog, QLabel, QDialogButtonBox,
-    QLineEdit, QApplication
+    QLineEdit, QApplication, QMessageBox
 )
 
 from .custom_widgets import make_layout, move_center
@@ -113,12 +112,9 @@ def popup(
         return False
 
 
-def notify(title, description):
-    toaster = ToastNotifier()
-    toaster.show_toast(
-        title,
-        description,
-        icon_path='source/ico.ico',
-        duration=10,
-        threaded=True
+def notify(parent, title, description):
+    QMessageBox.information(
+        parent,
+        title=title,
+        text=description
     )
