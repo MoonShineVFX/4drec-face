@@ -4,11 +4,15 @@ from PyQt5.Qt import (
 )
 
 from master.ui.custom_widgets import move_center, make_layout
-from master.ui.state import state
 
 
 class CameraParametersDialog(QDialog):
     _default = '''
+    CameraParametersDialog {
+        min-width: 240px;
+        min-height: 150px;
+    }
+
     QLabel {
       font-size: 14px;
     }
@@ -23,14 +27,13 @@ class CameraParametersDialog(QDialog):
     }
     '''
 
-    def __init__(self, parent):
+    def __init__(self, parent, entity):
         super().__init__(parent)
+        self._entity = entity
         self._setup_ui()
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
-        shot = state.get('current_shot')
-        job = state.get('current_job')
 
         layout = make_layout(
             horizon=False,
@@ -39,10 +42,10 @@ class CameraParametersDialog(QDialog):
         )
 
         # shot parms
-        if job is None:
-            self.setWindowTitle(f'[{shot.name}] Camera Parameters')
-            if isinstance(shot.camera_parameters, dict):
-                for key, value in shot.camera_parameters.items():
+        if self._entity.__class__.__name__ == 'ShotEntity':
+            self.setWindowTitle(f'[{self._entity.name}] Camera Parameters')
+            if isinstance(self._entity.camera_parameters, dict):
+                for key, value in self._entity.camera_parameters.items():
                     parm_layout = make_layout(spacing=48)
                     name_label = QLabel(f'{key}:')
                     if isinstance(value, float):
@@ -58,14 +61,14 @@ class CameraParametersDialog(QDialog):
                     layout.addLayout(parm_layout)
         # job parms
         else:
-            self.setWindowTitle(f'[{job.name}] Submit Parameters')
+            self.setWindowTitle(f'[{self._entity.name}] Submit Parameters')
 
             submit_widget = QWidget()
             submit_control = make_layout(
                 horizon=False, spacing=8, margin=24
             )
 
-            for key, value in job.parameters.items():
+            for key, value in self._entity.parameters.items():
                 widgets = convert_submit_parm_widgets(key, value, 0)
                 for widget in widgets:
                     if isinstance(widget, QLayout):

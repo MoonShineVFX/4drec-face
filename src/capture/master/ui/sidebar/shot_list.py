@@ -285,7 +285,7 @@ class ShotItem(LayoutWidget, EntityBinder):
         return menu
 
     def _show_parameters(self):
-        popup(dialog=CameraParametersDialog)
+        popup(dialog=CameraParametersDialog, dialog_args=[self._shot])
 
     def _rename(self):
         result = popup(
