@@ -42,7 +42,7 @@ def get_projects(include_archived=False, callback=None):
     else:
         query = {'is_archived': False}
 
-    projects = list(DB_PROJECTS.find(query).sort([('_id', -1)]))
+    projects = list(DB_PROJECTS.find(query).sort([('created_at', -1)]))
 
     return [ProjectEntity(d, callback) for d in projects]
 
@@ -90,6 +90,7 @@ class Entity:
             duplicated_doc = self._db.find_one({'_id': _doc_id})
 
         template['_id'] = _doc_id
+        template['created_at'] = datetime.now()
         self._db.insert_one(template)
         new_doc = self._db.find_one({'_id': _doc_id})
         return new_doc
@@ -99,7 +100,7 @@ class Entity:
         if prop == '_doc_id':
             return self._doc['_id']
         elif prop == 'create_at_str':
-            return f'{self._doc_id.generation_time:%Y-%m-%d %H:%M:%S}'
+            return f'{self.created_at:%Y-%m-%d %H:%M:%S}'
         else:
             if prop not in self._doc:
                 raise KeyError('[{}] not found in <{}>'.format(
@@ -228,7 +229,7 @@ class ProjectEntity(Entity):
     def _initial_shots(self):
         query = DB_SHOTS.find(
             {'project_id': self._doc_id}
-        ).sort([('_id', -1)])
+        ).sort([('created_at', -1)])
 
         shots = list(query)
 
@@ -243,7 +244,7 @@ class ProjectEntity(Entity):
         """
         # 名稱
         if name is None or name == '':
-            name = 'Shot no.{}'.format(self.shot_count)
+            name = 'shot_{}'.format(self.shot_count)
 
         # 創建
         shot = ShotEntity(
@@ -320,9 +321,10 @@ class ProjectEntity(Entity):
         刪除自己時，也會同步刪除所屬的 Shots
 
         """
-        shots = self._shots.copy()
-        for shot in shots:
-            shot.remove()
+        if self._shots is not None:
+            shots = self._shots.copy()
+            for shot in shots:
+                shot.remove()
 
         super().remove()
 
@@ -371,7 +373,7 @@ class ShotEntity(Entity):
     def _initial_jobs(self):
         query = DB_JOBS.find(
             {'shot_id': self._doc_id}
-        ).sort([('_id', -1)])
+        ).sort([('created_at', -1)])
         jobs = list(query)
 
         return [JobEntity(self, j) for j in jobs]

@@ -2,6 +2,7 @@ from PyQt5.Qt import (
     Qt, QDialog, QLabel, QDialogButtonBox,
     QLineEdit, QApplication, QMessageBox
 )
+import re
 
 from .custom_widgets import make_layout, move_center
 
@@ -106,6 +107,12 @@ def popup(
 
     if exit_code == 1:
         if hasattr(dialog, 'get_result'):
+            # For opencue name policy
+            if title in ('Create New Project', 'Create New Shot', 'Rename Shot'):
+                text = dialog.get_result().lower()
+                text = re.sub(r'[^a-z0-9]', '_', text)
+                return text
+            # Others
             return dialog.get_result()
         return True
     else:

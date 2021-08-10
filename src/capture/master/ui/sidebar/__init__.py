@@ -39,17 +39,14 @@ class Sidebar(LayoutWidget):
 
     def _new_shot(self):
         if state.get('shot_new_dialog'):
-            is_cali = state.get('is_cali')
-            shot_type = 'cali' if is_cali else 'shot'
-
             result = popup(
                 None,
-                f'Create New {shot_type.title()}',
-                f"Please input new {shot_type}'s name (optional)",
-                f'{shot_type.title()} Name'
+                'Create New Shot',
+                "Please input new shot's name (optional)",
+                'Shot Name'
             )
 
             if result is not False:
                 project = state.get('current_project')
-                project.create_shot(is_cali, result)
+                project.create_shot(result)
                 state.set('shot_new_dialog', False)

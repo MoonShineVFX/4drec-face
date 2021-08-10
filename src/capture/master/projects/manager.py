@@ -60,7 +60,7 @@ class ProjectManager():
 
         """
         self.current_project = project
-        if project.get_id() not in self._selected_projects:
+        if project is not None and project.get_id() not in self._selected_projects:
             self._selected_projects[project.get_id()] = project
 
         if project:

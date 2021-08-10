@@ -63,16 +63,12 @@ class ShotList(LayoutWidget):
         )
         shot_button = AddButton(' Shot')
         shot_button.clicked.connect(lambda: self._new_dialog())
-        cali_button = AddButton(' Cali')
-        cali_button.clicked.connect(lambda: self._new_dialog(True))
         layout.addWidget(shot_button)
-        layout.addWidget(cali_button)
         self.addLayout(layout)
 
         self._update()
 
-    def _new_dialog(self, is_cali=False):
-        state.set('is_cali', is_cali)
+    def _new_dialog(self):
         state.set('shot_new_dialog', True)
 
 
@@ -129,11 +125,6 @@ class ShotItem(LayoutWidget, EntityBinder):
         background-color: palette(base);
     }
     '''
-    _cali = '''
-    ShotItem {
-        background-color: #474538;
-    }
-    '''
     _hover = '''
     ShotItem {
         border: 2px solid palette(midlight);
@@ -155,6 +146,7 @@ class ShotItem(LayoutWidget, EntityBinder):
         self._shot = shot
         self._job_list = None
         self._menu = None
+        self._parameters_action = None
         self._name_label = None
         self._state_label = None
         self._is_current = False
@@ -162,13 +154,13 @@ class ShotItem(LayoutWidget, EntityBinder):
 
         self.bind_entity(shot, self._apply_data)
         state.on_changed('current_shot', self._update)
-        state.on_changed('current_shot', self._update_shot_list)
-        state.on_changed('body_mode', self._update_shot_list)
+        state.on_changed('current_shot', self._update_job_list)
+        state.on_changed('body_mode', self._update_job_list)
         self._setup_ui()
 
     def _update(self):
         current_shot = state.get('current_shot')
-        bg_style = self._cali if self._shot.is_cali() else self._base
+        bg_style = self._base
         if current_shot == self._shot:
             if self._is_current is not True:
                 self._is_current = True
@@ -178,7 +170,9 @@ class ShotItem(LayoutWidget, EntityBinder):
             self._is_current = False
             self.setStyleSheet(self._default + bg_style)
 
-    def _update_shot_list(self):
+        self._parameters_action.setEnabled(self._shot.state != 0)
+
+    def _update_job_list(self):
         current_shot = state.get('current_shot')
         body_mode = state.get('body_mode')
         if (
@@ -248,11 +242,9 @@ class ShotItem(LayoutWidget, EntityBinder):
         ):
             label.setText(self._get_shot_info(field))
 
-        self._update_shot_list()
+        self._update_job_list()
 
     def _get_shot_info(self, field):
-        if field == 'frame_range' and self._shot.is_cali():
-            return 'Calibrate'
         if getattr(self._shot, field) is None:
             return '---'
         if field == 'frame_range':
@@ -281,6 +273,7 @@ class ShotItem(LayoutWidget, EntityBinder):
         parm_action = QAction('Parameters', self)
         parm_action.triggered.connect(self._show_parameters)
         menu.addAction(parm_action)
+        self._parameters_action = parm_action
 
         rename_action = QAction('Rename', self)
         rename_action.triggered.connect(self._rename)

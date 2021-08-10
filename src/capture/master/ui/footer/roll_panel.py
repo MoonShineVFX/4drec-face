@@ -80,32 +80,20 @@ class SubmitButton(PushButton):
         if shot is None:
             return
 
-        if shot.is_cali() and shot.state == 2:
-            self.setEnabled(False)
-        else:
-            self.setEnabled(True)
+        self.setEnabled(True)
 
     def _submit(self):
         if self._is_server_on:
-            shot = state.get('current_shot')
-
-            if not shot.is_cali():
-                result = popup(dialog=ShotSubmitDialog)
-
-                if result:
-                    popup(
-                        dialog=SubmitProgressDialog,
-                        dialog_args=(
-                            result['name'],
-                            result['frames'],
-                            result['parms']
-                        )
-                    )
-            else:
-                state.cast(
-                    'camera',
-                    'submit_shot',
-                    shot.name, [0], {}
-                )
+            result = popup(dialog=ShotSubmitDialog)
+            print(result)
+            # if result:
+            #     popup(
+            #         dialog=SubmitProgressDialog,
+            #         dialog_args=(
+            #             result['name'],
+            #             result['frames'],
+            #             result['parms']
+            #         )
+            #     )
         else:
             self._check_server()
