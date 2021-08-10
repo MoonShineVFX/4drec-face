@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         log.info('finish widgets')
 
         # 尺寸
-        self.setGeometry(100, 80, 1600, 1100)
+        self.setGeometry(100, 80, 1520, 850)
 
         # 版面
         widget = LayoutWidget(horizon=False)
