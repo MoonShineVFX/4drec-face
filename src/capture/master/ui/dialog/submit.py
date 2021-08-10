@@ -151,6 +151,7 @@ class ShotSubmitDialog(QDialog):
         return {
             'name': self._text_name.text(),
             'frame_range': [start_frame, end_frame],
+            'offset_frame': offset_frame,
             'parms': parms
         }
 
@@ -204,8 +205,6 @@ class ShotSubmitParameter(QHBoxLayout):
         if self._parm_name is not None:
             label = QLabel(self._parm_name)
             self.addWidget(label)
-        # else:
-        #     self.addStretch(1)
         
         self._input_widget = self._create_widget(self._parm_value)
 

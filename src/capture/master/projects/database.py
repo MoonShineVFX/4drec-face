@@ -437,7 +437,7 @@ class ShotEntity(Entity):
     def get_cache_size(self):
         return self._memory
 
-    def submit(self, name, frame_range, parameters=None):
+    def submit(self, name, frame_range: [int, int], parameters=None):
         if parameters is None:
             parameters = {}
         job = self.create_job(name, frame_range, parameters)

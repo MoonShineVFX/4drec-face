@@ -161,7 +161,8 @@ class Receiver(MixThread):
         parms = message.unpack()
         shot_id = parms['shot_id']
         job_name = parms['job_name']
-        frames = parms['frames']
+        frame_range = parms['frame_range']
+        offset_frame = parms['offset_frame']
 
         # 蒐集檔案路徑
         camera_id = self._camera_connector.get_id()
@@ -172,7 +173,8 @@ class Receiver(MixThread):
         self._camera_connector.add_submit_task((
             shot_id,
             job_name,
-            frames,
+            frame_range,
+            offset_frame,
             shot_file_paths
         ))
 

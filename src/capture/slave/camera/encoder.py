@@ -194,14 +194,14 @@ class CameraShotSubmitter(MixThread):
 
     def _run(self):
         while self._running:
-            shot_id, job_name, frames, shot_file_paths = self._queue.get()
+            shot_id, job_name, frame_range, offset_frame, shot_file_paths = self._queue.get()
 
             if shot_id is None:
                 break
 
             self._log.info(
                 'Submit shot: '
-                f'{shot_id} ({frames[0]}-{frames[-1]} [{len(frames)}])'
+                f'{shot_id} ({frame_range[0]}-{frame_range[1]})'
             )
 
             # 創建資料夾
@@ -221,10 +221,10 @@ class CameraShotSubmitter(MixThread):
 
                 # 進度定義
                 current_count = 0
-                total_count = len(frames)
+                total_count = len(frame_range[1] - frame_range[0] + 1)
 
-                for frame in frames:
-                    camera_image = file_loader.load(frame)
+                for frame in range(frame_range[0], frame_range[1] + 1):
+                    camera_image = file_loader.load(frame + offset_frame)
 
                     if camera_image is not None:
                         image_path = (

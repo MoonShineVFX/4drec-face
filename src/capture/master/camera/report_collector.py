@@ -225,11 +225,11 @@ class SubmitReportContainer(ReportContainer):
 
     """
 
-    def __init__(self, collector, shot, name, frames, parameters):
+    def __init__(self, collector, shot, name, frame_range, parameters):
         super().__init__(collector, shot.get_id())
         self._shot = shot
         self._name = name
-        self._frames = frames  # 影格範圍
+        self._frame_range = frame_range  # 影格範圍
         self._parameters = parameters
         self._progress_list = {}  # 進度表{相機ID: 進度(0~1)}
         self._complete_check_list = {}
@@ -262,7 +262,7 @@ class SubmitReportContainer(ReportContainer):
 
     def _summarize_report(self):
         """總結"""
-        self._shot.submit(self._name, self._frames, self._parameters)
+        self._shot.submit(self._name, self._frame_range, self._parameters)
 
     def get_job_name(self):
         return self._name

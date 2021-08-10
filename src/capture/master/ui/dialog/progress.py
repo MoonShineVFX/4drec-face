@@ -170,11 +170,12 @@ class CacheProgressDialog(ProgressDialog):
 
 
 class SubmitProgressDialog(ProgressDialog):
-    def __init__(self, parent, job_name, job_frames, job_parms):
+    def __init__(self, parent, job_name, frame_range, offset_frame, job_parms):
         camera_count = len(setting.get_working_camera_ids())
-        super().__init__(parent, 'Submitting', len(job_frames) * camera_count)
+        super().__init__(parent, 'Submitting', (frame_range[1] - frame_range[0] + 1) * camera_count)
         self._job_name = job_name
-        self._job_frames = job_frames
+        self._job_frame_range = frame_range
+        self._job_offset_frame = offset_frame
         self._job_parms = job_parms
 
     def _prepare(self):
@@ -192,6 +193,7 @@ class SubmitProgressDialog(ProgressDialog):
             'camera',
             'submit_shot',
             self._job_name,
-            self._job_frames,
+            self._job_frame_range,
+            self._job_offset_frame,
             self._job_parms
         )

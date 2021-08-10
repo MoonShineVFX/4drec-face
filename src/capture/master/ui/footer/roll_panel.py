@@ -85,15 +85,16 @@ class SubmitButton(PushButton):
     def _submit(self):
         if self._is_server_on:
             result = popup(dialog=ShotSubmitDialog)
-            print(result)
-            # if result:
-            #     popup(
-            #         dialog=SubmitProgressDialog,
-            #         dialog_args=(
-            #             result['name'],
-            #             result['frames'],
-            #             result['parms']
-            #         )
-            #     )
+
+            if result:
+                popup(
+                    dialog=SubmitProgressDialog,
+                    dialog_args=(
+                        result['name'],
+                        result['frame_range'],
+                        result['offset_frame'],
+                        result['parms']
+                    )
+                )
         else:
             self._check_server()

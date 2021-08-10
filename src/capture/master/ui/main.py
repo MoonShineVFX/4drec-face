@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # 基礎屬性
-        self.setWindowTitle('4DREC')  # 程式名稱
+        self.setWindowTitle('4DREC [FACE]')  # 程式名稱
         self._second_screen = None
 
         # 綁定事件

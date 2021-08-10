@@ -419,7 +419,7 @@ class CameraManager():
                 None, False
             )
 
-    def submit_shot(self, name, frames, parameters):
+    def submit_shot(self, name, frame_range, offset_frame, parameters):
         """到 opencue 放算"""
         shot = project_manager.current_shot
         log.info(f'Preparing to submit shot: {shot}')
@@ -427,7 +427,7 @@ class CameraManager():
         self._report_collector.new_submit_report_container(
             shot,
             name,
-            frames,
+            frame_range,
             parameters
         )
 
@@ -437,7 +437,8 @@ class CameraManager():
             {
                 'shot_id': shot.get_id(),
                 'job_name': name,
-                'frames': frames
+                'frame_range': frame_range,
+                'offset_frame': offset_frame
             }
         )
 
