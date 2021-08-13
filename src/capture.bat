@@ -1,4 +1,7 @@
 @echo off
+SET CUEBOT_HOSTS=192.168.29.10
+SET http_proxy=
+SET https_proxy=
 set LOGURU_LEVEL=INFO
 set PYTHONPATH=%~dp0;%PYTHONPATH%
 set PATH=%~dp0;%PATH%

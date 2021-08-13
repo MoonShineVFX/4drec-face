@@ -28,13 +28,13 @@ packaging==21.0
 
 
 # Local Files
-../../4drec-face-resource/Metashape-1.7.3-cp35.cp36.cp37.cp38-none-win_amd64.whl
-../../4drec-face-resource/OpenEXR-1.3.2-cp37-cp37m-win_amd64.whl
-../../4drec-face-resource/spinnaker_python-2.4.0.144-cp37-cp37m-win_amd64.whl
+G:/resource/Metashape-1.7.3-cp35.cp36.cp37.cp38-none-win_amd64.whl
+G:/resource/OpenEXR-1.3.2-cp37-cp37m-win_amd64.whl
+G:/resource/spinnaker_python-1.27.0.48-cp37-cp37m-win_amd64.whl
 
 # OpenCue Client
 PySide2==5.11.2
-https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.8.8/pycue-0.8.8-all.tar.gz
-https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.8.8/pyoutline-0.8.8-all.tar.gz
-https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.8.8/cueadmin-0.8.8-all.tar.gz
-https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.8.8/cuegui-0.8.8-all.tar.gz
+https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/pycue-0.14.5-all.tar.gz
+https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/pyoutline-0.14.5-all.tar.gz
+https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/cueadmin-0.14.5-all.tar.gz
+https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/cuegui-0.14.5-all.tar.gz

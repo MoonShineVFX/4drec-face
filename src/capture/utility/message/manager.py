@@ -57,7 +57,7 @@ class MessageManager(MixThread):
 
         # 聆聽連線
         sock.listen(6)
-        log.info(f'Socket is Listening')
+        log.info(f'Socket is Listening: {setting.host_address.port}')
 
         # 建立連線交給 Accepter 處理
         self._accepter = MessageAccepter(sock, connect_queue)
