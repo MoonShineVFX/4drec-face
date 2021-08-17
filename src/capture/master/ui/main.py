@@ -1,7 +1,8 @@
 import sys
 from PyQt5.Qt import QMainWindow, QApplication, Qt, QWidget
 
-from utility.define import UIEventType, BodyMode, CameraState
+from utility.message import message_manager
+from utility.define import UIEventType, BodyMode, CameraState, MessageType
 from utility.logger import log
 
 
@@ -224,4 +225,5 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """關閉視窗"""
+        message_manager.send_message(MessageType.MASTER_DOWN, is_local=True)
         sys.exit()

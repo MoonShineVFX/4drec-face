@@ -38,6 +38,8 @@ def start():
         from slave.slave import start_slave
         start_slave()
 
+    os._exit(0)
+
 
 if __name__ == '__main__':
     start()

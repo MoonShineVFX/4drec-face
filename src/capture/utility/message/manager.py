@@ -136,7 +136,7 @@ class MessageManager(MixThread):
                     connected = False  # connected 的設置是避免不斷報錯
                     if error.errno == 10054:
                         if current_process().name == 'MainProcess':
-                            log.info('hihi')
+                            log.info(f'Message Error: {error}')
 
                 self._node.clear()
 
@@ -173,8 +173,11 @@ class MessageManager(MixThread):
         會回傳 Message 物件，是阻塞式調用
 
         """
-        message = self._inbox.get()
-        return message
+        while True:
+            try:
+                return self._inbox.get(timeout=1)  # Allow check for Ctrl-C every second
+            except queue.Empty:
+                pass
 
     def put_inbox(self, message):
         """將訊息放到收件匣
@@ -228,5 +231,8 @@ class MessageAccepter(MixThread):
 
     def _stop(self):
         """用 shutdown 的方式強制關閉 socket"""
-        self._sock.shutdown(2)
-        self._sock.close()
+        try:
+            self._sock.shutdown(2)
+            self._sock.close()
+        except OSError as error:
+            log.warning(error)

@@ -1,3 +1,7 @@
+import sys
+import os
+
+
 def start_master():
     """master 總啟動程序"""
     from utility.message import message_manager
@@ -12,34 +16,37 @@ def start_master():
     log.info('Start Master')
     ui.show()
 
-    while True:
-        # Message 接收與觸發
-        message = message_manager.receive_message()
+    try:
+        while True:
+            # Message 接收與觸發
+            message = message_manager.receive_message()
 
-        if (
-            message.type is MessageType.LIVE_VIEW_IMAGE or
-            message.type is MessageType.SHOT_IMAGE
-        ):
-            camera_manager.receive_image(message)
+            if (
+                message.type is MessageType.LIVE_VIEW_IMAGE or
+                message.type is MessageType.SHOT_IMAGE
+            ):
+                camera_manager.receive_image(message)
 
-        elif message.type is MessageType.CAMERA_STATUS:
-            camera_manager.update_status(message)
+            elif message.type is MessageType.CAMERA_STATUS:
+                camera_manager.update_status(message)
 
-        elif message.type is MessageType.SLAVE_DOWN:
-            camera_manager.stop_capture(message)
+            elif message.type is MessageType.SLAVE_DOWN:
+                camera_manager.stop_capture(message)
 
-        elif message.type is MessageType.MASTER_DOWN:
-            log.warning('Master closed')
-            break
+            elif message.type is MessageType.MASTER_DOWN:
+                log.warning('Master closed')
+                break
 
-        elif message.type is MessageType.RECORD_REPORT:
-            camera_manager.collect_report(message)
+            elif message.type is MessageType.RECORD_REPORT:
+                camera_manager.collect_report(message)
 
-        elif message.type is MessageType.SUBMIT_REPORT:
-            camera_manager.collect_report(message)
+            elif message.type is MessageType.SUBMIT_REPORT:
+                camera_manager.collect_report(message)
 
-        elif message.type is MessageType.TRIGGER_REPORT:
-            camera_manager.collect_report(message)
+            elif message.type is MessageType.TRIGGER_REPORT:
+                camera_manager.collect_report(message)
+    except KeyboardInterrupt:
+        log.warning('Interrupted by keyboard!')
 
     # 關閉通訊
     hardware_trigger.close()
