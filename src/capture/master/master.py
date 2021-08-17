@@ -2,7 +2,7 @@ import sys
 import os
 
 
-def start_master():
+def start_master() -> int:
     """master 總啟動程序"""
     from utility.message import message_manager
     from utility.logger import log
@@ -48,6 +48,10 @@ def start_master():
     except KeyboardInterrupt:
         log.warning('Interrupted by keyboard!')
 
+    message_manager.send_message(MessageType.MASTER_DOWN)
+
     # 關閉通訊
     hardware_trigger.close()
     message_manager.stop()
+
+    return 0

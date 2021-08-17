@@ -226,4 +226,3 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """關閉視窗"""
         message_manager.send_message(MessageType.MASTER_DOWN, is_local=True)
-        sys.exit()

@@ -26,9 +26,10 @@ def start():
     print(f'>> Launch 4D REC <{_4DREC_TYPE}>')
 
     # 執行程式
+    exit_code = None
     if _4DREC_TYPE == 'MASTER':
         from master.master import start_master
-        start_master()
+        exit_code = start_master()
     elif _4DREC_TYPE == 'SLAVE':
         # delay from restart
         if len(sys.argv) >= 3:
@@ -36,9 +37,9 @@ def start():
             print(f'Wait {delay_seconds}s from restart.')
             time.sleep(delay_seconds)
         from slave.slave import start_slave
-        start_slave()
+        exit_code = start_slave()
 
-    os._exit(0)
+    os._exit(exit_code)
 
 
 if __name__ == '__main__':

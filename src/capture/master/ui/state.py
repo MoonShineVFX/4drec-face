@@ -108,7 +108,7 @@ class UIState():
         if target in self._caster:
             getattr(self._caster[target], func)(*arg, **kwargs)
         else:
-            log.warning(f"can't find cast target [{target}]")
+            log.warning(f"can't find cast target [{target}]: {func} {arg} {kwargs}")
 
 
 class UIStateSignal(QObject):
