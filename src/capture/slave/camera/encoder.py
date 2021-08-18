@@ -249,7 +249,8 @@ class CameraShotSubmitter(MixThread):
                                 f.write(jpg_data)
 
                     else:
-                        self._log.error(f'{camera_id} missing frame {frame}')
+                        error_message = f'{camera_id} missing frame {frame}'
+                        self._log.error(error_message)
 
                     # 進度整理
                     current_count += 1

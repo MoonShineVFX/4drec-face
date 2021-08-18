@@ -67,4 +67,5 @@ class CameraStructure:
     def get_position_letters(self):
         return self._yaml['truss_positions'].keys()
 
+
 camera_structure = CameraStructure()  # 單例模式

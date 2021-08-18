@@ -96,8 +96,9 @@ class CameraConnector(Process):
 
         # set attribute
         self._id = self._camera.GetUniqueID()
-        self._configurator = CameraConfigurator(self._camera, self._log)
-        # self._log = get_prefix_log(f'<{self._id}> ')
+        self._configurator = CameraConfigurator(
+            self._camera, self._log
+        )
 
         # set child threads
         self._live_viewer = CameraLiveViewer(self._id)

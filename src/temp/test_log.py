@@ -1,12 +1,6 @@
+import loguru
 from loguru import logger
 import sys
-
-
-def get_prefix_log(prefix):
-    """取得綁訂前贅字詞的 logger"""
-    prefix_str = f'<{prefix}> '
-    return logger.bind(prefix=prefix_str)
-
 
 # log 格式
 log_format = (
@@ -25,3 +19,21 @@ logger.configure(
     ],
     extra={'prefix': ''}
 )
+
+log = logger.bind(prefix='<29445237(12)> ')
+
+
+# test
+log.info('test')
+
+
+def new_sink(message):
+    require_restart = message.record['level'].name == 'CRITICAL'
+    print(f'send to master: {str(message)}, require_start={require_restart}')
+
+
+log.add(sink=new_sink, format='{extra[prefix]}{message}', level='ERROR')
+
+log.info('hi this info')
+log.error('and sometihng error')
+log.critical('wow holy shit!!')

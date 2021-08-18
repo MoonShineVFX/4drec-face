@@ -1,8 +1,12 @@
 import PySpin
 import time
 
+from common.camera_structure import camera_structure
+
 from utility.setting import setting
-from utility.logger import log
+from utility.logger import log, get_prefix_log
+from utility.message import message_manager
+from utility.define import MessageType
 
 from .connector import CameraConnector
 
@@ -37,11 +41,12 @@ class CameraSystem:
 
             # 相機數量不對的狀況
             if current_cameras_count != setting_cameras_count:
-                log.error((
+                error_message = (
                     "Camera count didn't match setting"
                     f' ({current_cameras_count}/{setting_cameras_count}),'
-                    ' try again after 30s'
-                ))
+                    ' try again after 10s'
+                )
+                log.error(error_message)
                 time.sleep(10)
                 self.clear(retry=True)
                 continue
@@ -74,7 +79,13 @@ class CameraSystem:
     def _build_connectors(self):
         connectors = []
         for i in range(self._camera_list.GetSize()):
-            connector = CameraConnector(i, log)
+            this_camera = self._camera_list.GetByIndex(i)
+            this_camera_id = this_camera.GetUniqueID()
+            this_camera_num = camera_structure.get_camera_number_by_id(
+                this_camera_id
+            )
+            log_prefix = f'{this_camera_id}({this_camera_num})'
+            connector = CameraConnector(i, get_prefix_log(log_prefix))
             connector.start()
             connectors.append(connector)
 

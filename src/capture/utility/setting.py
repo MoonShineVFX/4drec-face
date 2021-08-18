@@ -113,6 +113,10 @@ class SettingManager(CameraStructure):
     def get_slave_index(self):
         return self.slaves.index(platform.node())
 
+    @staticmethod
+    def get_slave_name() -> str:
+        return platform.node()
+
     def save_camera_parameters(self, parms):
         save_parms = {'camera_user_parameters': parms}
         with open(str(SETTINGS_YAML_PATH / 'user_parameters.yaml'), 'w') as f:

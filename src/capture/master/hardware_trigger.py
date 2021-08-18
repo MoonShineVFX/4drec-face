@@ -1,7 +1,6 @@
 import serial
 import serial.tools.list_ports
 
-from utility.setting import setting
 from utility.logger import get_prefix_log
 from utility.define import UIEventType
 
@@ -10,7 +9,7 @@ from master.ui import ui
 
 class HardwareTrigger():
     def __init__(self):
-        self._log = get_prefix_log('<Arduino> ')
+        self._log = get_prefix_log('Arduino')
 
         try:
             self._ser = serial.Serial(
@@ -31,7 +30,7 @@ class HardwareTrigger():
         for pinfo in serial.tools.list_ports.comports():
             if 'CH340' in pinfo.description:
                 return pinfo.device
-        raise IOError('Cound not find an arduino')
+        raise IOError('Could not find an arduino')
 
     def get_response(self):
         resp = self._ser.readline().decode()

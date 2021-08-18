@@ -167,6 +167,16 @@ class MessageManager(MixThread):
         else:
             self.put_inbox(message)
 
+    def send_error(self, error_message: str, require_restart=False):
+        self.send_message(
+            MessageType.SLAVE_ERROR,
+            {
+                'slave_name': setting.get_slave_name(),
+                'error_message': error_message,
+                'require_restart': require_restart
+            }
+        )
+
     def receive_message(self):
         """查看接收訊息
 

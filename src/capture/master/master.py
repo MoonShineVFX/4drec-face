@@ -45,6 +45,17 @@ def start_master() -> int:
 
             elif message.type is MessageType.TRIGGER_REPORT:
                 camera_manager.collect_report(message)
+
+            elif message.type is MessageType.SLAVE_ERROR:
+                slave_name, error_message, require_restart = message.unpack()
+                log_func = log.critical if require_restart else log.error
+                log_func(f'[Slave {slave_name}] > {error_message}')
+                if require_restart:
+                    message_manager.send_message(
+                        MessageType.SLAVE_RESTART,
+                        {'slave_name': slave_name}
+                    )
+
     except KeyboardInterrupt:
         log.warning('Interrupted by keyboard!')
 

@@ -1,6 +1,7 @@
 from utility.message import message_manager
 from utility.logger import log
 from utility.define import MessageType
+from utility.setting import setting
 
 from .camera import CameraSystem
 
@@ -9,10 +10,16 @@ def start_slave() -> int:
     """Slave 總啟動程序"""
     log.info('Start slave')
 
+    # 增加報錯機制
+    def error_sink(error_message: str):
+        is_critical = message.record['level'].name == 'CRITICAL'
+        message_manager.send_error(str(error_message), is_critical)
+    log.add(sink=error_sink, format='{extra[prefix]}{message}', level='ERROR')
+
     # 等待 Master 連接
     log.info('Wait for master connecting...')
     camera_system = None
-    is_master_down = False
+    require_restart = False
 
     try:
         if not message_manager.is_connected():
@@ -30,8 +37,14 @@ def start_slave() -> int:
             message = message_manager.receive_message()
             if message.type is MessageType.MASTER_DOWN:
                 log.warning('Master Down !!')
-                is_master_down = True
+                require_restart = True
                 break
+            elif message.type is MessageType.SLAVE_RESTART:
+                slave_name = message.unpack()
+                if setting.get_slave_name() == slave_name:
+                    require_restart = True
+                    break
+
     except KeyboardInterrupt:
         log.warning('Interrupted by keyboard!')
 
@@ -44,7 +57,7 @@ def start_slave() -> int:
     except Exception as error:
         log.warning(error)
 
-    if is_master_down:
+    if require_restart:
         return 4813
 
     return 0

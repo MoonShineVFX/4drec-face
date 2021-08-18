@@ -72,12 +72,11 @@ class CameraConfigurator(MixThread):
                         prop = getattr(prop, k)
                 else:
                     prop = getattr(self._camera, key)
-
                 try:
                     prop.SetValue(value)
                 except PySpin.SpinnakerException as error:
-                    self._log.error(f'Property: {key}, Value: {value}')
-                    self._log.error(error)
+                    error_message = f'Configure property error: {key}, Value: {value} | Detail: {error}'
+                    self._log.critical(error_message)
                     message_manager.send_message(
                         MessageType.MASTER_DOWN,
                         is_local=True

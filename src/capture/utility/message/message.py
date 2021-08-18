@@ -89,6 +89,14 @@ class Message():
             return self._parms['node']
         elif self._type is MessageType.TRIGGER_REPORT:
             return self._parms['camera_id']
+        elif self._type is MessageType.SLAVE_ERROR:
+            return (
+                self._parms['slave_name'],
+                self._parms.get('error_message', None),
+                self._parms.get('require_restart', False)
+            )
+        elif self._type is MessageType.SLAVE_RESTART:
+            return self._parms['slave_name']
 
     @property
     def type(self):

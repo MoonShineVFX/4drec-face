@@ -110,6 +110,12 @@ class MessageType(Enum):
     SUBMIT_REPORT = auto()
     # {camera_id, shot_id, progress}
 
+    SLAVE_ERROR = auto()
+    # {slave_name: str, error_message: str, require_restart: bool}
+
+    SLAVE_RESTART = auto()
+    # {slave_name: str}
+
 
 class TaskState(Enum):
     WAITING = 0
