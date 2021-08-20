@@ -6,14 +6,16 @@ from utility.setting import setting
 from .camera import CameraSystem
 
 
+def error_sink(error_message):
+    is_critical = error_message.record['level'].name == 'CRITICAL'
+    message_manager.send_error(str(error_message), is_critical)
+
+
 def start_slave() -> int:
     """Slave 總啟動程序"""
     log.info('Start slave')
 
     # 增加報錯機制
-    def error_sink(error_message: str):
-        is_critical = message.record['level'].name == 'CRITICAL'
-        message_manager.send_error(str(error_message), is_critical)
     log.add(sink=error_sink, format='{extra[prefix]}{message}', level='ERROR')
 
     # 等待 Master 連接

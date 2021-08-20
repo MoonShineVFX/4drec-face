@@ -75,7 +75,10 @@ class CameraConfigurator(MixThread):
                 try:
                     prop.SetValue(value)
                 except PySpin.SpinnakerException as error:
-                    error_message = f'Configure property error: {key}, Value: {value} | Detail: {error}'
+                    if key == 'AcquisitionFrameRate':
+                        error_message = 'USB bandwidth not enough! Check connector!'
+                    else:
+                        error_message = f'Configure property error: {key}, Value: {value} | Detail: {error}'
                     self._log.critical(error_message)
                     message_manager.send_message(
                         MessageType.MASTER_DOWN,

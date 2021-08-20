@@ -31,7 +31,7 @@ class MessageNodeManager():
 
         """
         name = conn.getpeername()  # 取得連線名稱當作ID
-        log.info(f'Connection established ({name[0]})')
+        log.info(f'Connection established ({name})')
         send_node = MessageSendNode(conn, name)
         receive_node = MessageReceiveNode(
             conn, name, put_inbox=self._put_inbox

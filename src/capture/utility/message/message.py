@@ -87,8 +87,6 @@ class Message():
             return self._parms
         elif self._type is MessageType.SLAVE_DOWN:
             return self._parms['node']
-        elif self._type is MessageType.TRIGGER_REPORT:
-            return self._parms['camera_id']
         elif self._type is MessageType.SLAVE_ERROR:
             return (
                 self._parms['slave_name'],

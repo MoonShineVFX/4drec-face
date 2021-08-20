@@ -107,7 +107,11 @@ class CameraConnector(Process):
         self._submitter = CameraShotSubmitter(self._log)
 
         # Initialize
-        self._camera.Init()
+        try:
+            self._camera.Init()
+        except PySpin.SpinnakerException as error:
+            self._log.critical(str(error))
+
         self._log.debug('Initialized')
 
         self._log.debug('Apply default config')

@@ -16,6 +16,12 @@ log_format = (
     '<level>{extra[prefix]}{message}</level> '
     '({process.name})'
 )
+log_format_slave = (
+    '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> '
+    '|<level>{level}</level>| '
+    '<cyan>[{extra[slave]}]</cyan> - '
+    '<level>{message}</level>'
+)
 
 
 # log 總設定

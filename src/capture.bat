@@ -15,6 +15,8 @@ cd /d %~dp0\capture
 if not ["%errorlevel%"]==["4813"] goto LEAVE
 
 :RESTART
+tasklist /FI "IMAGENAME eq python.exe" 2>NUL | find /I /N "python.exe">NUL
+if "%ERRORLEVEL%"=="0" taskkill /f /im python.exe
 echo.
 echo.
 echo.
@@ -27,3 +29,5 @@ goto EXEC
 
 :LEAVE
 if NOT ["%errorlevel%"]==["0"] pause
+tasklist /FI "IMAGENAME eq python.exe" 2>NUL | find /I /N "python.exe">NUL
+if "%ERRORLEVEL%"=="0" taskkill /f /im python.exe

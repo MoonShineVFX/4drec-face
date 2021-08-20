@@ -43,13 +43,10 @@ def start_master() -> int:
             elif message.type is MessageType.SUBMIT_REPORT:
                 camera_manager.collect_report(message)
 
-            elif message.type is MessageType.TRIGGER_REPORT:
-                camera_manager.collect_report(message)
-
             elif message.type is MessageType.SLAVE_ERROR:
                 slave_name, error_message, require_restart = message.unpack()
                 log_func = log.critical if require_restart else log.error
-                log_func(f'[Slave {slave_name}] > {error_message}')
+                log_func(f'[{slave_name}] {error_message.rstrip()}')
                 if require_restart:
                     message_manager.send_message(
                         MessageType.SLAVE_RESTART,
