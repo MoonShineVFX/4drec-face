@@ -86,9 +86,9 @@ class Receiver(MixThread):
             message: 錄製訊息
 
         """
-        is_start, shot_id, is_cali = message.unpack()
+        is_start, shot_id = message.unpack()
         if is_start:
-            self._camera_connector.start_recording(shot_id, is_cali)
+            self._camera_connector.start_recording(shot_id)
         else:
             self._camera_connector.stop_recording()
 

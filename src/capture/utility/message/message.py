@@ -68,8 +68,7 @@ class Message():
         elif self._type is MessageType.TOGGLE_RECORDING:
             return (
                 self._parms['is_start'],
-                self._parms.get('shot_id', None),
-                self._parms.get('is_cali', None)
+                self._parms.get('shot_id', None)
             )
         elif self._type is MessageType.GET_SHOT_IMAGE:
             return self._parms

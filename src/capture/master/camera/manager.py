@@ -295,12 +295,10 @@ class CameraManager():
         }
 
         shot_id = project_manager.current_shot.get_id()
-        is_cali = project_manager.current_shot.is_cali()
 
         # 開啟錄製
         if self._is_recording:
             parms['shot_id'] = shot_id
-            parms['is_cali'] = is_cali
             log.info('Start recording: {} / {}'.format(
                 project_manager.current_project,
                 project_manager.current_shot
@@ -323,9 +321,6 @@ class CameraManager():
             MessageType.TOGGLE_RECORDING,
             parms
         )
-
-        if self._is_recording and is_cali:
-            self.record()
 
     def stop_capture(self, message=None):
         """停止擷取

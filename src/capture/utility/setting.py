@@ -102,13 +102,16 @@ class SettingManager(CameraStructure):
         return None
 
     def get_slave_cameras_count(self):
-        camera_count = 0
+        actual_camera_count = 0
+        cameras_count_per_slave = self.cameras_count_per_slave
         slave_index = self.get_slave_index()
-        start_idx = slave_index * 3
-        for camera_id in self.get_camera_numbers_by_position_order()[start_idx:start_idx + 3]:
+        start_idx = slave_index * cameras_count_per_slave
+        for camera_id in self.get_camera_numbers_by_position_order()[
+                         start_idx:start_idx + cameras_count_per_slave
+                         ]:
             if camera_id is not None:
-                camera_count += 1
-        return camera_count
+                actual_camera_count += 1
+        return actual_camera_count
 
     def get_slave_index(self):
         return self.slaves.index(platform.node())
