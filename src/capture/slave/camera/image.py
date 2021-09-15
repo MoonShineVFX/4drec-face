@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 
 from common.jpeg_coder import jpeg_coder
+from utility.define import CameraRotation
 
 
-class CameraImage():
+class CameraImage:
     """相機圖像
 
     將 PySpin 相機取出的二進制陣列做一個包裝管理，方便做進階的操作
@@ -16,16 +17,25 @@ class CameraImage():
 
     """
 
-    def __init__(self, data, width, height):
+    def __init__(self, data, width, height, rotation: CameraRotation):
         self._data = data  # 二進制陣列
         self._width = width  # 圖像寬
         self._height = height  # 圖像高
+        self._rotation = rotation
 
     def _raw_to_cv2(self):
         """將二進制陣列轉成 cv2 的圖像"""
         im = np.frombuffer(self._data, dtype=np.uint8)
         im = im.reshape((self._height, self._width))
         im = cv2.cvtColor(im, cv2.COLOR_BAYER_RG2RGB)
+        if self._rotation is not CameraRotation.NONE:
+            if self._rotation is CameraRotation.RIGHT:
+                rotate_method = cv2.ROTATE_90_CLOCKWISE
+            else:
+                rotate_method = cv2.ROTATE_90_COUNTERCLOCKWISE
+            im = cv2.rotate(im, rotate_method)
+
+            self._width, self._height = self._height, self._width
         return im
 
     def _rescale(self, image, scale_length):
@@ -76,4 +86,4 @@ class CameraImage():
 
     def get_size(self):
         """取得圖像尺寸"""
-        return (self._width, self._height)
+        return self._width, self._height

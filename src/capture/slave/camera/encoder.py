@@ -107,11 +107,12 @@ class CameraShotLoader(MixThread):
 
     """
 
-    def __init__(self, log):
+    def __init__(self, rotation, log):
         super().__init__()
         self._log = log
         self._file = None  # CameraShotFileLoader
         self._queue = queue.Queue()  # 任務佇列
+        self._rotation = rotation
 
         self.start()
 
@@ -133,7 +134,9 @@ class CameraShotLoader(MixThread):
             ):
                 if isinstance(self._file, CameraShotFileLoader):
                     self._file.close()
-                self._file = CameraShotFileLoader(shot_path, self._log)
+                self._file = CameraShotFileLoader(
+                    shot_path, self._rotation, self._log
+                )
 
             camera_image = self._file.load(shot_meta.frame)
             if camera_image is None:

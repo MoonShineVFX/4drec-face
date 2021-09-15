@@ -63,11 +63,12 @@ class CameraShotFileLoader(CameraShotFileCore):
 
     """
 
-    def __init__(self, shot_file_path, log):
+    def __init__(self, shot_file_path, rotation, log):
         super().__init__(shot_file_path, 'rb')
         self._log = log
         self._log.info(f'File read: {self._shot_file_path}')
         self._frames = {}  # {影格號碼: (圖像在檔案的位置, 圖像大小, 寬, 高)}
+        self._rotation = rotation
 
         # 先取得資訊
         self._load_metadata()
@@ -127,7 +128,7 @@ class CameraShotFileLoader(CameraShotFileCore):
         # 讀取圖像
         data = np.load(f, allow_pickle=False, fix_imports=False)
 
-        return CameraImage(data, w, h)
+        return CameraImage(data, w, h, self._rotation)
 
 
 class CameraShotFileDumper(CameraShotFileCore):

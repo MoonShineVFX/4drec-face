@@ -3,7 +3,7 @@ from threading import Thread
 import os
 import PySpin
 
-from utility.define import CameraState
+from utility.define import CameraState, CameraRotation
 from utility.setting import setting
 
 from .encoder import CameraLiveViewer, CameraShotLoader, CameraShotSubmitter
@@ -60,6 +60,7 @@ class CameraConnector(Process):
         self._is_live_view = False  # 預覽中
         self._state = CameraState.CLOSE  # 目前狀態
         self._is_retrigger = False
+        self._camera_rotation = CameraRotation.NONE
 
     def run(self):
         """運行
@@ -96,6 +97,9 @@ class CameraConnector(Process):
 
         # set attribute
         self._id = self._camera.GetUniqueID()
+        self._camera_rotation = CameraRotation(
+            setting.get_camera_rotation_by_id(self._id)
+        )
         self._configurator = CameraConfigurator(
             self._camera, self._log
         )
@@ -103,7 +107,7 @@ class CameraConnector(Process):
         # set child threads
         self._live_viewer = CameraLiveViewer(self._id)
         self._receiver = Receiver(self, self._log)
-        self._shot_loader = CameraShotLoader(self._log)
+        self._shot_loader = CameraShotLoader(self._camera_rotation, self._log)
         self._submitter = CameraShotSubmitter(self._log)
 
         # Initialize
@@ -150,7 +154,8 @@ class CameraConnector(Process):
                 camera_image = CameraImage(
                     image_ptr.GetData(),
                     image_ptr.GetWidth(),
-                    image_ptr.GetHeight()
+                    image_ptr.GetHeight(),
+                    self._camera_rotation
                 )
 
                 if self._is_live_view and not self._is_recording:

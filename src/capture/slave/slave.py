@@ -16,7 +16,7 @@ def start_slave() -> int:
     log.info('Start slave')
 
     # 增加報錯機制
-    log.add(sink=error_sink, format='{extra[prefix]}{message}', level='ERROR')
+    log.add(sink=error_sink, format='{extra[prefix]}{message} ({name}:{function}:{line})', level='ERROR')
 
     # 等待 Master 連接
     log.info('Wait for master connecting...')

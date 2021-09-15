@@ -58,6 +58,12 @@ class CameraState(Enum):
     OFFLINE = auto()
 
 
+class CameraRotation(Enum):
+    LEFT = 'LEFT'
+    RIGHT = 'RIGHT'
+    NONE = 'NONE'
+
+
 class CameraLibraryTask(Enum):
     IMPORT = auto()
     REQUEST = auto()

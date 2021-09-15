@@ -27,10 +27,16 @@ class CameraStructure:
         """
         return self._yaml['cameras'][camera_id]['number']
 
+    def get_camera_rotation_by_id(self, camera_id) -> str:
+        camera_number = self.get_camera_number_by_id(camera_id)
+        position_id = self.get_position_id_by_number(camera_number)
+        order_in_truss = int(position_id[1])
+        return 'LEFT' if order_in_truss % 2 == 0 else 'RIGHT'
+
     def get_camera_id_by_number(self, find_number):
-        for id, value in self._yaml['cameras'].items():
+        for _id, value in self._yaml['cameras'].items():
             if find_number == value['number']:
-                return id
+                return _id
         raise ValueError(f"can't find camera id by number {find_number}")
 
     def get_camera_id_by_position(self, position):
@@ -41,11 +47,9 @@ class CameraStructure:
 
     def get_position_id_by_number(self, find_number):
         for position_letter, number_list in self._yaml['truss_positions'].items():
-            num = 0
-            for number in number_list:
+            for num, number in enumerate(number_list):
                 if number == find_number:
                     return f'{position_letter}{num}'
-                num += 1
         raise ValueError(f"can't find position id by number {find_number}")
 
     def get_working_camera_ids(self):
