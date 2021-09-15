@@ -2,6 +2,7 @@ from multiprocessing import Process
 from threading import Thread
 import os
 import PySpin
+from pathlib import Path
 
 from utility.define import CameraState, CameraRotation
 from utility.setting import setting
@@ -36,7 +37,9 @@ class CameraConnector(Process):
         self._camera_index = camera_index
         self._camera = None  # PySpin 相機
         self._id = None  # 相機ID
-        self._record_folder_path = setting.get_record_folder_path(camera_index)  # 錄製的資料夾路徑
+        self._record_folder_path = setting.get_record_folder_path(
+            camera_index
+        )  # 錄製的資料夾路徑
         self._receiver = None
         self._log = logger
 
@@ -197,14 +200,16 @@ class CameraConnector(Process):
         self._log.info(f'Change to state: {state.name}')
         self._state = state
 
-    def get_shot_file_path_for_recording(self, shot_id):
+    def get_shot_file_path_for_recording_and_makedir(self, shot_id):
         """取得 shot 的檔案位置
 
         Args:
             shot_id: Shot ID
 
         """
-        return f'{self._record_folder_path}{shot_id}_{self._id}'
+        shot_folder = Path(f'{self._record_folder_path}/{shot_id}')
+        shot_folder.mkdir(parents=True, exist_ok=True)
+        return str(shot_folder / self._id)
 
     def stop_capture(self):
         """停止擷取
@@ -243,7 +248,7 @@ class CameraConnector(Process):
         self._log.info('Start recording')
         shot_meta = CameraShotMeta(
             {'shot_id': shot_id, 'camera_id': self._id},
-            self.get_shot_file_path_for_recording(shot_id)
+            self.get_shot_file_path_for_recording_and_makedir(shot_id)
         )
         self._recorder = CameraRecorder(shot_meta, self._log)
         self._is_recording = True

@@ -96,7 +96,7 @@ class SettingManager(CameraStructure):
     def get_shot_file_path(self, shot_id, camera_id):
         folder = self.record.folder_name
         for drive in self.record.drives:
-            file_path = f'{drive}:/{folder}/{shot_id}_{camera_id}'
+            file_path = f'{drive}:/{folder}/{shot_id}/{camera_id}'
             if os.path.isfile(file_path + '.4dr'):
                 return file_path
         return None

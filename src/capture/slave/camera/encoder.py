@@ -1,6 +1,7 @@
 from threading import Condition
 import queue
 import os
+from pathlib import Path
 
 from utility.setting import setting
 from utility.message import message_manager
@@ -209,7 +210,7 @@ class CameraShotSubmitter(MixThread):
 
             # 創建資料夾
             shot_id_path = f'{setting.submit.shot_path}{shot_id}/'
-            os.makedirs(shot_id_path, exist_ok=True)
+            Path(shot_id_path).mkdir(parents=True, exist_ok=True)
             self._log.debug(f'Save to {shot_id_path}')
 
             # 取出圖像
@@ -220,7 +221,7 @@ class CameraShotSubmitter(MixThread):
 
                 # 創建 camera_id 資料夾
                 shot_id_camera_path = f'{shot_id_path}{camera_id}/'
-                os.makedirs(shot_id_camera_path, exist_ok=True)
+                Path(shot_id_camera_path).mkdir(parents=True, exist_ok=True)
 
                 # 進度定義
                 current_count = 0
