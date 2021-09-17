@@ -61,7 +61,7 @@ class OpenCueBridge:
         service.setMinCores(400)
         service.setMaxCores(0)
         service.setMinMemory(4096 * 1024)
-        service.setMinGpu(1024 * 1024)
+        # service.setMinGpu(1024 * 1024)
         service.setTags(['general', 'metashape'])
         service.update()
 
@@ -133,6 +133,6 @@ class OpenCueBridge:
         frame_list = {}
 
         for frame in frames:
-            frame_list[frame.data.number] = frame.data.state
+            frame_list[str(frame.data.number)] = frame.data.state
 
         return frame_list

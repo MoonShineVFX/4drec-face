@@ -251,17 +251,10 @@ class PlaybackBar(LayoutWidget):
         current_slider_value = state.get('current_slider_value')
         current_real_frame = get_real_frame(current_slider_value)
 
-        if entity.has_prop('frame_range'):
-            if entity.state < 1:
-                return
+        sf, ef = entity.frame_range
+        frames = [f for f in range(sf, ef + 1)]
 
-            sf, ef = entity.frame_range
-            frames = [f for f in range(sf, ef + 1)]
-
-            state.set('offset_frame', sf)
-        elif entity.has_prop('frames'):
-            frames = entity.frames
-            frames.sort()
+        state.set('offset_frame', sf)
 
         if current_real_frame in frames:
             current_slider_value = frames.index(current_real_frame)
@@ -466,13 +459,13 @@ class PlaybackSlider(QSlider, EntityBinder):
 
                 i += 1
         elif job is not None and body_mode is BodyMode.MODEL:
-            progress, tasks = self._entity.get_cache_progress()
+            job_progress, tasks = self._entity.get_cache_progress()
 
             t_color = self.palette().midlight().color()
 
             i = 0
-            for f in job.frames:
-                if f in progress:
+            for f in range(job.frame_range[0], job.frame_range[1] + 1):
+                if f in job_progress:
                     painter.fillRect(
                         QRect(i * tw, (h - hh) / 2, math.ceil(tw), hh),
                         t_color

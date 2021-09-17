@@ -78,14 +78,13 @@ class ResolveManager(threading.Thread):
     def cache_whole_job(self):
         job = project_manager.current_job
         job_id = job.get_id()
-        cali_id = job.get_cali_id()
         
         tasks = []
         for f in job.frames:
             if self.has_cache(job_id, f):
                 self.send_ui(None)
                 continue
-            tasks.append((job_id, cali_id, f))
+            tasks.append((job_id, f))
         
         self._multi_executor.add_task('cache_all', tasks)
 
@@ -96,7 +95,6 @@ class ResolveManager(threading.Thread):
         self, job, frame, is_delay=True
     ):
         job_id = job.get_id()
-        cali_id = job.get_cali_id()
 
         # get already cached
         if self.has_cache(job_id, frame):
@@ -105,8 +103,10 @@ class ResolveManager(threading.Thread):
 
         # load rig data
         elif frame is None:
-            package = RigPackage(job_id, cali_id)
-            self._add_task(package)
+            # package = RigPackage(job_id)
+            # self._add_task(package)
+            # old method to get rig structure geo
+            pass
         # load frame 4df
         else:
             package = ResolvePackage(job_id, frame)

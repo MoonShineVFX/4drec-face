@@ -122,6 +122,6 @@ def popup(
 def notify(parent, title, description):
     QMessageBox.information(
         parent,
-        title=title,
-        text=description
+        title,
+        description
     )

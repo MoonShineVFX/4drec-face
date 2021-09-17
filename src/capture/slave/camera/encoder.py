@@ -188,10 +188,11 @@ class CameraShotSubmitter(MixThread):
 
     """
 
-    def __init__(self, log):
+    def __init__(self, rotation, log):
         super().__init__()
         self._queue = queue.Queue()  # 任務佇列
         self._log = log
+        self._rotation = rotation
 
         # 自動執行
         self.start()
@@ -216,7 +217,7 @@ class CameraShotSubmitter(MixThread):
             # 取出圖像
             for camera_id, shot_file_path in shot_file_paths.items():
                 file_loader = CameraShotFileLoader(
-                    shot_file_path, self._log
+                    shot_file_path, self._rotation, self._log
                 )
 
                 # 創建 camera_id 資料夾
@@ -225,7 +226,7 @@ class CameraShotSubmitter(MixThread):
 
                 # 進度定義
                 current_count = 0
-                total_count = len(frame_range[1] - frame_range[0] + 1)
+                total_count = frame_range[1] - frame_range[0] + 1
 
                 for frame in range(frame_range[0], frame_range[1] + 1):
                     camera_image = file_loader.load(frame + offset_frame)

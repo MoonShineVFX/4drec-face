@@ -418,6 +418,7 @@ class CameraManager():
         """到 opencue 放算"""
         shot = project_manager.current_shot
         log.info(f'Preparing to submit shot: {shot}')
+        frame_range = frame_range[0] - offset_frame, frame_range[1] - offset_frame
 
         self._report_collector.new_submit_report_container(
             shot,

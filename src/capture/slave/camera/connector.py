@@ -111,7 +111,7 @@ class CameraConnector(Process):
         self._live_viewer = CameraLiveViewer(self._id)
         self._receiver = Receiver(self, self._log)
         self._shot_loader = CameraShotLoader(self._camera_rotation, self._log)
-        self._submitter = CameraShotSubmitter(self._log)
+        self._submitter = CameraShotSubmitter(self._camera_rotation, self._log)
 
         # Initialize
         try:

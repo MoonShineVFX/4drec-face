@@ -4,7 +4,7 @@ host_address:
 
 mongodb_address: '192.168.29.10:27017'
 
-camera_resolution: [4096, 3000]
+camera_resolution: [3000, 4096] # For UI Inspection
 
 frame_rate: 30
 speed_offset: 1 # 0.83333

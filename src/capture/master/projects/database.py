@@ -500,6 +500,7 @@ class JobEntity(Entity):
         self._cache_progress = []
         self._opencue_frames = self._get_opencue_frames()
         self._memory = 0
+        self._parent = parent
 
         if self.state == 0:
             self._repeater = Repeater(self._update_opencue_frames, 60, True)

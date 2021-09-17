@@ -127,9 +127,8 @@ def build_camera_pos_list():
 class RigPackage(ResolvePackage):
     _camera_pos_list = build_camera_pos_list()
 
-    def __init__(self, job_id, cali_id):
+    def __init__(self, job_id):
         super().__init__(job_id, None)
-        self._cali_id = cali_id
 
     def load(self):
         if self._geo_cache is not None:

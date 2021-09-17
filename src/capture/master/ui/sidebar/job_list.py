@@ -72,7 +72,9 @@ class JobItem(LayoutWidget, EntityBinder):
         )
         self._name_label.setText(self._job.name)
 
-        frame_count = str(len(self._job.frames))
+        frame_count = str(
+            self._job.frame_range[1] - self._job.frame_range[0] + 1
+        )
         completed_count = self._job.get_completed_count()
         self._frame_label.setText(f'{completed_count} ({frame_count})')
 
