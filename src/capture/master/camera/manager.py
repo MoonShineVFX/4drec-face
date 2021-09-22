@@ -4,7 +4,7 @@ from utility.setting import setting
 from utility.message import message_manager, Message
 from utility.logger import log
 from utility.repeater import Repeater
-from utility.define import UIEventType, CameraState, MessageType
+from utility.define import UIEventType, CameraState, MessageType, SubmitOrder
 from utility.delay_executor import DelayExecutor
 
 from master.ui import ui
@@ -380,18 +380,15 @@ class CameraManager:
                 scale_length, delay
             )
 
-    def submit_shot(self, name, frame_range, export_only, offset_frame, parameters):
+    def submit_shot(self, submit_order: SubmitOrder):
         """到 opencue 放算"""
         shot = project_manager.current_shot
         log.info(f'Preparing to submit shot: {shot}')
-        frame_range = frame_range[0] - offset_frame, frame_range[1] - offset_frame
+        offset_frame_range = submit_order.get_offset_frame_range()
 
         self._report_collector.new_submit_report_container(
             shot,
-            name,
-            frame_range,
-            export_only,
-            parameters
+            submit_order
         )
 
         # 通知 Slaves 傳輸轉檔 Shot
@@ -399,9 +396,9 @@ class CameraManager:
             MessageType.SUBMIT_SHOT,
             {
                 'shot_id': shot.get_id(),
-                'job_name': name,
-                'frame_range': frame_range,
-                'offset_frame': offset_frame
+                'job_name': submit_order.name,
+                'frame_range': offset_frame_range,
+                'offset_frame': submit_order.offset_frame
             }
         )
 

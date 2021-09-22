@@ -163,7 +163,7 @@ class ShotSubmitDialog(QDialog):
         event.accept()
 
     def get_result(self):
-        offset_frame = state.get('offset_frame')
+        offset_frame = state.get('playbar_frame_offset')
 
         frame_str = self._text_frames.text().strip()
         if '-' not in frame_str:

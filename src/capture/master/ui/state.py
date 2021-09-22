@@ -55,8 +55,9 @@ class UIState():
 
         # playbar
         self._state['current_slider_value'] = 0
-        self._state['frames'] = []
-        self._state['offset_frame'] = 0
+        self._state['playbar_frame_range'] = [0, 0]
+        self._state['playbar_frame_count'] = 0
+        self._state['playbar_frame_offset'] = 0
         self._state['playing'] = False
         self._state['crop_range'] = [None, None]
         self._state['loop_range'] = [None, None]
@@ -166,8 +167,8 @@ def get_slider_range():
         min_slider_value, max_slider_value = state.get('loop_range')
 
     if min_slider_value is None or max_slider_value is None:
-        frames = state.get('frames')
-        max_slider_value = len(frames) - 1
+        playbar_frame_count = state.get('playbar_frame_count')
+        max_slider_value = playbar_frame_count - 1
         min_slider_value = 0
 
     return min_slider_value, max_slider_value
@@ -192,9 +193,9 @@ def step_pace(forward=True, stop=True):
 
 
 def get_real_frame(frame):
-    frames = state.get('frames')
-    if frame >= len(frames):
+    playbar_frame_count = state.get('playbar_frame_count')
+    if frame >= playbar_frame_count:
         return None
-    offset_frame = state.get('offset_frame')
-    real_frame = frames[frame] + offset_frame
+    offset_frame = state.get('playbar_frame_offset')
+    real_frame = frame + offset_frame
     return real_frame

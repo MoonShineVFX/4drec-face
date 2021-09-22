@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from dataclasses import dataclass, field
 
 
 class EntityEvent(Enum):
@@ -130,3 +131,19 @@ class TaskState(Enum):
     SUCCEEDED = 3
     DEAD = 5
     DEPEND = 4
+
+
+@dataclass
+class SubmitOrder:
+    name: str
+    frame_range: [int]
+    export_only: bool
+    offset_frame: int
+    parms: dict = field(default_factory=dict)
+
+    def get_frame_length(self):
+        return self.frame_range[1] - self.frame_range[0] + 1
+
+    def get_offset_frame_range(self):
+        return self.frame_range[0] - self.offset_frame,\
+               self.frame_range[1] - self.offset_frame

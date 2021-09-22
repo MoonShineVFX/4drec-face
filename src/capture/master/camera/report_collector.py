@@ -2,7 +2,7 @@ from time import perf_counter
 
 from utility.setting import setting
 from utility.logger import log
-from utility.define import MessageType, UIEventType
+from utility.define import MessageType, UIEventType, SubmitOrder
 
 from master.projects import project_manager
 
@@ -37,7 +37,7 @@ class CameraReportCollector:
             )
         )
 
-    def new_submit_report_container(self, shot, name, frame_range, export_only, parameters):
+    def new_submit_report_container(self, shot, submit_order):
         """創建新發佈報告搜集器
 
         發布 Shot 後，接收每個 Slave 的發送進度
@@ -45,7 +45,7 @@ class CameraReportCollector:
         """
         self._report_container_list.append(
             SubmitReportContainer(
-                self, shot, name, frame_range, export_only, parameters
+                self, shot, submit_order
             )
         )
 
@@ -222,13 +222,10 @@ class SubmitReportContainer(ReportContainer):
 
     """
 
-    def __init__(self, collector, shot, name, frame_range, export_only, parameters):
+    def __init__(self, collector, shot, submit_order: SubmitOrder):
         super().__init__(collector, shot.get_id())
         self._shot = shot
-        self._name = name
-        self._frame_range = frame_range  # 影格範圍
-        self._export_only = export_only
-        self._parameters = parameters
+        self._submit_order = submit_order
         self._progress_list = {}  # 進度表{相機ID: 進度(0~1)}
         self._complete_check_list = {}
 
@@ -261,20 +258,22 @@ class SubmitReportContainer(ReportContainer):
     def _summarize_report(self):
         """總結"""
         from master.ui import ui
-        if self._export_only:
+
+        if self._submit_order.export_only:
+            offset_frame_range = self._submit_order.get_offset_frame_range()
             ui.dispatch_event(
                 UIEventType.NOTIFICATION,
                 {
                     'title': f'[{self._shot.name}] Submit Success',
                     'description': (
                         f'Shot [{self._shot.name}] submitted frames '
-                        f'{self._frame_range[0]}-{self._frame_range[1]}.'
+                        f'{offset_frame_range[0]}-{offset_frame_range[1]}.'
                     )
                 }
             )
             return
 
-        self._shot.submit(self._name, self._frame_range, self._parameters)
+        self._shot.submit(self._submit_order)
 
     def get_job_name(self):
-        return self._name
+        return self._submit_order.name

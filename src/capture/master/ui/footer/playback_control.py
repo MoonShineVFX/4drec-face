@@ -248,30 +248,30 @@ class PlaybackBar(LayoutWidget):
         if entity is None:
             return
 
+        # Playbar Frames Construct
         current_slider_value = state.get('current_slider_value')
         current_real_frame = get_real_frame(current_slider_value)
 
-        sf, ef = entity.frame_range
-        frames = [f for f in range(sf, ef + 1)]
+        real_sf, real_ef = entity.frame_range
 
-        state.set('offset_frame', sf)
+        state.set('playbar_frame_offset', real_sf)
 
-        if current_real_frame in frames:
-            current_slider_value = frames.index(current_real_frame)
+        if current_real_frame is not None and\
+                real_sf <= current_real_frame <= real_ef:
+            current_slider_value = current_real_frame - real_sf
         else:
             current_slider_value = 0
 
-        offset_frame = state.get('offset_frame')
-        frames = [f - offset_frame for f in frames]
-        state.set('frames', frames)
+        playbar_frame_range = [0, real_ef - real_sf]
+        state.set('playbar_frame_range', playbar_frame_range)
+        state.set('playbar_frame_count', playbar_frame_range[1] + 1)
 
-        max_slider_value = len(frames) - 1
-        self._slider.setMaximum(max_slider_value)
+        self._slider.setMaximum(playbar_frame_range[1])
 
         state.set('current_slider_value', current_slider_value)
 
-        self._labels[0].setText(str(frames[0]))
-        self._labels[1].setText(str(frames[-1]))
+        self._labels[0].setText(str(playbar_frame_range[0]))
+        self._labels[1].setText(str(playbar_frame_range[1]))
 
         self.on_slider_value_changed(current_slider_value)
         self._slider.on_entity_changed(entity)
@@ -387,7 +387,7 @@ class PlaybackSlider(QSlider, EntityBinder):
 
         if isinstance(progress, tuple):
             offset_tasks = {}
-            offset_frame = state.get('offset_frame')
+            offset_frame = state.get('playbar_frame_offset')
             for k, v in progress[1].items():
                 offset_tasks[k - offset_frame] = v
             self._tasks = offset_tasks
@@ -528,10 +528,8 @@ class PlaybackSlider(QSlider, EntityBinder):
 
         # normal
         super().paintEvent(evt)
-
-        frames = state.get('frames')
         fm = painter.fontMetrics()
-        text = str(frames[self.value()])
+        text = str(self.value())
         width = fm.width(text)
         x = self.value() * tw - width / 2 + hw / 2
         x_max_width = self.width() - width

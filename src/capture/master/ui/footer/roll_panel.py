@@ -6,6 +6,8 @@ from master.ui.popup import popup
 from master.ui.dialog import ShotSubmitDialog, SubmitProgressDialog
 from master.ui.state import state
 
+from utility.define import SubmitOrder
+
 from .support_button import SupportButtonGroup
 
 
@@ -52,15 +54,15 @@ class SubmitButton(PushButton):
 
     def _submit(self):
         result = popup(dialog=ShotSubmitDialog)
-
+        submit_order = SubmitOrder(
+            result['name'],
+            result['frame_range'],
+            result['export_only'],
+            result['offset_frame'],
+            result['parms']
+        )
         if result:
             popup(
                 dialog=SubmitProgressDialog,
-                dialog_args=(
-                    result['name'],
-                    result['frame_range'],
-                    result['export_only'],
-                    result['offset_frame'],
-                    result['parms']
-                )
+                dialog_args=(submit_order,)
             )

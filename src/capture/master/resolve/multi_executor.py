@@ -64,11 +64,11 @@ class MultiExecutor(threading.Thread):
         import re
         from pathlib import Path
 
-        folder_name, job_id, frames, export_path = tasks
+        folder_name, job_id, frame_range, export_path = tasks
         load_path = (
             f'{setting.submit.job_path}{job_id}/export/'
         )
-        offset_frame = frames[0] - 1
+        offset_frame = frame_range[0]
 
         folder_name = re.sub(r'[^\w\d-]', '_', folder_name)
         export_path = Path(f'{export_path}/{folder_name}/')
@@ -78,7 +78,7 @@ class MultiExecutor(threading.Thread):
 
         with ProcessPoolExecutor() as executor:
             future_list = []
-            for f in frames:
+            for f in range(frame_range[0], frame_range[1] + 1):
                 offset_f = f - offset_frame
                 file_path = f'{load_path}{f:06d}.4df'
 

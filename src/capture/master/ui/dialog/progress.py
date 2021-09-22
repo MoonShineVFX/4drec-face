@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 
 from utility.setting import setting
-from utility.define import BodyMode
+from utility.define import BodyMode, SubmitOrder
 
 from master.ui.custom_widgets import move_center, make_layout
 from master.ui.state import state
@@ -78,22 +78,22 @@ class ProgressDialog(QDialog):
 
 class ExportProgressDialog(ProgressDialog):
     def __init__(self, parent, export_path):
-        super().__init__(parent, 'Exporting', len(state.get('frames')))
+        super().__init__(parent, 'Exporting', state.get('playbar_frame_count'))
         self._export_path = export_path
 
     def _prepare(self):
         state.on_changed('tick_export', self.increase)
 
     def _on_show(self):
-        offset_frame = state.get('offset_frame')
-        frames = state.get('frames')
+        offset_frame = state.get('playbar_frame_offset')
+        frame_range = state.get('playbar_frame_range')
         state.cast(
             'resolve',
             'export_model',
             state.get('current_project'),
             state.get('current_shot'),
             state.get('current_job'),
-            [f + offset_frame for f in frames],
+            [frame_range[0] + offset_frame, frame_range[1] + offset_frame],
             self._export_path
         )
 
@@ -101,7 +101,7 @@ class ExportProgressDialog(ProgressDialog):
 class ScreenshotProgressDialog(ProgressDialog):
     def __init__(self, parent, export_path):
         self._export_path = export_path
-        super().__init__(parent, 'Grab Preview', len(state.get('frames')))
+        super().__init__(parent, 'Grab Preview', state.get('playbar_frame_count'))
 
     def _prepare(self):
         project = state.get('current_project')
@@ -143,7 +143,7 @@ class CacheProgressDialog(ProgressDialog):
                 shot.frame_range[1] - shot.frame_range[0] + 1
             ) * count
         elif body_mode is BodyMode.MODEL:
-            return len(state.get('frames'))
+            return state.get('playbar_frame_count')
 
     def _prepare(self):
         body_mode = state.get('body_mode')
@@ -170,15 +170,15 @@ class CacheProgressDialog(ProgressDialog):
 
 
 class SubmitProgressDialog(ProgressDialog):
-    def __init__(self, parent, job_name, frame_range, export_only, offset_frame, job_parms):
+    def __init__(self, parent, submit_order: SubmitOrder):
         camera_count = len(setting.get_working_camera_ids())
-        message = 'Exporting' if export_only else 'Submitting'
-        super().__init__(parent, message, (frame_range[1] - frame_range[0] + 1) * camera_count)
-        self._export_only = export_only
-        self._job_name = job_name
-        self._job_frame_range = frame_range
-        self._job_offset_frame = offset_frame
-        self._job_parms = job_parms
+        message = 'Exporting' if submit_order.export_only else 'Submitting'
+        super().__init__(
+            parent,
+            message,
+            submit_order.get_frame_length() * camera_count
+        )
+        self._submit_order = submit_order
 
     def _prepare(self):
         state.on_changed('tick_submit', self._on_submit)
@@ -194,9 +194,5 @@ class SubmitProgressDialog(ProgressDialog):
         state.cast(
             'camera',
             'submit_shot',
-            self._job_name,
-            self._job_frame_range,
-            self._export_only,
-            self._job_offset_frame,
-            self._job_parms
+            self._submit_order
         )

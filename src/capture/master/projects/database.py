@@ -5,7 +5,8 @@ from bson.codec_options import CodecOptions
 from secrets import token_hex
 
 from utility.logger import log
-from utility.define import EntityEvent, CameraCacheType, TaskState, UIEventType
+from utility.define import EntityEvent, CameraCacheType, TaskState,\
+    UIEventType, SubmitOrder
 from utility.setting import setting
 from utility.repeater import Repeater
 from utility.opencue_bridge import OpenCueBridge
@@ -437,17 +438,20 @@ class ShotEntity(Entity):
     def get_cache_size(self):
         return self._memory
 
-    def submit(self, name, frame_range: [int, int], parameters=None):
-        if parameters is None:
-            parameters = {}
-        job = self.create_job(name, frame_range, parameters)
+    def submit(self, submit_order: SubmitOrder):
+        offset_frame_range = submit_order.get_offset_frame_range()
+        job = self.create_job(
+            submit_order.name,
+            offset_frame_range,
+            submit_order.parms
+        )
 
         # OpenCue integration
         log.info(f'OpenCue submit shot: {self}')
         opencue_job_id = OpenCueBridge.submit(
             self._parent.name, self.name, job.name,
             self.get_folder_name(), job.get_folder_name(),
-            frame_range, parameters
+            offset_frame_range, submit_order.parms
         )
 
         if opencue_job_id is None:
@@ -463,7 +467,7 @@ class ShotEntity(Entity):
                 'title': f'[{self.name}] Submit Success',
                 'description': (
                     f'Shot [{self.name}] submitted frames '
-                    f'{frame_range[0]}-{frame_range[1]}.'
+                    f'{offset_frame_range[0]}-{offset_frame_range[1]}.'
                 )
             }
         )

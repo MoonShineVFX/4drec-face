@@ -54,6 +54,8 @@ class ModelView(QWidget):
         state.set('tick_update_geo', None)
 
     def _on_key_pressed(self):
+        if not self.isVisible():
+            return
         key = state.get('key')
         if key == Qt.Key_Z:
             self._core.reset_camera_transform()
