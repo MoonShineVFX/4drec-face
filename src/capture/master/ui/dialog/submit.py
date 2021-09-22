@@ -6,7 +6,7 @@ from PyQt5.Qt import (
 from utility.setting import setting
 
 from master.ui.custom_widgets import (
-    move_center, make_layout, make_split_line
+    move_center, make_layout
 )
 from master.ui.state import state, get_slider_range
 
@@ -58,8 +58,14 @@ class ShotSubmitDialog(QDialog):
         self._text_frames = None
         self._parms = []
         self._comboBox = None
-        self._setup_ui()
         self._export_only = False
+        self._submit_button = None
+        self._setup_ui()
+
+        state.on_changed('opencue_status', self._update_server_state)
+
+        self._check_server()
+
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
@@ -123,10 +129,11 @@ class ShotSubmitDialog(QDialog):
 
         # 底部按鈕組
         self._buttons = QDialogButtonBox()
-        submit_button = self._buttons.addButton('Submit', QDialogButtonBox.NoRole)
+        self._submit_button = self._buttons.addButton('Submit', QDialogButtonBox.NoRole)
+        self._submit_button.setEnabled(False)
         export_button = self._buttons.addButton('Export Only', QDialogButtonBox.NoRole)
         self._buttons.addButton('Cancel', QDialogButtonBox.RejectRole)
-        submit_button.clicked.connect(lambda x: self._on_accept())
+        self._submit_button.clicked.connect(lambda x: self._on_accept())
         export_button.clicked.connect(lambda x: self._on_accept(True))
         self._buttons.rejected.connect(self.reject)
         layout.addWidget(self._buttons)
@@ -139,6 +146,15 @@ class ShotSubmitDialog(QDialog):
     def _on_accept(self, export_only=False):
         self._export_only = export_only
         self.accept.emit()
+
+    def _check_server(self):
+        state.cast(
+            'project', 'check_opencue_server'
+        )
+
+    def _update_server_state(self):
+        check_result = state.get('opencue_status')
+        self._submit_button.setEnabled(check_result)
 
     def showEvent(self, event):
         event.accept()

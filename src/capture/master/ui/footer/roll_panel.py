@@ -36,31 +36,11 @@ class RollPanel(LayoutWidget):
 
 
 class SubmitButton(PushButton):
-    _submit_text = '  SUBMIT'
-    _connect_text = '  CONNECT'
-
     def __init__(self):
-        super().__init__(self._connect_text, 'submit', size=(180, 60))
-        self._is_server_on = False
+        super().__init__(self._connect_text, '  SUBMIT', size=(180, 60))
         self.clicked.connect(self._submit)
 
-        state.on_changed('opencue_status', self._update)
         state.on_changed('current_shot', self._update_shot)
-
-        self._check_server()
-
-    def _check_server(self):
-        state.cast(
-            'project', 'check_opencue_server'
-        )
-
-    def _update(self):
-        check_result = state.get('opencue_status')
-        self.setText(self._submit_text if check_result else self._connect_text)
-        self._is_server_on = check_result
-
-        if check_result:
-            self._submit()
 
     def _update_shot(self):
         shot = state.get('current_shot')
@@ -71,19 +51,16 @@ class SubmitButton(PushButton):
         self.setEnabled(True)
 
     def _submit(self):
-        if self._is_server_on:
-            result = popup(dialog=ShotSubmitDialog)
+        result = popup(dialog=ShotSubmitDialog)
 
-            if result:
-                popup(
-                    dialog=SubmitProgressDialog,
-                    dialog_args=(
-                        result['name'],
-                        result['frame_range'],
-                        result['export_only'],
-                        result['offset_frame'],
-                        result['parms']
-                    )
+        if result:
+            popup(
+                dialog=SubmitProgressDialog,
+                dialog_args=(
+                    result['name'],
+                    result['frame_range'],
+                    result['export_only'],
+                    result['offset_frame'],
+                    result['parms']
                 )
-        else:
-            self._check_server()
+            )
