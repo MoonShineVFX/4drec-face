@@ -16,23 +16,7 @@ from .parameter import CameraParameter
 from .report_collector import CameraReportCollector
 
 
-class CameraSaveMeta():
-    def __init__(self, shot_id, frame, path):
-        self._shot_id = shot_id
-        self._frame = frame
-        self._path = path
-        self._cameras = {
-            camera: False for camera in setting.get_working_camera_ids()
-        }
-
-    def save(self, camera_id, image_data):
-        with open(f'{self._path}/{camera_id}_{self._frame:06d}.jpg', 'wb') as f:
-            f.write(image_data)
-        self._cameras[camera_id] = True
-        return all(self._cameras.values())
-
-
-class CameraManager():
+class CameraManager:
     """相機管理總成
 
     負責 slave 訊息過來的相機資訊歸納
@@ -54,8 +38,6 @@ class CameraManager():
             self._request_camera_status, 0.1, True
         )
         self._delay = DelayExecutor(0.1)
-
-        self._save_meta = None
 
         # 綁定 UI
         ui.dispatch_event(
@@ -366,12 +348,6 @@ class CameraManager():
         """
         parms, image_data = message.unpack()
 
-        if self._save_meta is not None:
-            result = self._save_meta.save(parms['camera_id'], image_data)
-            if result:
-                self._save_meta = None
-            return
-
         self._camera_list[parms['camera_id']].on_image_received(
             message
         )
@@ -404,17 +380,7 @@ class CameraManager():
                 scale_length, delay
             )
 
-    def request_save_image(self, frame, path):
-        shot_id = project_manager.current_shot.get_id()
-        self._save_meta = CameraSaveMeta(shot_id, frame, path)
-        for camera_id, camera in self._camera_list.items():
-            camera.on_image_requested(
-                camera_id, shot_id, frame,
-                setting.jpeg.submit.quality,
-                None, False
-            )
-
-    def submit_shot(self, name, frame_range, offset_frame, parameters):
+    def submit_shot(self, name, frame_range, export_only, offset_frame, parameters):
         """到 opencue 放算"""
         shot = project_manager.current_shot
         log.info(f'Preparing to submit shot: {shot}')
@@ -424,6 +390,7 @@ class CameraManager():
             shot,
             name,
             frame_range,
+            export_only,
             parameters
         )
 

@@ -59,6 +59,7 @@ class ShotSubmitDialog(QDialog):
         self._parms = []
         self._comboBox = None
         self._setup_ui()
+        self._export_only = False
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
@@ -98,7 +99,7 @@ class ShotSubmitDialog(QDialog):
         frame_range_layout.addWidget(self._text_frames)
         layout.addLayout(frame_range_layout)
 
-        # submit parameter
+        # Submit Parameter
         submit_widget = QWidget()
         submit_control = QVBoxLayout()
         submit_parameters = {
@@ -120,9 +121,13 @@ class ShotSubmitDialog(QDialog):
         scroll.setWidget(submit_widget)
         layout.addWidget(scroll)
 
-        buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self._buttons = QDialogButtonBox(buttons)
-        self._buttons.accepted.connect(self.accept)
+        # 底部按鈕組
+        self._buttons = QDialogButtonBox()
+        submit_button = self._buttons.addButton('Submit', QDialogButtonBox.NoRole)
+        export_button = self._buttons.addButton('Export Only', QDialogButtonBox.NoRole)
+        self._buttons.addButton('Cancel', QDialogButtonBox.RejectRole)
+        submit_button.clicked.connect(lambda x: self._on_accept())
+        export_button.clicked.connect(lambda x: self._on_accept(True))
         self._buttons.rejected.connect(self.reject)
         layout.addWidget(self._buttons)
 
@@ -130,6 +135,10 @@ class ShotSubmitDialog(QDialog):
 
         self.setMinimumSize(500, 560)
         move_center(self)
+
+    def _on_accept(self, export_only=False):
+        self._export_only = export_only
+        self.accept.emit()
 
     def showEvent(self, event):
         event.accept()
@@ -139,7 +148,13 @@ class ShotSubmitDialog(QDialog):
 
     def get_result(self):
         offset_frame = state.get('offset_frame')
-        start_frame_str, end_frame_str = self._text_frames.text().strip().split('-')
+
+        frame_str = self._text_frames.text().strip()
+        if '-' not in frame_str:
+            start_frame_str, end_frame_str = frame_str, frame_str
+        else:
+            start_frame_str, end_frame_str = frame_str.split('-')
+
         start_frame = int(start_frame_str) + offset_frame
         end_frame = int(end_frame_str) + offset_frame
 
@@ -152,7 +167,8 @@ class ShotSubmitDialog(QDialog):
             'name': self._text_name.text(),
             'frame_range': [start_frame, end_frame],
             'offset_frame': offset_frame,
-            'parms': parms
+            'parms': parms,
+            'export_only': self._export_only
         }
 
 

@@ -16,9 +16,8 @@ class RollPanel(LayoutWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        buttons = SupportButtonGroup(('Serial', 'Cache', 'Crop', 'Save'))
+        buttons = SupportButtonGroup(('Serial', 'Cache', 'Crop'))
         buttons.buttons['Cache'].clicked.connect(self._on_cache)
-        buttons.buttons['Save'].clicked.connect(self._on_save)
 
         self.addLayout(
             buttons
@@ -34,17 +33,6 @@ class RollPanel(LayoutWidget):
 
     def _on_cache(self):
         popup(dialog=CacheProgressDialog)
-
-    def _on_save(self):
-        directory = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if directory is not None and directory != '':
-            state.cast(
-                'camera',
-                'request_save_image',
-                state.get('current_slider_value') +
-                state.get('offset_frame'),
-                directory
-            )
 
 
 class SubmitButton(PushButton):
@@ -92,6 +80,7 @@ class SubmitButton(PushButton):
                     dialog_args=(
                         result['name'],
                         result['frame_range'],
+                        result['export_only'],
                         result['offset_frame'],
                         result['parms']
                     )

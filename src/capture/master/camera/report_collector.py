@@ -7,7 +7,7 @@ from utility.define import MessageType, UIEventType
 from master.projects import project_manager
 
 
-class CameraReportCollector():
+class CameraReportCollector:
     """報告搜集器
 
     由於相機分散在各 slave，當需要得到特定報告時
@@ -37,18 +37,15 @@ class CameraReportCollector():
             )
         )
 
-    def new_submit_report_container(self, shot, name, frames, parameters):
+    def new_submit_report_container(self, shot, name, frame_range, export_only, parameters):
         """創建新發佈報告搜集器
 
         發布 Shot 後，接收每個 Slave 的發送進度
 
-        Args:
-            shot_id: 要發布的 Shot ID
-
         """
         self._report_container_list.append(
             SubmitReportContainer(
-                self, shot, name, frames, parameters
+                self, shot, name, frame_range, export_only, parameters
             )
         )
 
@@ -225,11 +222,12 @@ class SubmitReportContainer(ReportContainer):
 
     """
 
-    def __init__(self, collector, shot, name, frame_range, parameters):
+    def __init__(self, collector, shot, name, frame_range, export_only, parameters):
         super().__init__(collector, shot.get_id())
         self._shot = shot
         self._name = name
         self._frame_range = frame_range  # 影格範圍
+        self._export_only = export_only
         self._parameters = parameters
         self._progress_list = {}  # 進度表{相機ID: 進度(0~1)}
         self._complete_check_list = {}
@@ -262,6 +260,20 @@ class SubmitReportContainer(ReportContainer):
 
     def _summarize_report(self):
         """總結"""
+        from master.ui import ui
+        if self._export_only:
+            ui.dispatch_event(
+                UIEventType.NOTIFICATION,
+                {
+                    'title': f'[{self._shot.name}] Submit Success',
+                    'description': (
+                        f'Shot [{self._shot.name}] submitted frames '
+                        f'{self._frame_range[0]}-{self._frame_range[1]}.'
+                    )
+                }
+            )
+            return
+
         self._shot.submit(self._name, self._frame_range, self._parameters)
 
     def get_job_name(self):

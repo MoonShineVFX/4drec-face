@@ -462,7 +462,8 @@ class ShotEntity(Entity):
             {
                 'title': f'[{self.name}] Submit Success',
                 'description': (
-                    f'Shot [{self.name}] submitted frames {frame_range[0]}-{frame_range[1]}.'
+                    f'Shot [{self.name}] submitted frames '
+                    f'{frame_range[0]}-{frame_range[1]}.'
                 )
             }
         )
