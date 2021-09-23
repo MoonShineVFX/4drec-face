@@ -154,75 +154,24 @@ class ResolveProject:
 
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk
-        cameras: [Metashape.Camera] = chunk.cameras
 
-        cameras_up: [Metashape.Camera] = []
-        cameras_origin: [Metashape.Camera] = []
-        cameras_horizon: [Metashape.Camera] = []
-        cameras_distance: [Metashape.Camera] = []
+        # Define marker locations and update chunk transform
+        for marker in chunk.markers:
+            marker_num = int(marker.label.split(' ')[-1])
+            if marker_num in SETTINGS.nct_marker_locations.keys():
+                marker.reference.location = Metashape.Vector(
+                    SETTINGS.nct_marker_locations[marker_num]
+                )
+        chunk.updateTransform()
 
-        # Get groups
-        for cam in cameras:
-            # Get camera number
-            camera_number = int(cam.label.split('_')[1])
-            if camera_number in SETTINGS.nct_group_up:
-                cameras_up.append(cam)
-            elif camera_number in SETTINGS.nct_group_origin:
-                cameras_origin.append(cam)
-            elif camera_number in SETTINGS.nct_group_horizon:
-                cameras_horizon.append(cam)
-            if camera_number in SETTINGS.nct_group_measure:
-                cameras_distance.append(cam)
-
-        # Get scale ratio
-        scale_vector = \
-            cameras_distance[0].transform.translation() \
-            - cameras_distance[1].transform.translation()
-        camera_distance = scale_vector.norm()
-        scale_ratio = SETTINGS.nct_group_measure_distance / camera_distance
-
-        # Get positions
-        position_up = self.get_average_position(cameras_up)
-        position_origin = self.get_average_position(cameras_origin)
-        position_left = self.get_average_position(cameras_horizon)
-
-        # Get vectors for rotation matrix
-        vector_up: Metashape.Vector = (position_up - position_origin).normalized()
-        vector_horizon: Metashape.Vector = (
-                position_left - position_origin
-        ).normalized()
-        vector_forward = Metashape.Vector.cross(vector_horizon, vector_up)
-
-        # Get pivot_center
-        pivot_center = position_left + (position_origin - position_left) / 2
-        pivot_offset = Metashape.Vector(SETTINGS.nct_center_offset)
-
-        # Create matrix_target
-        vector_horizon.size = 4
-        vector_horizon.w = 0
-        vector_up.size = 4
-        vector_up.w = 0
-        vector_forward.size = 4
-        vector_forward.w = 0
-        matrix_target = Metashape.Matrix((
-            vector_horizon, vector_up, vector_forward, (0.0, 0.0, 0.0, 1.0)
-        ))
-
-        # Apply Chunk transform
-        chunk.transform.matrix = matrix_target
-        chunk.transform.scale = scale_ratio
-        chunk.transform.translation = -matrix_target.mulp(
-            pivot_center * scale_ratio
-        )
-        chunk.transform.translation += pivot_offset
-
-        # Apply Region transform
+        # Define region transform
+        chunk_transform = chunk.transform
         region = chunk.region
-        region.center = pivot_center - matrix_target.inv().mulp(
-            pivot_offset / scale_ratio
+        region.rot = chunk_transform.matrix.rotation().inv()
+        region.size = Metashape.Vector(SETTINGS.region_size) / chunk_transform.scale
+        region.center = chunk_transform.matrix.inv().mulp(
+            Metashape.Vector(SETTINGS.nct_center_offset)
         )
-        region.rot = matrix_target.rotation().inv()
-        region.size = Metashape.Vector(SETTINGS.region_size) / scale_ratio
 
     @staticmethod
     def get_average_position(camera_list: [Metashape.Camera]) -> Metashape.Vector:

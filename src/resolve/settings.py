@@ -37,11 +37,7 @@ class ResolveSettings:
         self.region_size = [0.5, 0.5, 0.5]
 
         # Normalize chunk transform
-        self.nct_group_up = [2, 3]
-        self.nct_group_origin = [4, 5]
-        self.nct_group_horizon = [12, 13]
-        self.nct_group_measure = [5, 12]
-        self.nct_group_measure_distance = 0.5564
+        self.nct_marker_locations = {}
         self.nct_center_offset = [0.0, -0.2, 0.3]
 
         # Job
@@ -50,6 +46,12 @@ class ResolveSettings:
         self.offsetted_current_frame = -1
         self.shot_path = Path(r'D:\shot\a1b2c3d4')
         self.job_path = Path(r'D:\jobs\a1b2c3d4')
+
+        # Paths
+        self.project_path = ''
+        self.files_path = ''
+        self.export_path = ''
+        self.timelog_path = ''
 
     def initialize(self,
                    current_frame: int,

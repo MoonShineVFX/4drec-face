@@ -27,9 +27,8 @@ submit:
   texture_size: 8192
   region_size: [0.5, 0.5, 0.5]
   # Normalize chunk transform
-  nct_group_up: [2, 3]
-  nct_group_origin: [4, 5]
-  nct_group_horizon: [12, 13]
-  nct_group_measure: [5, 12]
-  nct_group_measure_distance: 0.5564
-  nct_center_offset: [0.0, -0.2, 0.3]
+  nct_marker_locations:
+    '14': [0, 0.866, 0]
+    '16': [0.511, 0.862, 0]
+    '21': [0, 1.932, 0]
+  nct_center_offset: [0.2555, 1.262, -0.37]
