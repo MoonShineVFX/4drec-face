@@ -395,6 +395,7 @@ class CameraManager:
         message_manager.send_message(
             MessageType.SUBMIT_SHOT,
             {
+                'project_id': shot.get_parent().get_id(),
                 'shot_id': shot.get_id(),
                 'job_name': submit_order.name,
                 'frame_range': offset_frame_range,

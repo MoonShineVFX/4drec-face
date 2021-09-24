@@ -92,7 +92,7 @@ class ResolveProject:
     def resolve(self):
         logging.info('Resolve')
         chunk = self.__doc.chunk
-        frame = chunk.frames[SETTINGS.offsetted_current_frame]
+        frame = chunk.frames[SETTINGS.current_frame_at_chunk]
 
         # Build points
         if frame.point_cloud is None:

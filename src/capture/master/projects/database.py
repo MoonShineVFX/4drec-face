@@ -480,6 +480,9 @@ class ShotEntity(Entity):
     def get_folder_name(self) -> str:
         return f'{self._parent.get_id()}/{self.get_id()}'
 
+    def get_parent(self) -> ProjectEntity:
+        return self._parent
+
 
 class JobEntity(Entity):
 

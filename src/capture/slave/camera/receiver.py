@@ -159,6 +159,7 @@ class Receiver(MixThread):
 
         """
         parms = message.unpack()
+        project_id = parms['project_id']
         shot_id = parms['shot_id']
         job_name = parms['job_name']
         frame_range = parms['frame_range']
@@ -171,6 +172,7 @@ class Receiver(MixThread):
         }
 
         self._camera_connector.add_submit_task((
+            project_id,
             shot_id,
             job_name,
             frame_range,
