@@ -80,11 +80,13 @@ class OpenCueBridge:
     @staticmethod
     def submit(show_name: str, shot_name: str, job_name: str,
                shot_folder: str, job_folder: str,
-               frame_range: (int, int), parameters: dict=None) -> [str]:
+               frame_range: (int, int), offset_frame: int,
+               parameters: dict = None) -> [str]:
         # Build yaml file
         yaml_data = setting.submit.copy()
         yaml_data['start_frame'] = frame_range[0]
         yaml_data['end_frame'] = frame_range[1]
+        yaml_data['offset_frame'] = offset_frame
         yaml_data['shot_path'] += shot_folder
         yaml_data['job_path'] += job_folder
         if parameters is not None:

@@ -41,13 +41,15 @@ class ResolveSettings:
         self.nct_center_offset = [0.0, -0.2, 0.3]
 
         # Job
+        self.offset_frame = 0
         self.start_frame = 0
         self.end_frame = 0
         self.current_frame_at_chunk = -1
-        self.shot_path = Path(r'D:\shot\a1b2c3d4')
-        self.job_path = Path(r'D:\jobs\a1b2c3d4')
+        self.cali_path = Path('')
+        self.shot_path = Path('')
+        self.job_path = Path('')
 
-        # Paths
+        # More Paths
         self.project_path = ''
         self.files_path = ''
         self.export_path = ''
@@ -88,6 +90,7 @@ class ResolveSettings:
         self.current_frame_at_chunk = self.current_frame + 1
         self.shot_path = Path(self.shot_path)
         self.job_path = Path(self.job_path)
+        self.cali_path = Path(self.cali_path)
 
         # Expand Path
         self.project_path = self.job_path / f'{self.metashape_project_name}.psx'
@@ -96,6 +99,25 @@ class ResolveSettings:
         self.timelog_path = self.job_path / f'{self.timelog_name}.txt'
 
         self.is_initialized = True
+
+    def get_import_camera_and_images(self) -> dict:
+        camera_folders = self.shot_path.glob('*')
+        import_data = {}
+        for camera_folder in camera_folders:
+            camera_id = camera_folder.stem
+            camera_photos = []
+
+            cali_image = self.cali_path / f'{camera_id}.jpg'
+            camera_photos.append(str(cali_image))
+            for f in range(self.start_frame, self.end_frame + 1):
+                real_frame = f + self.offset_frame
+                camera_photos.append(
+                    str(camera_folder / f'{camera_id}_{real_frame:06d}.jpg')
+                )
+
+            import_data[camera_id] = camera_photos
+
+        return import_data
 
 
 SETTINGS = ResolveSettings()

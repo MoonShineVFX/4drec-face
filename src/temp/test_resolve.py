@@ -3,7 +3,7 @@ from resolve.define import ResolveStage
 from pathlib import Path
 
 
-yaml_path = Path('test_resolve.yml').absolute()
+yaml_path = r'G:\jobs\4cdd8d\02e2e0\564bf8\job.yml'
 
 
 def initial():
@@ -22,4 +22,6 @@ def resolve_frame(frame: int):
         debug=True
     )
 
-resolve_frame(1)
+
+# initial()
+resolve_frame(0)

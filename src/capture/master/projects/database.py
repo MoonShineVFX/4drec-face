@@ -451,7 +451,8 @@ class ShotEntity(Entity):
         opencue_job_id = OpenCueBridge.submit(
             self._parent.name, self.name, job.name,
             self.get_folder_name(), job.get_folder_name(),
-            offset_frame_range, submit_order.parms
+            offset_frame_range, submit_order.offset_frame,
+            submit_order.parms
         )
 
         if opencue_job_id is None:

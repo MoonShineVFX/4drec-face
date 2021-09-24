@@ -43,14 +43,9 @@ class ResolveProject:
         chunk.label = SETTINGS.chunk_name
 
         # Import images
-        camera_folders = SETTINGS.shot_path.glob('*')
-        for camera_folder in camera_folders:
-            photos = [str(p) for p in camera_folder.glob('*.jpg')]
+        import_data = SETTINGS.get_import_camera_and_images()
+        for camera, photos in import_data.items():
             chunk.addPhotos(photos, layout=Metashape.MultiframeLayout)
-
-        # Camera labels
-        for camera in chunk.cameras:
-            camera.label = camera.label[:-7]
 
         # Camera calibration sensor
         ref_sensor: Metashape.Sensor = chunk.sensors[0]
@@ -71,15 +66,22 @@ class ResolveProject:
         logging.info('Calibrate')
         chunk: Metashape.Chunk = self.__doc.chunk
 
+        # Detect Markers
+        chunk.detectMarkers(frames=[0])
+
         # Build points
         interval = SETTINGS.match_photos_interval
-        logging.debug(f'Match photos every {interval} frames')
-        for frame in chunk.frames:
-            if interval != SETTINGS.match_photos_interval:
-                interval += 1
+        if len(chunk.frames) < interval:
+            interval = 1
+
+        logging.debug(
+            f'Match photos every {interval} frames'
+        )
+
+        for frame_number, frame in enumerate(chunk.frames):
+            if frame_number % interval != 0:
                 continue
             frame.matchPhotos()
-            interval = 1
 
         # Align photos
         chunk.alignCameras()
@@ -97,7 +99,10 @@ class ResolveProject:
         # Build points
         if frame.point_cloud is None:
             logging.debug('Point cloud not found, build one')
-            frame.matchPhotos()
+            frame.matchPhotos(
+                tiepoint_limit=8000,
+                filter_stationary_points=False
+            )
             frame.triangulatePoints()
 
         # Build dense
@@ -157,7 +162,7 @@ class ResolveProject:
 
         # Define marker locations and update chunk transform
         for marker in chunk.markers:
-            marker_num = int(marker.label.split(' ')[-1])
+            marker_num = marker.label.split(' ')[-1]
             if marker_num in SETTINGS.nct_marker_locations.keys():
                 marker.reference.location = Metashape.Vector(
                     SETTINGS.nct_marker_locations[marker_num]
