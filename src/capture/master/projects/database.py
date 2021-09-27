@@ -48,6 +48,10 @@ def get_projects(include_archived=False, callback=None):
     return [ProjectEntity(d, callback) for d in projects]
 
 
+def get_calibrations():
+    return list(DB_JOBS.find({'cali': True}).sort([('created_at', -1)]))
+
+
 class Entity:
     """文件實體
 
@@ -169,6 +173,7 @@ class Entity:
     def remove(self):
         """刪除實體"""
         self._db.delete_one({'_id': self._doc_id})
+        self._db.delete_one({'_id': self._doc_id})
         self.emit(EntityEvent.REMOVE, self)
 
     def get_detail(self):
@@ -236,7 +241,7 @@ class ProjectEntity(Entity):
 
         return [ShotEntity(self, s) for s in shots]
 
-    def create_shot(self, name=None):
+    def create_shot(self, is_cali, name=None):
         """創建 Shot
 
         Args:
@@ -252,7 +257,8 @@ class ProjectEntity(Entity):
             self,
             {
                 'project_id': self._doc_id,
-                'name': name
+                'name': name,
+                'cali': is_cali
             },
         )
 
@@ -348,6 +354,7 @@ class ShotEntity(Entity):
         'missing_frames': None,
         'camera_parameters': None,
         'state': 0,  # created, recorded, submitted
+        'cali': False
     }
 
     def __init__(self, parent, doc):
@@ -452,7 +459,7 @@ class ShotEntity(Entity):
             self._parent.name, self.name, job.name,
             self.get_folder_name(), job.get_folder_name(),
             offset_frame_range, submit_order.offset_frame,
-            submit_order.parms
+            submit_order.cali_id, submit_order.parms
         )
 
         if opencue_job_id is None:
@@ -483,6 +490,14 @@ class ShotEntity(Entity):
 
     def get_parent(self) -> ProjectEntity:
         return self._parent
+
+    def is_cali(self):
+        if 'cali' in self._doc:
+            return self.cali
+        return False
+
+    def is_submitted(self):
+        return self.state == 2
 
 
 class JobEntity(Entity):

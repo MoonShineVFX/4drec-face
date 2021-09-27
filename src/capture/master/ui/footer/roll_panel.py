@@ -39,7 +39,7 @@ class RollPanel(LayoutWidget):
 
 class SubmitButton(PushButton):
     def __init__(self):
-        super().__init__(self._connect_text, '  SUBMIT', size=(180, 60))
+        super().__init__('  SUBMIT', 'submit', size=(180, 60))
         self.clicked.connect(self._submit)
 
         state.on_changed('current_shot', self._update_shot)
@@ -47,22 +47,34 @@ class SubmitButton(PushButton):
     def _update_shot(self):
         shot = state.get('current_shot')
 
-        if shot is None:
+        if shot is None or (
+            shot.is_cali() and shot.is_submitted()
+        ):
+            self.setEnabled(False)
             return
 
         self.setEnabled(True)
 
     def _submit(self):
-        result = popup(dialog=ShotSubmitDialog)
-        submit_order = SubmitOrder(
-            result['name'],
-            result['frame_range'],
-            result['export_only'],
-            result['offset_frame'],
-            result['parms']
-        )
-        if result:
-            popup(
-                dialog=SubmitProgressDialog,
-                dialog_args=(submit_order,)
+        shot = state.get('current_shot')
+        if not shot.is_cali():
+            submit_order = popup(dialog=ShotSubmitDialog)
+            if submit_order:
+                popup(
+                    dialog=SubmitProgressDialog,
+                    dialog_args=(submit_order,)
+                )
+        else:
+            submit_order = SubmitOrder(
+                'cali_submit',
+                [0, 0],
+                False,
+                0,
+                '',
+                {}
+            )
+            state.cast(
+                'camera',
+                'submit_shot',
+                submit_order
             )

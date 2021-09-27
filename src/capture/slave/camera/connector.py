@@ -238,7 +238,7 @@ class CameraConnector(Process):
 
         return status
 
-    def start_recording(self, shot_id):
+    def start_recording(self, shot_id, is_cali):
         """開始錄製
 
         Args:
@@ -247,7 +247,7 @@ class CameraConnector(Process):
         """
         self._log.info('Start recording')
         shot_meta = CameraShotMeta(
-            {'shot_id': shot_id, 'camera_id': self._id},
+            {'shot_id': shot_id, 'camera_id': self._id, 'is_cali': is_cali},
             self.get_shot_file_path_for_recording_and_makedir(shot_id)
         )
         self._recorder = CameraRecorder(shot_meta, self._log)

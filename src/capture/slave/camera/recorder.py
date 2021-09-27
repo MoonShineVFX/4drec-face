@@ -79,5 +79,9 @@ class CameraRecorder(MixThread):
             camera_image: CameraImage
 
         """
+        if self._shot_meta.is_cali:
+            current_frame = 0
+            if self._count >= 1 and camera_image is not None:
+                return
         self._queue.put((current_frame, camera_image))
         self._count += 1

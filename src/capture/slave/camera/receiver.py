@@ -86,9 +86,9 @@ class Receiver(MixThread):
             message: 錄製訊息
 
         """
-        is_start, shot_id = message.unpack()
+        is_start, shot_id, is_cali = message.unpack()
         if is_start:
-            self._camera_connector.start_recording(shot_id)
+            self._camera_connector.start_recording(shot_id, is_cali)
         else:
             self._camera_connector.stop_recording()
 
@@ -164,6 +164,7 @@ class Receiver(MixThread):
         job_name = parms['job_name']
         frame_range = parms['frame_range']
         offset_frame = parms['offset_frame']
+        is_cali = parms['is_cali']
 
         # 蒐集檔案路徑
         camera_id = self._camera_connector.get_id()
@@ -177,7 +178,8 @@ class Receiver(MixThread):
             job_name,
             frame_range,
             offset_frame,
-            shot_file_paths
+            shot_file_paths,
+            is_cali
         ))
 
     def _report_status(self):

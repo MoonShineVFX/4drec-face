@@ -12,9 +12,9 @@ submit:
   offset_frame: 0
   start_frame: 0
   end_frame: 119
-  cali_path: 'G:/calis/cali_id'
-  shot_path: 'G:/shots/project_id/shot_id'
-  job_path: 'G:/jobs/project_id/shot_id/job_id'
+  cali_path: 'G:/calis/'
+  shot_path: 'G:/shots/'
+  job_path: 'G:/jobs/'
   # Names
   metashape_project_name: 'metashape_project'
   output_folder_name: 'output'

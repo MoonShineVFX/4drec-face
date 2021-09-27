@@ -63,12 +63,16 @@ class ShotList(LayoutWidget):
         )
         shot_button = AddButton(' Shot')
         shot_button.clicked.connect(lambda: self._new_dialog())
+        cali_button = AddButton(' Cali')
+        cali_button.clicked.connect(lambda: self._new_dialog(True))
         layout.addWidget(shot_button)
+        layout.addWidget(cali_button)
         self.addLayout(layout)
 
         self._update()
 
-    def _new_dialog(self):
+    def _new_dialog(self, is_cali=False):
+        state.set('is_cali', is_cali)
         state.set('shot_new_dialog', True)
 
 
@@ -125,6 +129,11 @@ class ShotItem(LayoutWidget, EntityBinder):
         background-color: palette(base);
     }
     '''
+    _cali = '''
+    ShotItem {
+        background-color: #474538;
+    }
+    '''
     _hover = '''
     ShotItem {
         border: 2px solid palette(midlight);
@@ -160,7 +169,7 @@ class ShotItem(LayoutWidget, EntityBinder):
 
     def _update(self):
         current_shot = state.get('current_shot')
-        bg_style = self._base
+        bg_style = self._cali if self._shot.is_cali() else self._base
         if current_shot == self._shot:
             if self._is_current is not True:
                 self._is_current = True
@@ -245,9 +254,9 @@ class ShotItem(LayoutWidget, EntityBinder):
         self._update_job_list()
 
     def _get_shot_info(self, field):
-        if getattr(self._shot, field) is None:
-            return '---'
         if field == 'frame_range':
+            if self._shot.is_cali():
+                return 'Calibrate'
             frame_range = self._shot.frame_range
             return f'{frame_range[1] - frame_range[0] + 1}F'
         if field == 'size':

@@ -258,7 +258,7 @@ class SubmitReportContainer(ReportContainer):
     def _summarize_report(self):
         """總結"""
         from master.ui import ui
-
+        # Export only
         if self._submit_order.export_only:
             offset_frame_range = self._submit_order.get_offset_frame_range()
             ui.dispatch_event(
@@ -272,7 +272,21 @@ class SubmitReportContainer(ReportContainer):
                 }
             )
             return
+        # Cali just update state and return
+        elif self._shot.is_cali():
+            ui.dispatch_event(
+                UIEventType.NOTIFICATION,
+                {
+                    'title': f'[{self._shot.name}] Submit Success',
+                    'description': (
+                        f'Cali images submitted.'
+                    )
+                }
+            )
+            self._shot.update({'state': 2})
+            return
 
+        # Opencue submit
         self._shot.submit(self._submit_order)
 
     def get_job_name(self):

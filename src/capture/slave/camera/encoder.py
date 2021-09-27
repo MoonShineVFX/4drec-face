@@ -199,7 +199,7 @@ class CameraShotSubmitter(MixThread):
 
     def _run(self):
         while self._running:
-            project_id, shot_id, job_name, frame_range, offset_frame, shot_file_paths = self._queue.get()
+            project_id, shot_id, job_name, frame_range, offset_frame, shot_file_paths, is_cali = self._queue.get()
 
             if shot_id is None:
                 break
@@ -210,9 +210,12 @@ class CameraShotSubmitter(MixThread):
             )
 
             # 創建資料夾
-            shot_id_path = f'{setting.submit.shot_path}{project_id}/{shot_id}/'
-            Path(shot_id_path).mkdir(parents=True, exist_ok=True)
-            self._log.debug(f'Save to {shot_id_path}')
+            if not is_cali:
+                submit_path = f'{setting.submit.shot_path}{project_id}/{shot_id}/'
+            else:
+                submit_path = f'{setting.submit.cali_path}/{shot_id}/'
+            Path(submit_path).mkdir(parents=True, exist_ok=True)
+            self._log.debug(f'Save to {submit_path}')
 
             # 取出圖像
             for camera_id, shot_file_path in shot_file_paths.items():
@@ -221,7 +224,7 @@ class CameraShotSubmitter(MixThread):
                 )
 
                 # 創建 camera_id 資料夾
-                shot_id_camera_path = f'{shot_id_path}{camera_id}/'
+                shot_id_camera_path = f'{submit_path}{camera_id}/'
                 Path(shot_id_camera_path).mkdir(parents=True, exist_ok=True)
 
                 # 進度定義
@@ -232,9 +235,14 @@ class CameraShotSubmitter(MixThread):
                     camera_image = file_loader.load(frame + offset_frame)
 
                     if camera_image is not None:
-                        image_path = (
-                            f'{shot_id_camera_path}{camera_id}_{frame:06d}.jpg'
-                        )
+                        if not is_cali:
+                            image_path = (
+                                f'{shot_id_camera_path}{camera_id}_{frame:06d}.jpg'
+                            )
+                        else:
+                            image_path = (
+                                f'{submit_path}{camera_id}.jpg'
+                            )
 
                         # 檢查是否有存在的檔案並大小差不多
                         is_exist = False

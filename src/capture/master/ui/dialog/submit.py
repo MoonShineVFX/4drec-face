@@ -1,9 +1,10 @@
 from PyQt5.Qt import (
     QDialog, Qt, QLabel, QDialogButtonBox, QLineEdit, QHBoxLayout, QWidget,
-    QSpinBox, QDoubleSpinBox, QScrollArea, QVBoxLayout
+    QSpinBox, QDoubleSpinBox, QScrollArea, QVBoxLayout, QComboBox
 )
 
 from utility.setting import setting
+from utility.define import SubmitOrder
 
 from master.ui.custom_widgets import (
     move_center, make_layout
@@ -105,6 +106,20 @@ class ShotSubmitDialog(QDialog):
         frame_range_layout.addWidget(self._text_frames)
         layout.addLayout(frame_range_layout)
 
+        # Calibration
+        hlayout = make_layout(
+            horizon=True,
+            margin=0,
+            spacing=24
+        )
+        label = HeaderLabel('Calibration')
+        hlayout.addWidget(label)
+
+        self._comboBox = CalibrationComboBox()
+        hlayout.addWidget(self._comboBox)
+
+        layout.addLayout(hlayout)
+
         # Submit Parameter
         submit_widget = QWidget()
         submit_control = QVBoxLayout()
@@ -179,13 +194,14 @@ class ShotSubmitDialog(QDialog):
             name, value = parm_widget.get_result()
             parms[name] = value
 
-        return {
-            'name': self._text_name.text(),
-            'frame_range': [start_frame, end_frame],
-            'offset_frame': offset_frame,
-            'parms': parms,
-            'export_only': self._export_only
-        }
+        return SubmitOrder(
+            name=self._text_name.text(),
+            frame_range=[start_frame, end_frame],
+            offset_frame=offset_frame,
+            cali_id=self._comboBox.currentData(),
+            export_only=self._export_only,
+            parms=parms
+        )
 
 
 class ShotSubmitParameter(QHBoxLayout):
@@ -249,3 +265,20 @@ class ShotSubmitParameter(QHBoxLayout):
     def get_result(self):
         value = self._get_widget_value(self._input_widget)
         return self._parm_name, value
+
+
+class CalibrationComboBox(QComboBox):
+    def __init__(self):
+        super().__init__()
+        state.on_changed('cali_list', self._update)
+        state.cast('project', 'update_cali_list')
+
+    def _update(self):
+        cali_list = state.get('cali_list')
+        self.clear()
+
+        for label, shot_id in cali_list:
+            self.addItem(label, shot_id)
+
+        if len(cali_list) == 0:
+            self.addItem('None', None)

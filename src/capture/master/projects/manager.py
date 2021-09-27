@@ -7,7 +7,7 @@ from master.ui import ui
 
 from .database import (
     get_projects, ProjectEntity, ShotEntity,
-    JobEntity
+    JobEntity, get_calibrations
 )
 
 
@@ -220,4 +220,18 @@ class ProjectManager():
         ui.dispatch_event(
             UIEventType.OPENCUE_STATUS,
             check_result == ''
+        )
+
+    def update_cali_list(self):
+        calis = get_calibrations()
+        result = []
+        for cali in calis:
+            name = f'{cali["name"]}  -  '\
+                   f'{cali["created_at"].strftime("%m/%d %H:%M")}'
+            value = cali.get_id()
+            result.append((name, value))
+
+        ui.dispatch_event(
+            UIEventType.CALI_LIST,
+            result
         )

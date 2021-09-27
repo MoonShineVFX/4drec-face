@@ -30,6 +30,7 @@ class UIState():
         self._state['project_list_select'] = None
         self._state['project_new_dialog'] = False
         self._state['shot_new_dialog'] = False
+        self._state['is_cali'] = False
         self._state['live_view_size'] = 150
         self._state['caching'] = False
         self._state['key'] = None
@@ -47,6 +48,7 @@ class UIState():
         # jobs
         self._state['current_job'] = None
         self._state['jobs'] = []
+        self._state['cali_list'] = []
 
         # parameter
         for key, parm in setting.camera_parameters.items():

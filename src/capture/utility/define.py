@@ -139,6 +139,7 @@ class SubmitOrder:
     frame_range: [int]
     export_only: bool
     offset_frame: int
+    cali_id: str = ''
     parms: dict = field(default_factory=dict)
 
     def get_frame_length(self):

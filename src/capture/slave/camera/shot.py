@@ -198,7 +198,7 @@ class CameraShotFileDumper(CameraShotFileCore):
         }
 
 
-class CameraShotMeta():
+class CameraShotMeta:
     """shot 資訊
 
     Args:
