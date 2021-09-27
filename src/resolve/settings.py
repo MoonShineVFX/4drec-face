@@ -44,6 +44,7 @@ class ResolveSettings:
         self.offset_frame = 0
         self.start_frame = 0
         self.end_frame = 0
+        self.current_frame_real = -1
         self.current_frame_at_chunk = -1
         self.cali_path = Path('')
         self.shot_path = Path('')
@@ -86,8 +87,8 @@ class ResolveSettings:
                 logging.warning(f'No match setting: [{key}]')
 
         # Format properties
-        self.current_frame = int(self.current_frame)
-        self.current_frame_at_chunk = self.current_frame + 1
+        self.current_frame_real = self.current_frame + self.offset_frame
+        self.current_frame_at_chunk = self.current_frame - self.start_frame + 1
         self.shot_path = Path(self.shot_path)
         self.job_path = Path(self.job_path)
         self.cali_path = Path(self.cali_path)

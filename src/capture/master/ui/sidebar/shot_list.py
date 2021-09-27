@@ -4,6 +4,7 @@ from PyQt5.Qt import (
 )
 
 from utility.define import BodyMode
+from utility.setting import setting
 
 from master.ui.state import state, EntityBinder
 from master.ui.custom_widgets import (
@@ -258,12 +259,18 @@ class ShotItem(LayoutWidget, EntityBinder):
             if self._shot.is_cali():
                 return 'Calibrate'
             frame_range = self._shot.frame_range
-            return f'{frame_range[1] - frame_range[0] + 1}F'
-        if field == 'size':
+            if frame_range is None:
+                return '---'
+            frame_count = frame_range[1] - frame_range[0] + 1
+            seconds = frame_count / setting.frame_rate
+            return f'{frame_count} ({seconds:.1f}s)'
+        elif getattr(self._shot, field) is None:
+            return '---'
+        elif field == 'size':
             size = self._shot.size / 1024 / 1024 / 1024
             size = f'{size:.2f}'.rstrip('0.')
             return f'{size}GB'
-        if field == 'state':
+        elif field == 'state':
             return self._state_text[self._shot.state]
 
     def _get_state_index(self):

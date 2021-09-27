@@ -224,20 +224,22 @@ class CameraShotSubmitter(MixThread):
                 )
 
                 # 創建 camera_id 資料夾
-                shot_id_camera_path = f'{submit_path}{camera_id}/'
-                Path(shot_id_camera_path).mkdir(parents=True, exist_ok=True)
+                if not is_cali:
+                    shot_id_camera_path = f'{submit_path}{camera_id}/'
+                    Path(shot_id_camera_path).mkdir(parents=True, exist_ok=True)
 
                 # 進度定義
                 current_count = 0
                 total_count = frame_range[1] - frame_range[0] + 1
 
                 for frame in range(frame_range[0], frame_range[1] + 1):
-                    camera_image = file_loader.load(frame + offset_frame)
+                    real_frame = frame + offset_frame
+                    camera_image = file_loader.load(real_frame)
 
                     if camera_image is not None:
                         if not is_cali:
                             image_path = (
-                                f'{shot_id_camera_path}{camera_id}_{frame:06d}.jpg'
+                                f'{shot_id_camera_path}{camera_id}_{real_frame:06d}.jpg'
                             )
                         else:
                             image_path = (

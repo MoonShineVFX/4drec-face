@@ -223,8 +223,8 @@ class ResolveProject:
 
         # Make dir
         SETTINGS.export_path.mkdir(parents=True, exist_ok=True)
-        export_4df_path = SETTINGS.export_path / f'{SETTINGS.current_frame:06d}.4df'
+        export_4df_path = SETTINGS.export_path / f'{SETTINGS.current_frame_real:06d}.4df'
 
         FourdFrameManager.save_from_metashape(
-            geo_arr, tex_arr, export_4df_path.__str__(), SETTINGS.current_frame
+            geo_arr, tex_arr, export_4df_path.__str__(), SETTINGS.current_frame_real
         )

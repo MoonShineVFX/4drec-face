@@ -36,7 +36,6 @@ class PlaybackControl(QVBoxLayout):
         body_mode = state.get('body_mode')
         if body_mode is BodyMode.LIVEVIEW:
             self._entity = None
-            return
         else:
             job = state.get('current_job')
             if job is not None:
@@ -252,21 +251,28 @@ class PlaybackBar(LayoutWidget):
         current_slider_value = state.get('current_slider_value')
         current_real_frame = get_real_frame(current_slider_value)
 
-        real_sf, real_ef = entity.frame_range
+        # Prevent Non-Recorded
+        if entity.has_prop('cali') and entity.state < 1:
+            return
 
-        state.set('playbar_frame_offset', real_sf)
+        # Get Real Frames
+        real_sf, real_ef = entity.get_real_frame_range()
+        offset_frame = entity.get_frame_offset()
+        playbar_frame_range = [real_sf - offset_frame, real_ef - offset_frame]
+
+        state.set('playbar_frame_offset', offset_frame)
+        state.set('playbar_frame_range', playbar_frame_range)
+        state.set('playbar_frame_count', real_ef - real_sf + 1)
+
+        # Configure Slider
+        self._slider.setMinimum(playbar_frame_range[0])
+        self._slider.setMaximum(playbar_frame_range[1])
 
         if current_real_frame is not None and\
                 real_sf <= current_real_frame <= real_ef:
             current_slider_value = current_real_frame - real_sf
         else:
-            current_slider_value = 0
-
-        playbar_frame_range = [0, real_ef - real_sf]
-        state.set('playbar_frame_range', playbar_frame_range)
-        state.set('playbar_frame_count', playbar_frame_range[1] + 1)
-
-        self._slider.setMaximum(playbar_frame_range[1])
+            current_slider_value = real_sf - offset_frame
 
         state.set('current_slider_value', current_slider_value)
 
@@ -425,7 +431,7 @@ class PlaybackSlider(QSlider, EntityBinder):
         job = state.get('current_job')
         body_mode = state.get('body_mode')
         if shot is not None and body_mode is BodyMode.PLAYBACK:
-            progress = self._entity.get_cache_progress()
+            progress = shot.get_cache_progress()
             t_color = self.palette().midlight().color()
             c_color = QColor('#DB2A71')
             sf, ef = shot.frame_range
@@ -459,7 +465,7 @@ class PlaybackSlider(QSlider, EntityBinder):
 
                 i += 1
         elif job is not None and body_mode is BodyMode.MODEL:
-            job_progress, tasks = self._entity.get_cache_progress()
+            job_progress, tasks = job.get_cache_progress()
 
             t_color = self.palette().midlight().color()
 
@@ -490,10 +496,10 @@ class PlaybackSlider(QSlider, EntityBinder):
 
         h = self.height()
 
-        if self.maximum() == 0:
+        if self.maximum() == 0 or self.maximum() - self.minimum() == 0:
             tw = 0
         else:
-            tw = w / self.maximum()
+            tw = w / (self.maximum() - self.minimum())
 
         # bar map
         painter.drawPixmap(0, 0, self._bar_map)
@@ -531,7 +537,7 @@ class PlaybackSlider(QSlider, EntityBinder):
         fm = painter.fontMetrics()
         text = str(self.value())
         width = fm.width(text)
-        x = self.value() * tw - width / 2 + hw / 2
+        x = (self.value() - self.minimum()) * tw - width / 2 + hw / 2
         x_max_width = self.width() - width
 
         if x < 0:

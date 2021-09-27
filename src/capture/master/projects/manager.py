@@ -228,7 +228,7 @@ class ProjectManager():
         for cali in calis:
             name = f'{cali["name"]}  -  '\
                    f'{cali["created_at"].strftime("%m/%d %H:%M")}'
-            value = cali.get_id()
+            value = cali['_id']
             result.append((name, value))
 
         ui.dispatch_event(

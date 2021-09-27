@@ -49,7 +49,7 @@ def get_projects(include_archived=False, callback=None):
 
 
 def get_calibrations():
-    return list(DB_JOBS.find({'cali': True}).sort([('created_at', -1)]))
+    return list(DB_SHOTS.find({'cali': True}).sort([('created_at', -1)]))
 
 
 class Entity:
@@ -499,6 +499,12 @@ class ShotEntity(Entity):
     def is_submitted(self):
         return self.state == 2
 
+    def get_real_frame_range(self):
+        return self.frame_range
+
+    def get_frame_offset(self):
+        return self.frame_range[0]
+
 
 class JobEntity(Entity):
 
@@ -574,3 +580,10 @@ class JobEntity(Entity):
 
     def get_folder_name(self) -> str:
         return f'{self._parent.get_folder_name()}/{self.get_id()}'
+
+    def get_real_frame_range(self):
+        frame_offset = self._parent.frame_range[0]
+        return self.frame_range[0] + frame_offset, self.frame_range[1] + frame_offset
+
+    def get_frame_offset(self):
+        return self._parent.frame_range[0]

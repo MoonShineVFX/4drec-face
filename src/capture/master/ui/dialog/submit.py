@@ -144,9 +144,9 @@ class ShotSubmitDialog(QDialog):
 
         # 底部按鈕組
         self._buttons = QDialogButtonBox()
-        self._submit_button = self._buttons.addButton('Submit', QDialogButtonBox.NoRole)
+        self._submit_button = self._buttons.addButton('Submit', QDialogButtonBox.AcceptRole)
         self._submit_button.setEnabled(False)
-        export_button = self._buttons.addButton('Export Only', QDialogButtonBox.NoRole)
+        export_button = self._buttons.addButton('Export', QDialogButtonBox.AcceptRole)
         self._buttons.addButton('Cancel', QDialogButtonBox.RejectRole)
         self._submit_button.clicked.connect(lambda x: self._on_accept())
         export_button.clicked.connect(lambda x: self._on_accept(True))
@@ -160,7 +160,7 @@ class ShotSubmitDialog(QDialog):
 
     def _on_accept(self, export_only=False):
         self._export_only = export_only
-        self.accept.emit()
+        self.accept()
 
     def _check_server(self):
         state.cast(

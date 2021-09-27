@@ -27,9 +27,6 @@ class BodySwitcher(LayoutWidget, EntityBinder):
 
         self.bind_entity(shot, self._update)
 
-        if shot == self._entity and shot.state == self._state:
-            return
-
         if shot.state != self._state:
             self._state = shot.state
 
@@ -38,7 +35,7 @@ class BodySwitcher(LayoutWidget, EntityBinder):
 
         if shot.state == 0:
             self._set((0, 3, 2))
-        elif shot.state == 1:
+        elif shot.state == 1 or shot.is_cali():
             self._set((3, 0, 2))
         else:
             self._set((3, 1, 0))
