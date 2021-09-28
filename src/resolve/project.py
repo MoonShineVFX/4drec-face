@@ -60,7 +60,7 @@ class ResolveProject:
             camera.sensor = sensor
         chunk.remove([ref_sensor])
 
-        self.save()
+        self.save(chunk)
 
     def calibrate(self):
         logging.info('Calibrate')
@@ -89,7 +89,7 @@ class ResolveProject:
         # Align chunk
         self.__normalize_chunk_transform()
 
-        self.save()
+        self.save(chunk)
 
     def resolve(self):
         logging.info('Resolve')
@@ -120,15 +120,14 @@ class ResolveProject:
         # Build texture
         frame.buildUV()
         frame.buildTexture(texture_size=SETTINGS.texture_size)
-        self.save()
+
+        self.save(frame)
 
         # Export 4df
         self.export_4df(frame)
 
-        self.save()
-
-    def save(self):
-        self.__doc.save(str(SETTINGS.project_path), self.__doc.chunks)
+    def save(self, chunk: Metashape.Chunk):
+        self.__doc.save(str(SETTINGS.project_path), [chunk])
 
     def run(self):
         # Timestamp
@@ -149,13 +148,17 @@ class ResolveProject:
             raise ValueError(error_message)
 
         logging.info('Finish')
+
         # Record elapsed time
-        duration = perf_counter() - start_time
-        time_label = f'[{SETTINGS.resolve_stage}]'
-        if SETTINGS.resolve_stage is ResolveStage.RESOLVE:
-            time_label += f'({SETTINGS.current_frame})'
-        with open(str(SETTINGS.timelog_path), 'a') as f:
-            f.write(f'{now:%Y-%m-%d %H:%M:%S} {time_label}: {duration}s\n')
+        try:
+            duration = perf_counter() - start_time
+            time_label = f'[{SETTINGS.resolve_stage}]'
+            if SETTINGS.resolve_stage is ResolveStage.RESOLVE:
+                time_label += f'({SETTINGS.current_frame})'
+            with open(str(SETTINGS.timelog_path), 'a') as f:
+                f.write(f'{now:%Y-%m-%d %H:%M:%S} {time_label}: {duration}s\n')
+        except Exception as e:
+            logging.warning(e)
 
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk

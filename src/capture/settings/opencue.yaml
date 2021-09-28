@@ -5,7 +5,7 @@ opencue:
   allocation_name: 'local.general'
   user_name: 'client'
 
-resolve_path: 'C:\Users\eli.hung\PycharmProjects\4drec-face\src'
+resolve_path: 'G:\app\4drec-face\src'
 
 submit:
   # Job

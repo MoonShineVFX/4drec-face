@@ -58,7 +58,7 @@ class OpenCueBridge:
         service: Service = api.createService(None)
         service.setName(setting.opencue.service_name)
         service.setThreadable(True)
-        service.setMinCores(400)
+        service.setMinCores(800)
         service.setMaxCores(0)
         service.setMinMemory(4096 * 1024)
         # service.setMinGpu(1024 * 1024)

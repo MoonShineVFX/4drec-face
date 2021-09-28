@@ -38,3 +38,4 @@ https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/p
 https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/pyoutline-0.14.5-all.tar.gz
 https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/cueadmin-0.14.5-all.tar.gz
 https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/cuegui-0.14.5-all.tar.gz
+https://github.com/AcademySoftwareFoundation/OpenCue/releases/download/v0.14.5/rqd-0.14.5-all.tar.gz
