@@ -49,7 +49,18 @@ class MasterUI(threading.Thread):
         self._lock.notify()
         self._lock.release()
 
-        result = app.exec_()
+        # Catch QT exception
+        sys._excepthook = sys.excepthook
+        sys.excepthook = self._qt_exception_hook
+
+        sys.exit(app.exec_())
+
+    @staticmethod
+    def _qt_exception_hook(_type, value, traceback):
+        print(_type, value, traceback)
+        # Call the normal Exception hook after
+        sys._excepthook(_type, value, traceback)
+        sys.exit(1)
 
     def show(self):
         self._main.dispatch_event(UIEventType.UI_SHOW)

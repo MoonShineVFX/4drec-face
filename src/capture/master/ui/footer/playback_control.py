@@ -401,6 +401,20 @@ class PlaybackSlider(QSlider, EntityBinder):
         self._paint_progress()
         self._update()
 
+    def _get_base_unit(self) -> (int, int, int, int):
+        w = self.width()
+        hw = self._handle_width
+        w -= hw
+
+        h = self.height()
+
+        if self.maximum() == 0 or self.maximum() - self.minimum() == 0:
+            tw = 0
+        else:
+            tw = w / (self.maximum() - self.minimum())
+
+        return w, h, hw, tw
+
     def _paint_progress(self):
         """
         繪製播放列進度條
@@ -411,16 +425,7 @@ class PlaybackSlider(QSlider, EntityBinder):
         self._bar_map.fill(Qt.transparent)
         painter = QPainter(self._bar_map)
 
-        w = self.width()
-        hw = self._handle_width
-        w -= hw
-
-        h = self.height()
-
-        if self.maximum() == 0:
-            tw = 0
-        else:
-            tw = w / self.maximum()
+        w, h, hw, tw = self._get_base_unit()
 
         hh = self._bar_height
 
@@ -468,19 +473,19 @@ class PlaybackSlider(QSlider, EntityBinder):
 
                 i += 1
         elif job is not None and body_mode is BodyMode.MODEL:
-            job_progress, tasks = job.get_cache_progress()
+            cache_progress, task_progress = job.get_cache_progress()
 
             t_color = self.palette().midlight().color()
 
             i = 0
             for f in range(job.frame_range[0], job.frame_range[1] + 1):
-                if f in job_progress:
+                if f in cache_progress:
                     painter.fillRect(
                         QRect(i * tw, (h - hh) / 2, math.ceil(tw), hh),
                         t_color
                     )
-                elif f in tasks:
-                    task_state = tasks[f]
+                elif f in task_progress:
+                    task_state = task_progress[f]
                     painter.fillRect(
                         QRect(i * tw, (h - hh) / 2, math.ceil(tw), hh),
                         self._opencue_color[task_state]
@@ -493,16 +498,7 @@ class PlaybackSlider(QSlider, EntityBinder):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        w = self.width()
-        hw = self._handle_width
-        w -= hw
-
-        h = self.height()
-
-        if self.maximum() == 0 or self.maximum() - self.minimum() == 0:
-            tw = 0
-        else:
-            tw = w / (self.maximum() - self.minimum())
+        w, h, hw, tw = self._get_base_unit()
 
         # bar map
         painter.drawPixmap(0, 0, self._bar_map)

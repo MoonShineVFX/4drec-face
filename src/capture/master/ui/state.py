@@ -195,9 +195,10 @@ def step_pace(forward=True, stop=True):
 
 
 def get_real_frame(frame):
-    playbar_frame_count = state.get('playbar_frame_count')
-    if frame >= playbar_frame_count:
+    sf, ef = state.get('playbar_frame_range')
+    if sf > frame or frame > ef:
         return None
+
     offset_frame = state.get('playbar_frame_offset')
     real_frame = frame + offset_frame
     return real_frame

@@ -109,7 +109,7 @@ def popup(
         if hasattr(dialog, 'get_result'):
             # For opencue name policy
             if title in ('Create New Project', 'Create New Shot', 'Rename Shot'):
-                text = dialog.get_resulte().lower()
+                text = dialog.get_result().lower()
                 text = re.sub(r'[^a-z0-9]', '_', text)
                 return text
             # Others

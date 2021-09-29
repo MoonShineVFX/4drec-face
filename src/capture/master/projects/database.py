@@ -13,23 +13,23 @@ from utility.opencue_bridge import OpenCueBridge
 
 from master.ui import ui
 
+from ._mock import get_mock_client
+
 
 # 資料庫設定
 client = None
 
 if setting.is_testing():
-    import mongomock
-    client = mongomock.MongoClient()
-    DB_ROOT = client['4drec']
+    client = get_mock_client()
 else:
     client = MongoClient(host=[setting.mongodb_address])
-    DB_ROOT = client['4drec']
-    DB_ROOT.with_options(
+    client['4drec'].with_options(
         codec_options=CodecOptions(
             tz_aware=True, tzinfo=pytz.timezone('Asia/Taipei')
         )
     )
 
+DB_ROOT = client['4drec']
 DB_SHOTS = DB_ROOT['shots']
 DB_PROJECTS = DB_ROOT['projects']
 DB_JOBS = DB_ROOT['jobs']

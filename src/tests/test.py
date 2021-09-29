@@ -1,7 +1,7 @@
 import sys
 import os
 from pathlib import Path
-import mongomock
+from unittest import mock
 
 from capture.main import start
 
@@ -20,9 +20,6 @@ sys.path.insert(0, str(capture_path))
 # Mock sys.argv
 main_py = capture_path / 'main.py'
 sys.argv = [str(main_py), 'MASTER']
-
-# Mock DB
-client = mongomock.MongoClient()
 
 # Execute
 start()

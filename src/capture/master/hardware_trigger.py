@@ -7,9 +7,10 @@ from utility.define import UIEventType
 from master.ui import ui
 
 
-class HardwareTrigger():
+class HardwareTrigger:
     def __init__(self):
         self._log = get_prefix_log('Arduino')
+        self._ser = None
 
         try:
             self._ser = serial.Serial(
@@ -42,7 +43,8 @@ class HardwareTrigger():
         self.get_response()
 
     def close(self):
-        self._ser.close()
+        if self._ser is not None:
+            self._ser.close()
 
 
 hardware_trigger = HardwareTrigger()
