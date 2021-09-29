@@ -15,14 +15,20 @@ from master.ui import ui
 
 
 # 資料庫設定
-client = MongoClient(host=[setting.mongodb_address])
+client = None
 
-DB_ROOT = client['4drec']
-DB_ROOT.with_options(
-    codec_options=CodecOptions(
-        tz_aware=True, tzinfo=pytz.timezone('Asia/Taipei')
+if setting.is_testing():
+    import mongomock
+    client = mongomock.MongoClient()
+    DB_ROOT = client['4drec']
+else:
+    client = MongoClient(host=[setting.mongodb_address])
+    DB_ROOT = client['4drec']
+    DB_ROOT.with_options(
+        codec_options=CodecOptions(
+            tz_aware=True, tzinfo=pytz.timezone('Asia/Taipei')
+        )
     )
-)
 
 DB_SHOTS = DB_ROOT['shots']
 DB_PROJECTS = DB_ROOT['projects']

@@ -402,6 +402,9 @@ class PlaybackSlider(QSlider, EntityBinder):
         self._update()
 
     def _paint_progress(self):
+        """
+        繪製播放列進度條
+        """
         if self._bar_map is None:
             return
 

@@ -132,6 +132,10 @@ class SettingManager(CameraStructure):
     def apply(self, data):
         self._settings.update(data)
 
+    @staticmethod
+    def is_testing():
+        return os.environ.get('testing', None) is not None
+
 
 class SettingProperty(dict):
     """屬性包裝
