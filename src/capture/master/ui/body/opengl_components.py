@@ -7,9 +7,9 @@ import numpy as np
 import math
 
 
-class OpenGLCamera():
-    _default_zoom = -2.0
-    _default_pos = [0.0, -0.8]
+class OpenGLCamera:
+    _default_zoom = -4.0
+    _default_pos = [0.0, 0.0]
 
     def __init__(self, aspect):
         self._matrix = None
@@ -49,7 +49,9 @@ class OpenGLCamera():
         project_matrix[0] /= self._aspect
 
         move_matrix = glm.mat4(1.0)
+
         move_matrix = glm.translate(move_matrix, glm.vec3(*self._pos, self._zoom))
+
         move_matrix = glm.rotate(
             move_matrix, math.radians(self._rot_x), (1.0, 0.0, 0.0)
         )

@@ -7,7 +7,7 @@ from utility.delay_executor import DelayExecutor
 from master.ui import ui
 from master.projects import project_manager
 
-from .package import ResolvePackage, RigPackage
+from .package import ResolvePackage
 from .multi_executor import MultiExecutor
 
 
@@ -78,13 +78,15 @@ class ResolveManager(threading.Thread):
     def cache_whole_job(self):
         job = project_manager.current_job
         job_id = job.get_id()
+        job_folder_name = job.get_folder_name()
+        real_frame_range = job.get_real_frame_range()
         
         tasks = []
-        for f in job.frames:
+        for f in range(real_frame_range[0], real_frame_range[1] + 1):
             if self.has_cache(job_id, f):
                 self.send_ui(None)
                 continue
-            tasks.append((job_id, f))
+            tasks.append((job_id, job_folder_name, f))
         
         self._multi_executor.add_task('cache_all', tasks)
 
@@ -109,7 +111,8 @@ class ResolveManager(threading.Thread):
             pass
         # load frame 4df
         else:
-            package = ResolvePackage(job_id, frame)
+            job_folder_name = job.get_folder_name()
+            package = ResolvePackage(job_id, job_folder_name, frame)
             if is_delay:
                 self._delay.execute(
                     lambda: self._add_task(package)
@@ -121,7 +124,9 @@ class ResolveManager(threading.Thread):
         project_name = project.name
         shot_name = shot.name
         job_id = job.get_id()
+        job_folder_name = job.get_folder_name()
         self._multi_executor.add_task(
             'export_all',
-            (f'{project_name}_{shot_name}', job_id, frame_range, export_path)
+            (f'{project_name}_{shot_name}', job_id,
+             job_folder_name, frame_range, export_path)
         )

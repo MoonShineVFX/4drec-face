@@ -19,9 +19,9 @@ class OpenGLCore(QOpenGLWidget):
     _zoom_wheel_speed = 0.2
     _zoom_move_speed = 0.01
     _default_shader_parms = {
-        'gamma': 1.5,
-        'saturate': 1.2,
-        'exposure': 1.5
+        'gamma': 1.1,
+        'saturate': 1.1,
+        'exposure': 1.0
     }
 
     def __init__(self, parent, interface):

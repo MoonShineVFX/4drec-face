@@ -1,7 +1,6 @@
 import sys
 import os
 from pathlib import Path
-from unittest import mock
 
 from capture.main import start
 

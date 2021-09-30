@@ -2,16 +2,11 @@ from queue import Queue
 import threading
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from .package import RigPackage, ResolvePackage
+from .package import ResolvePackage
 
 
-def load_geometry(job_id, cali_id, frame):
-    # check rig or 4df
-    if frame is None:
-        package = RigPackage(job_id, cali_id)
-    else:
-        package = ResolvePackage(job_id, frame)
-
+def load_geometry(job_id, job_folder_name, frame):
+    package = ResolvePackage(job_id, job_folder_name, frame)
     result = package.load()
 
     # no files
@@ -25,9 +20,6 @@ def export_geometry(load_path, filename, frame, export_path):
     from common.fourd_frame import FourdFrameManager
 
     fourd_frame = FourdFrameManager.load(load_path)
-
-    # with open(f'{export_path}/obj/{filename}_{frame:04d}.obj', 'w') as f:
-    #     f.write(fourd_frame.get_obj_data())
 
     with open(f'{export_path}/geo/{filename}_{frame:04d}.4dh', 'wb') as f:
         f.write(fourd_frame.get_houdini_data())
@@ -46,9 +38,9 @@ class MultiExecutor(threading.Thread):
     def cache_all(self, tasks):
         future_list = []
         with ProcessPoolExecutor() as executor:
-            for job_id, cali_id, f in tasks:
+            for job_id, job_folder_name, f in tasks:
                 future = executor.submit(
-                    load_geometry, job_id, cali_id, f
+                    load_geometry, job_id, job_folder_name, f
                 )
                 future_list.append(future)
 
@@ -64,9 +56,10 @@ class MultiExecutor(threading.Thread):
         import re
         from pathlib import Path
 
-        folder_name, job_id, frame_range, export_path = tasks
+        folder_name, job_id, job_folder_name, frame_range, export_path = tasks
         load_path = (
-            f'{setting.submit.job_path}{job_id}/export/'
+            f'{setting.submit.job_path}{job_folder_name}/'
+            f'{setting.submit.output_folder_name}/'
         )
         offset_frame = frame_range[0]
 

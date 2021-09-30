@@ -13,13 +13,12 @@ from utility.opencue_bridge import OpenCueBridge
 
 from master.ui import ui
 
-from ._mock import get_mock_client
-
 
 # 資料庫設定
 client = None
 
 if setting.is_testing():
+    from ._mock import get_mock_client
     client = get_mock_client()
 else:
     client = MongoClient(host=[setting.mongodb_address])

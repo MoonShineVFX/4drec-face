@@ -51,7 +51,7 @@ class FourdFrameManager:
         print('Convert geo')
         geo_buffer = lz4framed.compress(geo_arr.tobytes())
         header['geo_buffer_size'] = len(geo_buffer)
-        header['geo_faces'] = int(len(geo_arr[0]) / 3)
+        header['geo_faces'] = int(len(geo_arr) / 4 / 5 / 3)
 
         # texture
         print('Convert texture')
@@ -253,9 +253,10 @@ class FourdFrame:
     def get_houdini_data(self):
         import zlib
         pos_list, uv_list = self.get_geo_data()
-        pos_data = zlib.compress(pos_list.tobytes())
+        pos_list_data = pos_list.tobytes()
+        point_count = int(len(pos_list_data) / 4 / 3)
+        pos_data = zlib.compress(pos_list_data)
         uv_data = zlib.compress(uv_list.tobytes())
-        point_count = self.header['geo_faces'] * 3
         data = struct.pack(
             'III',
             point_count,
@@ -265,7 +266,6 @@ class FourdFrame:
         data += pos_data
         data += uv_data
         return data
-
 
     def get_submit_data(self):
         if self._submit_data is None:
