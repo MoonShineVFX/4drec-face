@@ -169,9 +169,7 @@ def get_slider_range():
         min_slider_value, max_slider_value = state.get('loop_range')
 
     if min_slider_value is None or max_slider_value is None:
-        playbar_frame_count = state.get('playbar_frame_count')
-        max_slider_value = playbar_frame_count - 1
-        min_slider_value = 0
+        min_slider_value, max_slider_value = state.get('playbar_frame_range')
 
     return min_slider_value, max_slider_value
 

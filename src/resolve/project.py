@@ -1,7 +1,9 @@
+import time
+
 import Metashape
 import numpy as np
 import logging
-from time import perf_counter
+from time import perf_counter, sleep
 from datetime import datetime
 
 from common.fourd_frame import FourdFrameManager
@@ -12,6 +14,8 @@ from define import ResolveStage
 
 class ResolveProject:
     def __init__(self):
+        self.__error_count = 0
+
         # Check settings
         if not SETTINGS.is_initialized:
             error_message = "Settings didn't initialized"
@@ -127,7 +131,17 @@ class ResolveProject:
         self.export_4df(frame)
 
     def save(self, chunk: Metashape.Chunk):
-        self.__doc.save(str(SETTINGS.project_path), [chunk])
+        try:
+            self.__doc.save(str(SETTINGS.project_path), [chunk])
+        except OSError as error:
+            # Retry due to want to save other chunk and conflicted
+            logging.warning(error)
+            self.__error_count += 1
+            if self.__error_count <= 5:
+                sleep(5)
+                self.save(chunk)
+            else:
+                raise ValueError('Too many errors')
 
     def run(self):
         # Timestamp
@@ -160,6 +174,9 @@ class ResolveProject:
         except Exception as e:
             logging.warning(e)
 
+    def get_current_chunk(self):
+        return self.__doc.chunk.frames[SETTINGS.current_frame_at_chunk]
+
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk
 
@@ -191,6 +208,14 @@ class ResolveProject:
     @staticmethod
     def export_4df(chunk: Metashape.Chunk):
         logging.info('Export 4DF')
+        # Get transform
+        transform = chunk.transform.matrix
+        rot_mat = np.array(list(transform.rotation().inv()), np.float32)
+        rot_mat = rot_mat.reshape((3, 3))
+        scale = transform.scale()
+        offset = np.array(list(transform.translation()), np.float32)
+        nct_offset = np.array(SETTINGS.nct_center_offset, np.float32)
+
         # Get model
         model: Metashape.Model = chunk.model
 
@@ -211,6 +236,8 @@ class ResolveProject:
         )
 
         vtx_arr = vtx_arr[vtx_idxs]
+        # Apply transform
+        vtx_arr = np.dot(vtx_arr, rot_mat) * scale + offset - nct_offset
 
         uv_arr = uv_arr[uv_idxs]
         uv_arr *= [1, -1]

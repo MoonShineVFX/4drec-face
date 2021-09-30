@@ -64,7 +64,7 @@ class FourdFrameManager:
         header['texture_height'] = tex_arr.shape[0]
 
         # pack
-        print('save 4dp')
+        print('save 4df')
         header_buffer = struct.pack(cls.header_format, *header.values())
         header_buffer = header_buffer.ljust(cls.header_size, b'\0')
 
