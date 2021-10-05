@@ -2,7 +2,9 @@ import threading
 from queue import Queue
 
 from utility.define import UIEventType
+from utility.setting import setting
 from utility.delay_executor import DelayExecutor
+from utility.logger import log
 
 from master.ui import ui
 from master.projects import project_manager
@@ -19,6 +21,7 @@ class ResolveManager(threading.Thread):
         self._cache = {}
         self._delay = DelayExecutor()
         self._multi_executor = MultiExecutor(self)
+        self._prefer_resolution = setting.default_texture_display_resolution
 
         # 綁定 UI
         ui.dispatch_event(
@@ -75,7 +78,10 @@ class ResolveManager(threading.Thread):
             job = project_manager.get_job(job_id)
             job.update_cache_progress(frame, package.get_cache_size())
 
-    def cache_whole_job(self):
+    def cache_whole_job(self, resolution):
+        if resolution != self._prefer_resolution:
+            self._cache = {}
+
         job = project_manager.current_job
         job_id = job.get_id()
         job_folder_name = job.get_folder_name()
@@ -86,7 +92,9 @@ class ResolveManager(threading.Thread):
             if self.has_cache(job_id, f):
                 self.send_ui(None)
                 continue
-            tasks.append((job_id, job_folder_name, f))
+            tasks.append(
+                (job_id, job_folder_name, self._prefer_resolution, f)
+            )
         
         self._multi_executor.add_task('cache_all', tasks)
 
@@ -94,25 +102,30 @@ class ResolveManager(threading.Thread):
         return job_id in self._cache and frame in self._cache[job_id]
 
     def request_geometry(
-        self, job, frame, is_delay=True
+        self, job, frame, resolution, is_delay=True
     ):
+        if resolution != self._prefer_resolution:
+            log.info(
+                'Change resolution '
+                f'{self._prefer_resolution} -> {resolution}'
+            )
+            self._prefer_resolution = resolution
+            self._cache = {}
+
         job_id = job.get_id()
 
         # get already cached
         if self.has_cache(job_id, frame):
             package = self._cache[job_id][frame]
             self.send_ui(package)
-
-        # load rig data
-        elif frame is None:
-            # package = RigPackage(job_id)
-            # self._add_task(package)
-            # old method to get rig structure geo
-            pass
         # load frame 4df
-        else:
+        elif frame is not None:
             job_folder_name = job.get_folder_name()
-            package = ResolvePackage(job_id, job_folder_name, frame)
+            package = ResolvePackage(
+                job_id, job_folder_name,
+                self._prefer_resolution,
+                frame
+            )
             if is_delay:
                 self._delay.execute(
                     lambda: self._add_task(package)

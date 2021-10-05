@@ -5,8 +5,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from .package import ResolvePackage
 
 
-def load_geometry(job_id, job_folder_name, frame):
-    package = ResolvePackage(job_id, job_folder_name, frame)
+def load_geometry(job_id, job_folder_name, res, frame):
+    package = ResolvePackage(job_id, job_folder_name, res, frame)
     result = package.load()
 
     # no files
@@ -38,9 +38,9 @@ class MultiExecutor(threading.Thread):
     def cache_all(self, tasks):
         future_list = []
         with ProcessPoolExecutor() as executor:
-            for job_id, job_folder_name, f in tasks:
+            for job_id, job_folder_name, res, f in tasks:
                 future = executor.submit(
-                    load_geometry, job_id, job_folder_name, f
+                    load_geometry, job_id, job_folder_name, res, f
                 )
                 future_list.append(future)
 

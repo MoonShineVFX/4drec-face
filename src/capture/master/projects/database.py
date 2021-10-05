@@ -388,7 +388,6 @@ class ShotEntity(Entity):
             {'shot_id': self._doc_id}
         ).sort([('created_at', -1)])
         jobs = list(query)
-
         return [JobEntity(self, j) for j in jobs]
 
     def create_job(self, name, frame_range, parameters):
@@ -550,6 +549,10 @@ class JobEntity(Entity):
             return
 
         frame_list = OpenCueBridge.get_frame_list(self.opencue_job_id)
+        if frame_list is None:  # Not Found
+            log.warning(f'Job [{self._parent.name} - {self.name}] not found on opencue server.')
+            self._repeater.stop()
+            return
         if frame_list == self.frame_list:
             return
 

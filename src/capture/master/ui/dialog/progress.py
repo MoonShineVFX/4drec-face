@@ -168,7 +168,10 @@ class CacheProgressDialog(ProgressDialog):
                 'camera', 'cache_whole_shot', state.get('closeup_camera')
             )
         elif body_mode is BodyMode.MODEL:
-            state.cast('resolve', 'cache_whole_job')
+            state.cast(
+                'resolve', 'cache_whole_job',
+                state.get('texture_resolution')
+            )
         state.set('caching', True)
 
     def _on_close(self):

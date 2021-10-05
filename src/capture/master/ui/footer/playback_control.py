@@ -23,6 +23,7 @@ class PlaybackControl(QVBoxLayout):
         self._setup_ui()
         state.on_changed('current_slider_value', self._on_slider_value_changed)
         state.on_changed('closeup_camera', self._on_slider_value_changed)
+        state.on_changed('texture_resolution', self._request_geometry)
 
         state.on_changed('body_mode', self._on_body_mode_changed)
         state.on_changed('current_shot', self._on_shot_changed)
@@ -97,13 +98,27 @@ class PlaybackControl(QVBoxLayout):
             job = state.get('current_job')
             if job is None:
                 return
-
+            res = state.get('texture_resolution')
             state.cast(
                 'resolve', 'request_geometry',
-                self._entity, real_frame
+                self._entity, real_frame, res
             )
 
         self._playback_bar.on_slider_value_changed(slider_value)
+
+    def _request_geometry(self):
+        job = state.get('current_job')
+        if job is None or self._entity is None:
+            return
+
+        slider_value = state.get('current_slider_value')
+        frame = get_real_frame(slider_value)
+        res = state.get('texture_resolution')
+
+        state.cast(
+            'resolve', 'request_geometry',
+            self._entity, frame, res
+        )
 
     def _stop_function(self):
         if state.get('playing'):
@@ -488,12 +503,13 @@ class PlaybackSlider(QSlider, EntityBinder):
                 i += 1
         elif job is not None and body_mode is BodyMode.MODEL:
             cache_progress, task_progress = job.get_cache_progress()
+            offset_frame = state.get('playbar_frame_offset')
 
             t_color = self.palette().midlight().color()
 
             i = 0
             for f in range(job.frame_range[0], job.frame_range[1] + 1):
-                if f in cache_progress:
+                if f + offset_frame in cache_progress:
                     painter.fillRect(
                         QRect(i * tw, (h - hh) / 2, math.ceil(tw), hh),
                         t_color

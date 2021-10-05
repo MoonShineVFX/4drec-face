@@ -24,13 +24,13 @@ class CompressedCache:
 
 
 class ResolvePackage:
-    def __init__(self, job_id, job_folder_name, frame):
+    def __init__(self, job_id, job_folder_name, resolution, frame):
         self._geo_cache = None
         self._tex_cache = None
         self._job_id = job_id
         self._job_folder_name = job_folder_name
         self._frame = frame
-        self._resolution = setting.max_display_resolution
+        self._resolution = resolution
 
     def get_name(self):
         if self._frame is None:
@@ -70,19 +70,20 @@ class ResolvePackage:
             fourd_frame = FourdFrameManager.load(file_path)
             geo_data = fourd_frame.get_geo_data()
             tex_data = fourd_frame.get_texture_data()
-            self._resolution = fourd_frame.get_texture_resolution()
+            tex_res = fourd_frame.get_texture_resolution()
 
             # resize for better playback performance
-            if self._resolution > setting.max_display_resolution:
+            if tex_res > self._resolution:
                 tex_data = cv2.resize(
                     tex_data,
                     dsize=(
-                        setting.max_display_resolution,
-                        setting.max_display_resolution
+                        self._resolution,
+                        self._resolution
                     ),
                     interpolation=cv2.INTER_CUBIC
                 )
-                self._resolution = setting.max_display_resolution
+            elif tex_res < self._resolution:
+                self._resolution = tex_res
 
             self._cache_buffer(geo_data, tex_data)
             return True

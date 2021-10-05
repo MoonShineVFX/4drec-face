@@ -130,7 +130,11 @@ class OpenCueBridge:
 
     @staticmethod
     def get_frame_list(job_id):
-        job = api.getJob(job_id)
+        try:
+            job = api.getJob(job_id)
+        except opencue.exception.EntityNotFoundException:
+            return None
+
         layer = job.getLayers()[-1]
         frames = layer.getFrames()
 

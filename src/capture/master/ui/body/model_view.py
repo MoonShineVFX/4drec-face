@@ -1,7 +1,7 @@
-from PyQt5.Qt import QLabel, QWidget, Qt, QRect, QPixmap
+from PyQt5.Qt import QLabel, QWidget, Qt, QRect, QComboBox
 
-from utility.define import BodyMode
 from utility.fps_counter import FPScounter
+from utility.setting import setting
 
 from master.ui.state import state, get_real_frame
 
@@ -15,8 +15,10 @@ class ModelView(QWidget):
         super().__init__()
 
         self._interface = ModelInterface()
+        self._res_select = TextureResolutionComboBox()
         self._core = OpenGLCore(self, self._interface)
         self._interface.setParent(self)
+        self._res_select.setParent(self)
         self._cache = {}
 
         self._turntable_speed = 0.0
@@ -26,9 +28,6 @@ class ModelView(QWidget):
         state.on_changed('Rig', self._update_rig)
         state.on_changed('Wireframe', self._update_shader)
         state.on_changed('key', self._on_key_pressed)
-
-        state.on_changed('current_job', self._get_rig_geo)
-        state.on_changed('body_mode', self._get_rig_geo)
 
     def resizeEvent(self, event):
         self._core.setFixedSize(event.size())
@@ -80,16 +79,6 @@ class ModelView(QWidget):
         self._turntable_speed += offset_value
         self._interface.update_turntable(self._turntable_speed)
 
-    def _get_rig_geo(self):
-        job = state.get('current_job')
-        body_mode = state.get('body_mode')
-        if job is None or body_mode is not BodyMode.MODEL:
-            return
-
-        state.cast(
-            'resolve', 'request_geometry', job, None
-        )
-
     def _take_screenshot(self, export_path):
         frame = state.get('current_slider_value')
         rect = QRect(0, 0, self._core.width(), self._core.height())
@@ -102,7 +91,7 @@ class ModelInterface(QLabel):
         font-size: 13;
         color: palette(window-text);
         min-width: 200px;
-        min-height: 360px;
+        min-height: 400px;
     '''
 
     def __init__(self):
@@ -148,6 +137,7 @@ class ModelInterface(QLabel):
 
     def _update(self):
         text = (
+            f'Resolution: \n\n' +
             f'Vertices:  {self._vertex_count}\n' +
             f'Real Frame:  {self._real_frame}\n' +
             '\n'.join([f'{k}: {v:.2f}' for k, v in self._shader_parms.items()]) +
@@ -168,3 +158,29 @@ class ModelInterface(QLabel):
             )
 
         self.setText(text)
+
+
+class TextureResolutionComboBox(QComboBox):
+    _res_list = [8192, 4096, 3000, 2048, 1024, 512]
+
+    def __init__(self):
+        super().__init__()
+
+        for res in self._res_list:
+            self.addItem(str(res), res)
+
+        self._setup_ui()
+        self.setCurrentIndex(
+            self._res_list.index(
+                setting.default_texture_display_resolution
+            )
+        )
+
+        self.currentIndexChanged.connect(self._on_changed)
+
+    def _setup_ui(self):
+        self.move(120, 12)
+
+    def _on_changed(self, index: int):
+        resolution = self.currentData()
+        state.set('texture_resolution', resolution)

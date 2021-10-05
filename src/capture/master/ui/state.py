@@ -84,6 +84,8 @@ class UIState():
         self._state['tick_export'] = None
         self._state['tick_update_geo'] = None
         self._state['screenshot_export_path'] = None
+        self._state['texture_resolution'] = \
+            setting.default_texture_display_resolution
 
         # camera
         self._state['trigger'] = False
