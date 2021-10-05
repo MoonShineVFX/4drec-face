@@ -6,10 +6,12 @@ import glm
 import numpy as np
 import math
 
+from utility.setting import setting
+
 
 class OpenGLCamera:
-    _default_zoom = -4.0
-    _default_pos = [0.0, 0.0]
+    _default_zoom = -0.6
+    _default_pos = [0.0, 0.1]
 
     def __init__(self, aspect):
         self._matrix = None
@@ -300,30 +302,42 @@ class FloorObject(OpenGLObject):
     def __init__(self, vertex_shader, fragment_shader):
         super().__init__(
             vertex_shader, fragment_shader,
-            has_wireframe=False
+            has_uv=False
         )
         self._build_geo()
         self._visible = False
 
     def _build_geo(self):
-        pos_list = np.array(
-            [
-                (-1, 0, 1), (1, 0, 1), (-1, 0, -1),
-                (-1, 0, -1), (1, 0, 1), (1, 0, -1)
+        rx, ry, rz = setting.submit.region_size
+        rx, ry, rz = [rx / 2, ry / 2, rz / 2]
+        ref_points = np.array([
+                [rx, ry, rz], [-rx, ry, rz],
+                [-rx, -ry, rz], [rx, -ry, rz],
+                [rx, ry, -rz], [-rx, ry, -rz],
+                [-rx, -ry, -rz], [rx, -ry, -rz]
             ],
             np.float32
         )
-        pos_list *= 1.5
+        connect_orders = [
+            0, 1, 1, 2, 2, 3, 3, 0,
+            0, 4, 3, 7, 1, 5, 2, 6,
+            4, 5, 5, 6, 6, 7, 7, 4
+        ]
+        pos_list = ref_points[connect_orders]
 
-        uv_list = np.array(
-            [
-                (0, 0), (1, 0), (0, 1),
-                (0, 1), (1, 0), (1, 1)
-            ],
-            np.float32
-        )
+        self.update(len(pos_list), pos_list, None)
 
-        self.update(len(pos_list), pos_list, uv_list)
+    def render(self):
+        if self._vertex_count == 0:
+            return
+
+        self._program.use()
+        self._program.set_wireframe(True)
+
+        glBindVertexArray(self._vao)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        glDrawArrays(GL_LINES, 0, self._vertex_count)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
 
 class CameraObject(OpenGLObject):

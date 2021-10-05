@@ -16,8 +16,8 @@ from .opengl_components import (
 class OpenGLCore(QOpenGLWidget):
     _rot_speed = 0.5
     _offset_speed = 0.0035
-    _zoom_wheel_speed = 0.2
-    _zoom_move_speed = 0.01
+    _zoom_wheel_speed = 0.03
+    _zoom_move_speed = 0.002
     _default_shader_parms = {
         'gamma': 1.1,
         'saturate': 1.1,
@@ -201,8 +201,8 @@ class OpenGLCore(QOpenGLWidget):
         main = compileShader(
             self.load_shader('main.frag'), GL_FRAGMENT_SHADER
         )
-        circle = compileShader(
-            self.load_shader('circle.frag'), GL_FRAGMENT_SHADER
+        floor = compileShader(
+            self.load_shader('floor.frag'), GL_FRAGMENT_SHADER
         )
         camera = compileShader(
             self.load_shader('camera.frag'), GL_FRAGMENT_SHADER
@@ -210,7 +210,7 @@ class OpenGLCore(QOpenGLWidget):
 
         # Objects
         self._objects['main'] = OpenGLObject(vtx, main, has_texture=True)
-        self._objects['floor'] = FloorObject(vtx, circle)
+        self._objects['floor'] = FloorObject(vtx, floor)
         self._objects['camera'] = CameraObject(vtx, camera)
 
         # Set shader default

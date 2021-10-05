@@ -6,7 +6,7 @@ from utility.setting import setting
 from utility.define import BodyMode, SubmitOrder
 
 from master.ui.custom_widgets import move_center, make_layout
-from master.ui.state import state
+from master.ui.state import state, get_slider_range
 
 
 class ProgressDialog(QDialog):
@@ -101,7 +101,10 @@ class ExportProgressDialog(ProgressDialog):
 class ScreenshotProgressDialog(ProgressDialog):
     def __init__(self, parent, export_path):
         self._export_path = export_path
-        super().__init__(parent, 'Grab Preview', state.get('playbar_frame_count'))
+        self._range = get_slider_range()
+        super().__init__(
+            parent, 'Grab Preview', self._range[1] - self._range[0] + 1
+        )
 
     def _prepare(self):
         project = state.get('current_project')
@@ -116,14 +119,17 @@ class ScreenshotProgressDialog(ProgressDialog):
         state.on_changed('tick_update_geo', self._play_next)
 
     def _on_show(self):
-        state.set('current_slider_value', 0)
+        state.set('current_slider_value', self._range[0])
 
     def _on_close(self):
         state.set('screenshot_export_path', None)
 
     def _play_next(self):
         self.increase()
-        state.set('current_slider_value', self._progress_bar.value())
+        state.set(
+            'current_slider_value',
+            self._progress_bar.value() + self._range[0]
+        )
 
 
 class CacheProgressDialog(ProgressDialog):
