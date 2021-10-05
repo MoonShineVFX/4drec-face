@@ -24,25 +24,39 @@ class PlaybackControl(QVBoxLayout):
         state.on_changed('current_slider_value', self._on_slider_value_changed)
         state.on_changed('closeup_camera', self._on_slider_value_changed)
 
-        state.on_changed('body_mode', self._on_entity_changed)
-        state.on_changed('current_shot', self._on_entity_changed)
-        state.on_changed('current_job', self._on_entity_changed)
+        state.on_changed('body_mode', self._on_body_mode_changed)
+        state.on_changed('current_shot', self._on_shot_changed)
+        state.on_changed('current_job', self._on_job_changed)
 
         state.on_changed('key', self._on_key_pressed)
 
+    def _on_body_mode_changed(self):
+        new_body_mode = state.get('body_mode')
+        if new_body_mode is BodyMode.MODEL:
+            return
+        elif new_body_mode is BodyMode.LIVEVIEW:
+            self._entity = None
+        self._on_entity_changed()
+
+    def _on_shot_changed(self):
+        shot = state.get('current_shot')
+        body_mode = state.get('body_mode')
+        if shot is None or body_mode is BodyMode.MODEL:
+            return
+        self._entity = shot
+        self._on_entity_changed()
+
+    def _on_job_changed(self):
+        job = state.get('current_job')
+        body_mode = state.get('body_mode')
+        if job is None or body_mode is BodyMode.PLAYBACK:
+            self._on_shot_changed()
+            return
+        self._entity = job
+        self._on_entity_changed()
+
     def _on_entity_changed(self):
         self._stop_function()
-
-        body_mode = state.get('body_mode')
-        if body_mode is BodyMode.LIVEVIEW:
-            self._entity = None
-        else:
-            job = state.get('current_job')
-            if job is not None:
-                self._entity = job
-            else:
-                shot = state.get('current_shot')
-                self._entity = shot
 
         self._playback_bar.on_entity_changed(self._entity)
         if self._entity is not None and self._entity.state != 0:
@@ -272,8 +286,8 @@ class PlaybackBar(LayoutWidget):
                 real_sf <= current_real_frame <= real_ef:
             current_slider_value = current_real_frame - real_sf
         else:
-            current_slider_value = real_sf - offset_frame
-
+            current_slider_value = 0
+        current_slider_value += playbar_frame_range[0]
         state.set('current_slider_value', current_slider_value)
 
         self._labels[0].setText(str(playbar_frame_range[0]))
