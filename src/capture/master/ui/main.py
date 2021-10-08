@@ -205,6 +205,9 @@ class MainWindow(QMainWindow):
         elif event.type is UIEventType.TICK_SUBMIT:
             state.set('tick_submit', event.get_payload())
 
+        elif event.type is UIEventType.AUDIO_DECIBEL:
+            state.set('audio_decibel', event.get_payload())
+
     def _on_project_list_open(self):
         if self._state.get('project_list_dialog'):
             from .projects import ProjectListDialog

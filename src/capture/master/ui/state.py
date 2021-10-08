@@ -95,6 +95,9 @@ class UIState():
         # arduino
         self._state['has_arduino'] = False
 
+        # audio
+        self._state['audio_decibel'] = -100
+
     def get(self, state_name):
         return self._state[state_name]
 

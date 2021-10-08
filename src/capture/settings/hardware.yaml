@@ -30,3 +30,8 @@ cameras_count_per_slave: 2
 record:
   folder_name: '4drec_data'
   drives: ['E', 'F']
+
+audio:
+  mic_name: 'USB PnP'
+  sample_rate: 44100
+  chunk_size: 1024

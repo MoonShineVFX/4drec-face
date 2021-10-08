@@ -104,6 +104,9 @@ class PlaybackControl(QVBoxLayout):
                 self._entity, real_frame, res
             )
 
+        shot = state.get('current_shot')
+        state.cast('audio', 'play_audio', shot.get_folder_name(), slider_value)
+
         self._playback_bar.on_slider_value_changed(slider_value)
 
     def _request_geometry(self):

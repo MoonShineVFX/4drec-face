@@ -10,6 +10,7 @@ from utility.delay_executor import DelayExecutor
 from master.ui import ui
 from master.projects import project_manager
 from master.hardware_trigger import hardware_trigger
+from master.audio import audio_manager
 
 from .proxy import CameraProxy
 from .parameter import CameraParameter
@@ -44,7 +45,8 @@ class CameraManager:
             UIEventType.UI_CONNECT,
             {
                 'camera': self,
-                'project': project_manager
+                'project': project_manager,
+                'audio': audio_manager
             }
         )
 
@@ -287,6 +289,13 @@ class CameraManager:
                 project_manager.current_project,
                 project_manager.current_shot
             ))
+
+            # Record audio
+            if not is_cali:
+                audio_manager.start_record(
+                    setting.submit.shot_path +
+                    project_manager.current_shot.get_folder_name()
+                )
         # 關閉錄製
         else:
             log.info('Stop recording')
@@ -295,6 +304,10 @@ class CameraManager:
             parameters = {}
             for name, parm in self._parameters.items():
                 parameters[name] = parm.get_value()
+
+            # Stop record audio
+            if not is_cali:
+                audio_manager.stop_record()
 
             # 建立錄製報告容器
             self._report_collector.new_record_report_container(
