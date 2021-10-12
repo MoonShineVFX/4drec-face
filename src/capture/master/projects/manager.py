@@ -11,7 +11,7 @@ from .database import (
 )
 
 
-class ProjectManager():
+class ProjectManager:
     """專案管理員
 
     專案資料庫與介面的控制仲介

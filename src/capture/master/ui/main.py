@@ -2,7 +2,7 @@ import sys
 from PyQt5.Qt import QMainWindow, QApplication, Qt, QWidget
 
 from utility.message import message_manager
-from utility.define import UIEventType, BodyMode, CameraState, MessageType
+from utility.define import UIEventType, BodyMode, CameraState, MessageType, AudioSource
 from utility.logger import log
 
 
@@ -206,7 +206,11 @@ class MainWindow(QMainWindow):
             state.set('tick_submit', event.get_payload())
 
         elif event.type is UIEventType.AUDIO_DECIBEL:
-            state.set('audio_decibel', event.get_payload())
+            source, db = event.get_payload()
+            if source is AudioSource.Mic and state.get('body_mode') is BodyMode.LIVEVIEW:
+                state.set('audio_decibel', db)
+            elif source is AudioSource.File and state.get('body_mode') is not BodyMode.LIVEVIEW:
+                state.set('audio_decibel', db)
 
     def _on_project_list_open(self):
         if self._state.get('project_list_dialog'):

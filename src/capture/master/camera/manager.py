@@ -226,7 +226,6 @@ class CameraManager:
             scale_length: 最長邊長度
 
         """
-
         if toggle:
             self._delay.execute(
                 lambda:
@@ -293,7 +292,6 @@ class CameraManager:
             # Record audio
             if not is_cali:
                 audio_manager.start_record(
-                    setting.submit.shot_path +
                     project_manager.current_shot.get_folder_name()
                 )
         # 關閉錄製

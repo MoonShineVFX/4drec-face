@@ -1,11 +1,10 @@
 from PyQt5.Qt import (
     QHBoxLayout, QGridLayout, Qt, QLabel, QSlider, QIcon, QPushButton,
-    QProgressBar
+    QSpacerItem
 )
 from functools import partial
 
 from utility.setting import setting
-from utility.define import BodyMode
 
 from master.ui.custom_widgets import LayoutWidget, PushButton
 from master.ui.resource import icons
@@ -15,8 +14,9 @@ from .support_button import SupportButtonGroup
 
 
 class LiveViewPanel(LayoutWidget):
-    def __init__(self):
+    def __init__(self, decibel_meter):
         super().__init__(spacing=36, margin=(0, 0, 0, 0))
+        self._decibel_meter = decibel_meter
         self._setup_ui()
 
     def _setup_ui(self):
@@ -24,8 +24,14 @@ class LiveViewPanel(LayoutWidget):
             SupportButtonGroup(('Serial', 'Calibrate', 'Focus'))
         )
         self.addLayout(ParameterFields())
-        self.addWidget(DecibelMeter())
+        self.addWidget(self._decibel_meter)
         self.addWidget(RecordButton())
+
+    def showEvent(self, event):
+        self.layout().insertWidget(2, self._decibel_meter)
+
+    def hideEvent(self, event):
+        self.layout().removeWidget(self._decibel_meter)
 
 
 class RecordButton(PushButton):
@@ -194,71 +200,3 @@ class PresetButtons(QHBoxLayout):
             state.cast('camera', 'load_parameters', 'User')
         elif preset_type == 'Save':
             state.cast('camera', 'save_parameters')
-
-
-class DecibelMeter(QProgressBar):
-    def __init__(self):
-        super(DecibelMeter, self).__init__()
-        self.setOrientation(Qt.Vertical)
-        self.setMinimum(-600)
-        self.setMaximum(0)
-        self._setup_ui()
-        self._peak = 0
-
-        state.on_changed('audio_decibel', self._update)
-
-    def _setup_ui(self):
-        self.setFixedWidth(12)
-        self.setTextVisible(False)
-
-    def _get_gradient(self):
-        step = self.value() - self.minimum()
-        duration = self.maximum() - self.minimum() + 1
-        percent = step / duration
-        if percent == 0:
-            y = 0
-        else:
-            y = -1 / percent + 1
-        style = f'''
-        QProgressBar::chunk:vertical {{
-            background: qlineargradient(
-                x1: 0, y1: {y},
-                x2: 0, y2: 1, 
-                stop: 0.1 red, 
-                stop: 0.3 yellow,
-                stop: 0.6 green
-            );
-        }}
-        '''
-        if self._peak > 0:
-            style += '''
-            QProgressBar {
-                border: 2px solid red;
-            }
-            '''
-        return style
-
-    def _update(self):
-        if state.get('body_mode') is not BodyMode.LIVEVIEW:
-            return
-        real_decibel = state.get('audio_decibel')
-
-        # Peak
-        if real_decibel > -6:
-            self._peak = 60
-        elif self._peak != 0:
-            self._peak -= 1
-
-        # Progress
-        decibel = real_decibel * 10
-        if decibel < self.minimum():
-            value = self.minimum()
-        elif decibel > self.maximum():
-            value = self.maximum()
-        else:
-            value = decibel
-        self.setValue(value)
-
-        self.setStyleSheet(self._get_gradient())
-
-        self.update()

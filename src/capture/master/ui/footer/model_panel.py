@@ -11,9 +11,10 @@ from .support_button import SupportButtonGroup
 
 
 class ModelPanel(LayoutWidget):
-    def __init__(self, playback_control):
+    def __init__(self, decibel_meter, playback_control):
         super().__init__(spacing=12)
         self._playback_control = playback_control
+        self._decibel_meter = decibel_meter
         self.buttons = None
         self._setup_ui()
 
@@ -32,6 +33,8 @@ class ModelPanel(LayoutWidget):
             self.buttons
         )
 
+        self.layout().addSpacing(24)
+
         button = PushButton(
             '  EXPORT', 'export', size=(180, 60)
         )
@@ -40,10 +43,12 @@ class ModelPanel(LayoutWidget):
         self.addWidget(button)
 
     def showEvent(self, event):
+        self.layout().insertWidget(1, self._decibel_meter)
         self.layout().insertLayout(1, self._playback_control)
 
     def hideEvent(self, event):
         self.layout().removeItem(self._playback_control)
+        self.layout().removeWidget(self._decibel_meter)
 
     def _on_cache(self):
         popup(dialog=CacheProgressDialog)

@@ -1,78 +1,56 @@
 import threading
-import pyaudio
 import wave
 from typing import Optional
-import math
-import numpy as np
+
 from pathlib import Path
 from queue import Queue
+from io import BytesIO
 
-from utility.define import UIEventType
+from utility.setting import setting
+from utility.logger import log
 
-from master.ui import ui
-
-from .mic import MicDevice
+from .device import MicDevice, SpeakerDevice
 
 
-INPUT_DEVICE_NAME = 'USB PnP'
-SAMPLE_RATE = 44100
-CHUNK = 1024
-AUDIO_FILENAME = 'audio.wav'
+CHUNK_PER_FRAME = setting.audio.sample_rate // setting.frame_rate
 
 
 class AudioManager(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.__task_queue = Queue()
         self.__is_running = True
+        self.__is_mic_active = False
+
+        self.__mic_queue = Queue()
+        self.__mic_device = MicDevice(self.__mic_queue)
         self.__wave_write_handle: Optional[wave.Wave_write] = None
+
+        self.__speaker_device = SpeakerDevice()
         self.__wave_read_handle: Optional[wave.Wave_read] = None
+        self.__read_buffer: Optional[BytesIO] = None
         self.__read_path: Optional[str] = None
 
         self.start()
 
-    def send_ui_decibel(self, data: bytes):
-        samples = np.frombuffer(data, dtype=np.int16).astype(np.float32)
-        samples /= 32767
-        volume = np.sum(samples**2)/len(samples)
-        rms = math.sqrt(volume)
-        db = 20 * math.log10(rms)
-
-        ui.dispatch_event(
-            UIEventType.AUDIO_DECIBEL,
-            db
-        )
-
-
     def __get_audio_file_path(self, path: str) -> str:
-        return path + f'/{AUDIO_FILENAME}'
+        return f'{setting.submit.shot_path}{path}/{setting.audio.record_filename}'
 
     def run(self):
-        mic_device = MicDevice(self.__task_queue)
         while self.__is_running:
-            audio_data = stream.read(CHUNK)
-
-            # Send decibel
-            ui.dispatch_event(
-                UIEventType.AUDIO_DECIBEL,
-                self.__get_decibel(audio_data)
-            )
+            mic_audio_data = self.__mic_queue.get()
 
             # Record
             if self.__wave_write_handle is not None:
-                self.__wave_write_handle.writeframes(audio_data)
+                self.__wave_write_handle.writeframes(mic_audio_data)
 
-        stream.stop_stream()
-        stream.close()
-
-    def start_record(self, shot_path):
+    def start_record(self, shot_path: str):
         Path(shot_path).mkdir(parents=True, exist_ok=True)
-        self.__wave_write_handle = wave.open(self.__get_audio_file_path(shot_path), 'wb')
-        self.__wave_write_handle.setnchannels(1)
-        self.__wave_write_handle.setsampwidth(
-            self.__core.get_sample_size(pyaudio.paInt16)
+        self.__wave_write_handle = wave.open(
+            self.__get_audio_file_path(shot_path), 'wb'
         )
-        self.__wave_write_handle.setframerate(SAMPLE_RATE)
+        self.__wave_write_handle.setnchannels(1)
+        self.__wave_write_handle.setsampwidth(2)  # int16 size in bytes
+        self.__wave_write_handle.setframerate(setting.audio.sample_rate)
 
     def stop_record(self):
         if self.__wave_write_handle is None:
@@ -80,7 +58,43 @@ class AudioManager(threading.Thread):
         self.__wave_write_handle.close()
         self.__wave_write_handle = None
 
-    def play_audio(self, shot_path, frame):
-        if self.__read_path != shot_path:
-            self.__read_path = shot_path
-        #TODO read audio file to frame
+    def play_audio_file(self, shot_path, frame):
+        file_path = self.__get_audio_file_path(shot_path)
+
+        # Check audio file loaded
+        if self.__read_path != file_path:
+            self.__read_path = file_path
+            log.debug(f'Change audio file: {file_path}')
+
+            if self.__wave_read_handle is not None:
+                self.__wave_read_handle.close()
+                self.__wave_read_handle = None
+            if self.__read_buffer is not None:
+                self.__read_buffer.close()
+                self.__read_buffer = None
+
+            if not Path(file_path).is_file():
+                log.warning(f'No audio file found: [{file_path}]')
+                return
+
+            with open(file_path, 'rb') as f:
+                self.__read_buffer = BytesIO(f.read())
+            self.__wave_read_handle = wave.open(self.__read_buffer, 'rb')
+
+        # If file not exists
+        if self.__wave_read_handle is None:
+            return
+
+        # If out of range
+        try:
+            self.__wave_read_handle.setpos(frame * CHUNK_PER_FRAME)
+        except wave.Error as error:
+            log.error(str(error))
+            return
+
+        # Play sound
+        audio_data = self.__wave_read_handle.readframes(CHUNK_PER_FRAME)
+        self.__speaker_device.play_sound(audio_data)
+
+    def toggle_mic(self, toggle: bool):
+        self.__is_mic_active = toggle

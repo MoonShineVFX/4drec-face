@@ -1,5 +1,3 @@
-from PyQt5.Qt import QFileDialog
-
 from master.ui.custom_widgets import LayoutWidget, PushButton
 from master.ui.dialog import CacheProgressDialog
 from master.ui.popup import popup
@@ -12,9 +10,10 @@ from .support_button import SupportButtonGroup
 
 
 class RollPanel(LayoutWidget):
-    def __init__(self, playback_control):
+    def __init__(self, decibel_meter, playback_control):
         super().__init__(spacing=24)
         self._playback_control = playback_control
+        self._decibel_meter = decibel_meter
         self._setup_ui()
 
     def _setup_ui(self):
@@ -25,13 +24,17 @@ class RollPanel(LayoutWidget):
             buttons
         )
 
+        self.layout().addSpacing(12)
+
         self.addWidget(SubmitButton())
 
     def showEvent(self, event):
+        self.layout().insertWidget(1, self._decibel_meter)
         self.layout().insertLayout(1, self._playback_control)
 
     def hideEvent(self, event):
         self.layout().removeItem(self._playback_control)
+        self.layout().removeWidget(self._decibel_meter)
 
     def _on_cache(self):
         popup(dialog=CacheProgressDialog)

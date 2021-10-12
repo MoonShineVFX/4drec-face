@@ -7,6 +7,7 @@ from .live_view_panel import LiveViewPanel
 from .roll_panel import RollPanel
 from .playback_control import PlaybackControl
 from .model_panel import ModelPanel
+from .decibel_meter import DecibelMeter
 
 
 class Footer(LayoutWidget):
@@ -41,9 +42,10 @@ class Footer(LayoutWidget):
         self._layout = make_layout(stack=True)
 
         playback_control = PlaybackControl()
-        self._layout.addWidget(LiveViewPanel())
-        self._layout.addWidget(RollPanel(playback_control))
-        self._layout.addWidget(ModelPanel(playback_control))
+        decibel_meter = DecibelMeter()
+        self._layout.addWidget(LiveViewPanel(decibel_meter))
+        self._layout.addWidget(RollPanel(decibel_meter, playback_control))
+        self._layout.addWidget(ModelPanel(decibel_meter, playback_control))
 
         self.addLayout(self._layout)
 

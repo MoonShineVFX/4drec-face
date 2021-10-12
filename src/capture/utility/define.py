@@ -134,6 +134,11 @@ class TaskState(Enum):
     DEPEND = 4
 
 
+class AudioSource(Enum):
+    Mic = auto()
+    File = auto()
+
+
 @dataclass
 class SubmitOrder:
     name: str
