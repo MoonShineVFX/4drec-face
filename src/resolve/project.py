@@ -1,5 +1,4 @@
-import time
-
+import sys
 import Metashape
 import numpy as np
 import logging
@@ -137,11 +136,12 @@ class ResolveProject:
             # Retry due to want to save other chunk and conflicted
             logging.warning(error)
             self.__error_count += 1
-            if self.__error_count <= 5:
+            if self.__error_count <= 10:
                 sleep(5)
                 self.save(chunk)
             else:
-                raise ValueError('Too many errors')
+                logging.error('Too many errors')
+                sys.exit(1)
 
     def run(self):
         # Timestamp
