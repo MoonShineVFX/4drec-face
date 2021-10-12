@@ -105,6 +105,9 @@ class ResolveSettings:
         camera_folders = self.shot_path.glob('*')
         import_data = {}
         for camera_folder in camera_folders:
+            if camera_folder.is_file():
+                continue
+
             camera_id = camera_folder.stem
             camera_photos = []
 

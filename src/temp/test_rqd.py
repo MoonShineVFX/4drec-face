@@ -1,6 +1,6 @@
 import subprocess
 
-cmd = subprocess.Popen(r'C:\Users\eli.hung\PycharmProjects\4drec-face\src\resolve.bat --frame 196 --resolve_stage resolve --yaml_path "G:/jobs/4cdd8d/87be91/3d9a44/job.yml"')
+cmd = subprocess.Popen(r'G:\app\4drec-face\src\resolve.bat --frame 0 --resolve_stage initialize --yaml_path "G:/jobs/9e9802/6b6242/e2d153/job.yml"')
 
 cmd.communicate()[0]
 

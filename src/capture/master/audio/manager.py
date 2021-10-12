@@ -44,9 +44,10 @@ class AudioManager(threading.Thread):
                 self.__wave_write_handle.writeframes(mic_audio_data)
 
     def start_record(self, shot_path: str):
-        Path(shot_path).mkdir(parents=True, exist_ok=True)
+        record_path = self.__get_audio_file_path(shot_path)
+        Path(record_path).parent.mkdir(parents=True, exist_ok=True)
         self.__wave_write_handle = wave.open(
-            self.__get_audio_file_path(shot_path), 'wb'
+            record_path, 'wb'
         )
         self.__wave_write_handle.setnchannels(1)
         self.__wave_write_handle.setsampwidth(2)  # int16 size in bytes
