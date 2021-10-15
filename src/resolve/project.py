@@ -90,7 +90,7 @@ class ResolveProject:
         for frame_number, frame in enumerate(chunk.frames):
             if frame_number % interval != 0:
                 continue
-            logging.info(f'Match photos - {frame_number}({frame}) / {len(chunk.frames)}')
+            logging.info(f'Match photos - {frame_number} / {len(chunk.frames)}')
             frame.matchPhotos()
 
         # Align photos
@@ -103,8 +103,10 @@ class ResolveProject:
 
     def resolve(self):
         logging.info('Resolve')
-        chunk = self.__doc.chunk
-        frame = chunk.frames[SETTINGS.current_frame_at_chunk]
+        frame = self.get_current_chunk()
+
+        # Align chunk again if setting changed
+        self.__align_region()
 
         # Build points
         if frame.point_cloud is None:
@@ -184,6 +186,18 @@ class ResolveProject:
     def get_current_chunk(self):
         return self.__doc.chunk.frames[SETTINGS.current_frame_at_chunk]
 
+    def __align_region(self):
+        chunk = self.__doc.chunk
+
+        # Define region transform
+        chunk_transform = chunk.transform
+        region = chunk.region
+        region.rot = chunk_transform.matrix.rotation().inv()
+        region.size = Metashape.Vector(SETTINGS.region_size) / chunk_transform.scale
+        region.center = chunk_transform.matrix.inv().mulp(
+            Metashape.Vector(SETTINGS.nct_center_offset)
+        )
+
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk
 
@@ -196,14 +210,7 @@ class ResolveProject:
                 )
         chunk.updateTransform()
 
-        # Define region transform
-        chunk_transform = chunk.transform
-        region = chunk.region
-        region.rot = chunk_transform.matrix.rotation().inv()
-        region.size = Metashape.Vector(SETTINGS.region_size) / chunk_transform.scale
-        region.center = chunk_transform.matrix.inv().mulp(
-            Metashape.Vector(SETTINGS.nct_center_offset)
-        )
+        self.__align_region()
 
     @staticmethod
     def get_average_position(camera_list: [Metashape.Camera]) -> Metashape.Vector:

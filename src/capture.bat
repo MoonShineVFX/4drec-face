@@ -12,6 +12,7 @@ cd /d %~dp0\capture
 :EXEC
 %~dp0\.python\python -u %~dp0\capture\main.py %*
 
+if [%1]==[MASTER] goto EXIT
 if not ["%errorlevel%"]==["4813"] goto LEAVE
 
 :RESTART
@@ -30,4 +31,7 @@ goto EXEC
 :LEAVE
 if NOT ["%errorlevel%"]==["0"] pause
 tasklist /FI "IMAGENAME eq python.exe" 2>NUL | find /I /N "python.exe">NUL
+echo ~~~~~~~~~~IMAMFAMFSAMFSAMASF
 if "%ERRORLEVEL%"=="0" taskkill /f /im python.exe
+
+:EXIT
