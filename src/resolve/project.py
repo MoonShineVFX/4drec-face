@@ -11,6 +11,9 @@ from settings import SETTINGS
 from define import ResolveStage
 
 
+MAX_CALIBRATE_FRAMES = 50
+
+
 class ResolveProject:
     def __init__(self):
         self.__error_count = 0
@@ -74,8 +77,11 @@ class ResolveProject:
 
         # Build points
         interval = SETTINGS.match_photos_interval
-        if len(chunk.frames) < interval:
+        frames_count = len(chunk.frames)
+        if frames_count < interval:
             interval = 1
+        elif frames_count / interval > MAX_CALIBRATE_FRAMES:
+            interval = int(frames_count / MAX_CALIBRATE_FRAMES)
 
         logging.debug(
             f'Match photos every {interval} frames'
