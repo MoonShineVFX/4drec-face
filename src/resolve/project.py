@@ -84,6 +84,7 @@ class ResolveProject:
         for frame_number, frame in enumerate(chunk.frames):
             if frame_number % interval != 0:
                 continue
+            logging.info(f'Match photos - {frame_number}({frame}) / {len(chunk.frames)}')
             frame.matchPhotos()
 
         # Align photos
