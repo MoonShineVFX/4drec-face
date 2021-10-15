@@ -60,15 +60,13 @@ class DecibelMeter(QProgressBar):
             self._peak -= 1
 
         # Progress
-        decibel = real_decibel * 10
+        decibel = int(real_decibel * 10)
         if decibel < self.minimum():
             value = self.minimum()
         elif decibel > self.maximum():
             value = self.maximum()
         else:
             value = decibel
-        self.setValue(value)
 
         self.setStyleSheet(self._get_gradient())
-
-        self.update()
+        self.setValue(value)

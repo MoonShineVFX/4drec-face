@@ -357,6 +357,7 @@ class PlaybackSlider(QSlider, EntityBinder):
         self._crop_path = None
         self._crop_brush = None
         self._bar_map = None
+        self._painter = QPainter()
         self._setup_ui()
         state.on_changed('crop_range', self._update)
         state.on_changed('loop_range', self._update)
@@ -459,7 +460,8 @@ class PlaybackSlider(QSlider, EntityBinder):
             return
 
         self._bar_map.fill(Qt.transparent)
-        painter = QPainter(self._bar_map)
+        painter = self._painter
+        painter.begin(self._bar_map)
 
         w, h, hw, tw = self._get_base_unit()
 
@@ -532,7 +534,8 @@ class PlaybackSlider(QSlider, EntityBinder):
         painter.end()
 
     def paintEvent(self, evt):
-        painter = QPainter(self)
+        painter = self._painter
+        self._painter.begin(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
         w, h, hw, tw = self._get_base_unit()
@@ -586,6 +589,8 @@ class PlaybackSlider(QSlider, EntityBinder):
             Qt.AlignCenter,
             text
         )
+
+        painter.end()
 
 
 class PlaybackButton(ToolButton):

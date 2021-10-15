@@ -161,7 +161,7 @@ class CameraConnector(Process):
                     self._camera_rotation
                 )
 
-                if self._is_live_view and not self._is_recording:
+                if self._is_live_view:
                     self._live_viewer.set_buffer(camera_image)
 
                 if self._is_recording:
@@ -332,6 +332,8 @@ class CameraConnector(Process):
                 CameraShotFileCore.image_ext,
                 CameraShotFileCore.meta_ext
             ):
+                if shot_file_path is None:
+                    continue
                 file = shot_file_path + ext
                 if os.path.isfile(file):
                     os.remove(file)

@@ -207,9 +207,10 @@ class MainWindow(QMainWindow):
 
         elif event.type is UIEventType.AUDIO_DECIBEL:
             source, db = event.get_payload()
-            if source is AudioSource.Mic and state.get('body_mode') is BodyMode.LIVEVIEW:
+            body_mode = state.get('body_mode')
+            if source is AudioSource.Mic and body_mode is BodyMode.LIVEVIEW:
                 state.set('audio_decibel', db)
-            elif source is AudioSource.File and state.get('body_mode') is not BodyMode.LIVEVIEW:
+            elif source is AudioSource.File and body_mode is not BodyMode.LIVEVIEW:
                 state.set('audio_decibel', db)
 
     def _on_project_list_open(self):
