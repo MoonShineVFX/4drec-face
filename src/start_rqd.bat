@@ -15,4 +15,5 @@ SET http_proxy=
 SET https_proxy=
 %~dp0\.python\python -c "import sys; sys.argv = []; from rqd.__main__ import main; main()"
 
+if NOT ["%errorlevel%"]==["0"] pause
 REM Set thread-mode: cue cueadmin -host 4D-USR -thread all

@@ -27,7 +27,7 @@ submit:
   mesh_clean_faces_threshold: 10000
   smooth_model: 1.0
   texture_size: 8192
-  region_size: [0.5, 1, 0.5]
+  region_size: [0.5, 1.0, 0.5]
   # Normalize chunk transform
   nct_marker_locations:
     '14': [0, 0.866, 0]

@@ -1,9 +1,12 @@
 import sys
+import time
+
 import Metashape
 import numpy as np
 import logging
 from time import perf_counter, sleep
 from datetime import datetime
+from typing import Optional
 
 from common.fourd_frame import FourdFrameManager
 
@@ -17,6 +20,7 @@ MAX_CALIBRATE_FRAMES = 50
 class ResolveProject:
     def __init__(self):
         self.__error_count = 0
+        self.__step_timer: Optional[float] = None
 
         # Check settings
         if not SETTINGS.is_initialized:
@@ -106,37 +110,57 @@ class ResolveProject:
         frame = self.get_current_chunk()
 
         # Align chunk again if setting changed
+        self.__mark_timer('Start')
         self.__align_region()
+        self.__mark_timer('Align Region')
 
         # Build points
-        if frame.point_cloud is None:
-            logging.debug('Point cloud not found, build one')
+        is_cali_frame = frame.point_cloud is not None
+        if not is_cali_frame:
+            logging.info('Point cloud not found, build one')
             frame.matchPhotos(
                 tiepoint_limit=8000,
                 filter_stationary_points=False
             )
+            self.__mark_timer('Match Photos')
+
             frame.triangulatePoints()
+            self.__mark_timer('Triangulate Points')
 
         # Build dense
         frame.buildDepthMaps()
+        self.__mark_timer('Depth Map')
         frame.buildDenseCloud(
             point_colors=False,
             keep_depth=False
         )
+        self.__mark_timer('Dense Cloud')
 
         # Build mesh
         frame.buildModel()
+        self.__mark_timer('Build Model')
         frame.model.removeComponents(SETTINGS.mesh_clean_faces_threshold)
+        self.__mark_timer('Remove Small Parts')
         frame.smoothModel(SETTINGS.smooth_model)
+        self.__mark_timer('Smooth Model')
 
         # Build texture
         frame.buildUV()
+        self.__mark_timer('Build UV')
         frame.buildTexture(texture_size=SETTINGS.texture_size)
+        self.__mark_timer('Build Texture')
 
+        # Clean point cloud and save
+        if not is_cali_frame:
+            logging.warning('Start to Remove point cloud=============')
+            time.sleep(10)
+            frame.point_cloud = None
         self.save(frame)
+        self.__mark_timer('Save')
 
         # Export 4df
         self.export_4df(frame)
+        self.__mark_timer('Export 4DF')
 
     def save(self, chunk: Metashape.Chunk):
         try:
@@ -201,7 +225,7 @@ class ResolveProject:
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk
 
-        # Define marker locations and update chunk transform
+        # Define marker locatifons and update chunk transform
         for marker in chunk.markers:
             marker_num = marker.label.split(' ')[-1]
             if marker_num in SETTINGS.nct_marker_locations.keys():
@@ -211,6 +235,16 @@ class ResolveProject:
         chunk.updateTransform()
 
         self.__align_region()
+
+    def __mark_timer(self, text: str):
+        if self.__step_timer is None:
+            self.__step_timer = perf_counter()
+            logging.info(f'[Timer] {text}')
+            return
+        now = perf_counter()
+        duration = now - self.__step_timer
+        self.__step_timer = now
+        logging.info(f'[Timer] {text}: {duration:.2f}s')
 
     @staticmethod
     def get_average_position(camera_list: [Metashape.Camera]) -> Metashape.Vector:
