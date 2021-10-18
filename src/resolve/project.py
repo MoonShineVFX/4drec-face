@@ -135,7 +135,7 @@ class ResolveProject:
                     time.sleep(10)
                     if self.__error_count >= MAX_ERROR_COUNT:
                         logging.error('Too many errors')
-                        sys.exit(1)
+                        raise error
                     self.__error_count += 1
             self.__error_count = 0
 
@@ -188,7 +188,7 @@ class ResolveProject:
                 self.save(chunk)
             else:
                 logging.error('Too many errors')
-                sys.exit(1)
+                raise error
 
     def run(self):
         # Timestamp
