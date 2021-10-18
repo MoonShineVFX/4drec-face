@@ -15,6 +15,7 @@ from define import ResolveStage
 
 
 MAX_CALIBRATE_FRAMES = 50
+MAX_ERROR_COUNT = 10
 
 
 class ResolveProject:
@@ -124,7 +125,20 @@ class ResolveProject:
             )
             self.__mark_timer('Match Photos')
 
-            frame.triangulatePoints()
+            is_triangulated = False
+            while not is_triangulated:
+                try:
+                    frame.triangulatePoints()
+                    is_triangulated = True
+                except OSError as error:
+                    logging.warning(str(error))
+                    time.sleep(10)
+                    if self.__error_count >= MAX_ERROR_COUNT:
+                        logging.error('Too many errors')
+                        sys.exit(1)
+                    self.__error_count += 1
+            self.__error_count = 0
+
             self.__mark_timer('Triangulate Points')
 
         # Build dense
@@ -169,7 +183,7 @@ class ResolveProject:
             # Retry due to want to save other chunk and conflicted
             logging.warning(error)
             self.__error_count += 1
-            if self.__error_count <= 10:
+            if self.__error_count <= MAX_ERROR_COUNT:
                 sleep(5)
                 self.save(chunk)
             else:
