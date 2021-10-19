@@ -1,11 +1,11 @@
-import sys
 import time
-
+import zipfile
+import os
 import Metashape
 import numpy as np
 import logging
-from time import perf_counter, sleep
-from datetime import datetime
+from time import perf_counter
+import shutil
 from typing import Optional
 
 from common.fourd_frame import FourdFrameManager
@@ -31,17 +31,35 @@ class ResolveProject:
 
         # Check metashape documents
         self.__doc = Metashape.Document()
-        if SETTINGS.project_path.exists():
-            logging.info('Project file exists, loading')
+
+        # Initial load project file
+        if SETTINGS.resolve_stage is ResolveStage.INITIALIZE:
+            if SETTINGS.project_path.exists():
+                logging.info('Project file exists, loading')
+                self.__doc.open(
+                    str(SETTINGS.project_path),
+                    ignore_lock=True,
+                    read_only=False
+                )
+            else:
+                logging.info('Project file not found, create one')
+                SETTINGS.project_path.parent.mkdir(parents=True, exist_ok=True)
+                self.__doc.save(str(SETTINGS.project_path), absolute_paths=True)
+        # Resolve load archive zip
+        else:
+            logging.info('Project file exists, extract to local')
+            if not SETTINGS.archive_path.exists():
+                raise ValueError(f'Project file {SETTINGS.archive_path} not found!')
+            if SETTINGS.temp_path.exists():
+                shutil.rmtree(str(SETTINGS.temp_path), ignore_errors=True)
+            SETTINGS.temp_path.mkdir(parents=True, exist_ok=True)
+            zf = zipfile.ZipFile(str(SETTINGS.archive_path), 'r')
+            zf.extractall(str(SETTINGS.temp_path))
             self.__doc.open(
-                str(SETTINGS.project_path),
+                str(SETTINGS.temp_project_path),
                 ignore_lock=True,
                 read_only=False
             )
-        else:
-            logging.info('Project file not found, create one')
-            SETTINGS.project_path.parent.mkdir(parents=True, exist_ok=True)
-            self.__doc.save(str(SETTINGS.project_path))
 
     def initialize(self):
         logging.info('Initialize')
@@ -104,7 +122,10 @@ class ResolveProject:
         # Align chunk
         self.__normalize_chunk_transform()
 
+        # Save and archive
         self.save(chunk)
+        Metashape.Document()
+        self.__archive_project()
 
     def resolve(self):
         logging.info('Resolve')
@@ -125,20 +146,7 @@ class ResolveProject:
             )
             self.__mark_timer('Match Photos')
 
-            is_triangulated = False
-            while not is_triangulated:
-                try:
-                    frame.triangulatePoints()
-                    is_triangulated = True
-                except OSError as error:
-                    logging.warning(str(error))
-                    time.sleep(10)
-                    if self.__error_count >= MAX_ERROR_COUNT:
-                        logging.error('Too many errors')
-                        raise error
-                    self.__error_count += 1
-            self.__error_count = 0
-
+            frame.triangulatePoints()
             self.__mark_timer('Triangulate Points')
 
         # Build dense
@@ -164,38 +172,19 @@ class ResolveProject:
         frame.buildTexture(texture_size=SETTINGS.texture_size)
         self.__mark_timer('Build Texture')
 
-        # Clean point cloud and save
-        if not is_cali_frame:
-            logging.warning('Start to Remove point cloud=============')
-            time.sleep(10)
-            frame.point_cloud = None
-        self.save(frame)
-        self.__mark_timer('Save')
-
         # Export 4df
         self.export_4df(frame)
         self.__mark_timer('Export 4DF')
 
+        # Clean data
+        Metashape.Document()
+        shutil.rmtree(str(SETTINGS.temp_path), ignore_errors=True)
+
     def save(self, chunk: Metashape.Chunk):
-        try:
-            self.__doc.save(str(SETTINGS.project_path), [chunk])
-        except OSError as error:
-            # Retry due to want to save other chunk and conflicted
-            logging.warning(error)
-            self.__error_count += 1
-            if self.__error_count <= MAX_ERROR_COUNT:
-                sleep(5)
-                self.save(chunk)
-            else:
-                logging.error('Too many errors')
-                raise error
+        self.__doc.save(str(SETTINGS.project_path), [chunk], absolute_paths=True)
 
     def run(self):
-        # Timestamp
-        start_time = perf_counter()
-        now = datetime.now()
-
-        # Maim
+        # Main
         if SETTINGS.resolve_stage is ResolveStage.INITIALIZE:
             logging.info('Project run: INITIAL')
             self.initialize()
@@ -210,19 +199,22 @@ class ResolveProject:
 
         logging.info('Finish')
 
-        # Record elapsed time
-        try:
-            duration = perf_counter() - start_time
-            time_label = f'[{SETTINGS.resolve_stage}]'
-            if SETTINGS.resolve_stage is ResolveStage.RESOLVE:
-                time_label += f'({SETTINGS.current_frame})'
-            with open(str(SETTINGS.timelog_path), 'a') as f:
-                f.write(f'{now:%Y-%m-%d %H:%M:%S} {time_label}: {duration}s\n')
-        except Exception as e:
-            logging.warning(e)
-
     def get_current_chunk(self):
         return self.__doc.chunk.frames[SETTINGS.current_frame_at_chunk]
+
+    def __archive_project(self):
+        zf = zipfile.ZipFile(str(SETTINGS.archive_path), 'w', zipfile.ZIP_STORED)
+        zf.write(
+            str(SETTINGS.project_path),
+            str(SETTINGS.project_path.name))
+        for root, dirs, files in os.walk(str(SETTINGS.files_path)):
+            for file in files:
+                zf.write(os.path.join(root, file),
+                         os.path.relpath(os.path.join(root, file),
+                         os.path.join(str(SETTINGS.files_path), '..')))
+        zf.close()
+        os.remove(str(SETTINGS.project_path))
+        shutil.rmtree(str(SETTINGS.files_path), ignore_errors=True)
 
     def __align_region(self):
         chunk = self.__doc.chunk

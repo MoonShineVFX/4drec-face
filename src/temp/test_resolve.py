@@ -1,9 +1,8 @@
 from resolve.launch import launch
 from resolve.define import ResolveStage
-from pathlib import Path
 
 
-yaml_path = r'G:/jobs/9e9802/9419df/654cb8/job.yml'
+yaml_path = r'G:/jobs/9e9802/1ab2a5/f2fc8b/job.yml'
 
 
 def initial():
@@ -13,6 +12,7 @@ def initial():
         str(yaml_path),
         debug=True
     )
+
 
 def resolve_frame(frame: int):
     launch(
@@ -25,3 +25,4 @@ def resolve_frame(frame: int):
 
 # initial()
 resolve_frame(2)
+

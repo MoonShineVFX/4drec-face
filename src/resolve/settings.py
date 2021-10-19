@@ -23,7 +23,8 @@ class ResolveSettings:
         self.metashape_project_name = 'metashape_project'
         self.output_folder_name = 'output'
         self.chunk_name = 'MainChunk'
-        self.timelog_name = 'timelog'
+        self.archive_name = 'cali_archive'
+        self.temp_name = 'fourd_temp'
 
         # Camera
         self.sensor_pixel_width = 0.00345
@@ -51,10 +52,12 @@ class ResolveSettings:
         self.job_path = Path('')
 
         # More Paths
-        self.project_path = ''
-        self.files_path = ''
-        self.export_path = ''
-        self.timelog_path = ''
+        self.project_path = Path('')
+        self.files_path = Path('')
+        self.export_path = Path('')
+        self.archive_path = Path('')
+        self.temp_path = Path('')
+        self.temp_project_path = Path('')
 
     def initialize(self,
                    current_frame: int,
@@ -97,7 +100,9 @@ class ResolveSettings:
         self.project_path = self.job_path / f'{self.metashape_project_name}.psx'
         self.files_path = self.job_path / f'{self.metashape_project_name}.files'
         self.export_path = self.job_path / f'{self.output_folder_name}'
-        self.timelog_path = self.job_path / f'{self.timelog_name}.txt'
+        self.archive_path = self.job_path / f'{self.archive_name}.zip'
+        self.temp_path = Path.home() / self.temp_name
+        self.temp_project_path = self.temp_path / f'{self.metashape_project_name}.psx'
 
         self.is_initialized = True
 
