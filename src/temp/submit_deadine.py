@@ -1,7 +1,10 @@
+import os
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
 from utility.Deadline import DeadlineConnect
 
 
-deadline = DeadlineConnect.DeadlineCon('192.168.29.10', 8080)
+deadline = DeadlineConnect.DeadlineCon('192.168.29.10', 8081, insecure=True)
 
 job_info = {
     'Plugin': '4DREC',
@@ -15,7 +18,7 @@ job_info = {
     'ExtraInfoKeyValue1': r'yaml_path=G:\jobs\9e9802\test_shot\test_job\job.yml'
 }
 
-result = deadline.Jobs.SubmitJobs(job_info, {})
+result = deadline.Jobs.SubmitJob(job_info, {})
 init_id = ''
 if isinstance(result, dict) and '_id' in result:
     init_id = result['_id']
@@ -35,5 +38,5 @@ job_info = {
     'ExtraInfoKeyValue1': r'yaml_path=G:\jobs\9e9802\test_shot\test_job\job.yml'
 }
 
-result = deadline.Jobs.SubmitJobs(job_info, {})
+result = deadline.Jobs.SubmitJob(job_info, {})
 print(result)
