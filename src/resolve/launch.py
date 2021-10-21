@@ -1,16 +1,50 @@
 import argparse
-from typing import Optional
+from typing import Optional, Callable, Any
 import json
 import logging
+import sys
+from define import ResolveStage, ResolveEvent
 
-from define import ResolveStage
+
+OnEventCall = Callable[[ResolveEvent, Optional[Any]], None]
+
+
+class LoggingEventHandler(logging.StreamHandler):
+    def __init__(self, on_event: OnEventCall = None):
+        super(LoggingEventHandler, self).__init__()
+        self.__on_event = on_event
+        self.__stdout = sys.stdout
+        sys.stdout = self
+
+    def write(self, message: str):
+        if message != '\n':
+            self.__on_event(ResolveEvent.LOG_STDOUT, message)
+        return
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            if hasattr(record, 'resolve_state'):
+                if record.resolve_state == 'COMPLETE':
+                    self.__on_event(ResolveEvent.COMPLETE)
+                    return
+                elif record.resolve_state == 'PROGRESS':
+                    self.__on_event(ResolveEvent.PROGRESS, record.progress)
+            if record.levelname in ('INFO', 'DEBUG'):
+                self.__on_event(ResolveEvent.LOG_INFO, record.message)
+            elif record.levelname == 'WARNING':
+                self.__on_event(ResolveEvent.LOG_WARNING, record.message)
+            elif record.levelname in ('CRITICAL', 'ERROR'):
+                self.__on_event(ResolveEvent.FAIL, record.message)
+        except:
+            self.handleError(record)
 
 
 def launch(current_frame: int,
            resolve_stage: ResolveStage,
            yaml_path: Optional[str] = None,
            extra_settings: Optional[dict] = None,
-           debug: bool = False):
+           debug: bool = False,
+           on_event: Optional[OnEventCall] = None):
     # Set logging
     logging_level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(
@@ -19,13 +53,17 @@ def launch(current_frame: int,
         level=logging_level
     )
 
+    # Add Event if assign
+    if on_event is not None:
+        event_handler = LoggingEventHandler()
+        logging.getLogger().addHandler(event_handler)
+
     # launch
     from settings import SETTINGS
     from project import ResolveProject
 
     SETTINGS.initialize(
         current_frame,
-        # Redefined for preventing outside import
         ResolveStage(resolve_stage.value),
         yaml_path,
         extra_settings

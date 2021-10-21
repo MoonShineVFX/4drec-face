@@ -1,4 +1,3 @@
-import time
 import zipfile
 import os
 import Metashape
@@ -11,17 +10,16 @@ from typing import Optional
 from common.fourd_frame import FourdFrameManager
 
 from settings import SETTINGS
-from define import ResolveStage
+from define import ResolveStage, ResolveEvent
 
 
 MAX_CALIBRATE_FRAMES = 50
-MAX_ERROR_COUNT = 10
 
 
 class ResolveProject:
     def __init__(self):
-        self.__error_count = 0
         self.__step_timer: Optional[float] = None
+        self.__progress = 0.0
 
         # Check settings
         if not SETTINGS.is_initialized:
@@ -73,7 +71,9 @@ class ResolveProject:
 
         # Import images
         import_data = SETTINGS.get_import_camera_and_images()
+        progress_import_step = 10.0 / len(import_data.keys())
         for camera, photos in import_data.items():
+            self.__logging_progress(progress_import_step, 'Import camera')
             chunk.addPhotos(photos, layout=Metashape.MultiframeLayout)
 
         # Camera calibration sensor
@@ -106,15 +106,17 @@ class ResolveProject:
         elif frames_count / interval > MAX_CALIBRATE_FRAMES:
             interval = int(frames_count / MAX_CALIBRATE_FRAMES)
 
-        logging.debug(
-            f'Match photos every {interval} frames'
-        )
+        self.__logging_progress(2.0, f'Match photos every {interval} frames')
 
+        progress_point_step = 85.0 / len(chunk.frames)
         for frame_number, frame in enumerate(chunk.frames):
             if frame_number % interval != 0:
                 continue
-            logging.info(f'Match photos - {frame_number} / {len(chunk.frames)}')
             frame.matchPhotos()
+            self.__logging_progress(
+                progress_point_step,
+                f'Match photos - {frame_number} / {len(chunk.frames)}'
+            )
 
         # Align photos
         chunk.alignCameras()
@@ -130,6 +132,7 @@ class ResolveProject:
     def resolve(self):
         logging.info('Resolve')
         frame = self.get_current_chunk()
+        self.__logging_progress(1, 'Resolve Process')
 
         # Align chunk again if setting changed
         self.__mark_timer('Start')
@@ -148,6 +151,7 @@ class ResolveProject:
 
             frame.triangulatePoints()
             self.__mark_timer('Triangulate Points')
+        self.__logging_progress(19, 'Match Photos')
 
         # Build dense
         frame.buildDepthMaps()
@@ -157,6 +161,7 @@ class ResolveProject:
             keep_depth=False
         )
         self.__mark_timer('Dense Cloud')
+        self.__logging_progress(10, 'Dense Cloud')
 
         # Build mesh
         frame.buildModel()
@@ -165,12 +170,15 @@ class ResolveProject:
         self.__mark_timer('Remove Small Parts')
         frame.smoothModel(SETTINGS.smooth_model)
         self.__mark_timer('Smooth Model')
+        self.__logging_progress(15, 'Model Process')
 
         # Build texture
         frame.buildUV()
         self.__mark_timer('Build UV')
+        self.__logging_progress(30, 'Build UV')
         frame.buildTexture(texture_size=SETTINGS.texture_size)
         self.__mark_timer('Build Texture')
+        self.__logging_progress(15, 'Build Texture')
 
         # Export 4df
         self.export_4df(frame)
@@ -197,10 +205,18 @@ class ResolveProject:
             logging.critical(error_message)
             raise ValueError(error_message)
 
-        logging.info('Finish')
+        logging.info('Finish', extra={'resolve_state': 'COMPLETE'})
 
     def get_current_chunk(self):
         return self.__doc.chunk.frames[SETTINGS.current_frame_at_chunk]
+
+    def __logging_progress(self, progress_step: float, message: str):
+        self.__progress += progress_step
+        logging.info(message,
+                     extra={
+                         'resolve_state': 'PROGRESS',
+                         'progress': self.__progress
+                     })
 
     def __archive_project(self):
         zf = zipfile.ZipFile(str(SETTINGS.archive_path), 'w', zipfile.ZIP_STORED)

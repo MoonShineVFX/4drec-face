@@ -7,3 +7,12 @@ class ResolveStage(Enum):
 
     def __str__(self):
         return self.value
+
+
+class ResolveEvent(Enum):
+    COMPLETE = 'complete'
+    FAIL = 'fail'
+    LOG_INFO = 'log_info'
+    LOG_STDOUT = 'log_stdout'
+    LOG_WARNING = 'log_warning'
+    PROGRESS = 'progress'
