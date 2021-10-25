@@ -107,7 +107,7 @@ def popup(
 
     if exit_code == 1:
         if hasattr(dialog, 'get_result'):
-            # For opencue name policy
+            # For folder name policy
             if title in ('Create New Project', 'Create New Shot', 'Rename Shot'):
                 text = dialog.get_result().lower()
                 text = re.sub(r'[^a-z0-9]', '_', text)

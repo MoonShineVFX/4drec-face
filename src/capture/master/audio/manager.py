@@ -33,7 +33,7 @@ class AudioManager(threading.Thread):
         self.start()
 
     def __get_audio_file_path(self, path: str) -> str:
-        return f'{setting.submit.shot_path}{path}/{setting.audio.record_filename}'
+        return f'{path}/{setting.audio.record_filename}'
 
     def run(self):
         while self.__is_running:

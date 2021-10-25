@@ -1,11 +1,11 @@
 bypass_exist_size: 307200
-
-opencue:
-  service_name: 'metashape'
-  allocation_name: 'local.general'
-  user_name: 'client'
-
-resolve_path: 'G:\app\4drec-face\src'
+submit_path: 'G:/submit/'
+deadline_mongo:
+  ip: '192.168.29.10'
+  port: 27017
+deadline_connect:
+  ip: '192.168.29.10'
+  port: 8081
 
 submit:
   # Job

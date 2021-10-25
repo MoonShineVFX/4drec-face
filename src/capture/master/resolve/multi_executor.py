@@ -5,8 +5,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from .package import ResolvePackage
 
 
-def load_geometry(job_id, job_folder_name, res, frame):
-    package = ResolvePackage(job_id, job_folder_name, res, frame)
+def load_geometry(job_id, job_folder_path, res, frame):
+    package = ResolvePackage(job_id, job_folder_path, res, frame)
     result = package.load()
 
     # no files
@@ -38,9 +38,9 @@ class MultiExecutor(threading.Thread):
     def cache_all(self, tasks):
         future_list = []
         with ProcessPoolExecutor() as executor:
-            for job_id, job_folder_name, res, f in tasks:
+            for job_id, job_folder_path, res, f in tasks:
                 future = executor.submit(
-                    load_geometry, job_id, job_folder_name, res, f
+                    load_geometry, job_id, job_folder_path, res, f
                 )
                 future_list.append(future)
 
@@ -56,9 +56,9 @@ class MultiExecutor(threading.Thread):
         import re
         from pathlib import Path
 
-        folder_name, job_id, job_folder_name, frame_range, export_path = tasks
+        folder_name, job_id, job_folder_path, frame_range, export_path = tasks
         load_path = (
-            f'{setting.submit.job_path}{job_folder_name}/'
+            f'{job_folder_path}/'
             f'{setting.submit.output_folder_name}/'
         )
         offset_frame = frame_range[0]

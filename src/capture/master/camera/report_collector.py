@@ -286,7 +286,7 @@ class SubmitReportContainer(ReportContainer):
             self._shot.update({'state': 2})
             return
 
-        # Opencue submit
+        # Deadline submit
         self._shot.submit(self._submit_order)
 
     def get_job_name(self):

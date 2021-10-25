@@ -1,1 +1,0 @@
-java -jar e:\cuebot\cuebot-0.14.5-all.jar --datasource.cue-data-source.jdbc-url=jdbc:postgresql://localhost/opencue --datasource.cue-data-source.username=opencue --datasource.cue-data-source.password=password --log.frame-log-root="G:/opencue/logs" --history.archive_jobs_cutoff_hours=17520

@@ -165,6 +165,7 @@ class Receiver(MixThread):
         frame_range = parms['frame_range']
         offset_frame = parms['offset_frame']
         is_cali = parms['is_cali']
+        shot_path = parms['shot_path']
 
         # 蒐集檔案路徑
         camera_id = self._camera_connector.get_id()
@@ -179,7 +180,8 @@ class Receiver(MixThread):
             frame_range,
             offset_frame,
             shot_file_paths,
-            is_cali
+            is_cali,
+            shot_path
         ))
 
     def _report_status(self):

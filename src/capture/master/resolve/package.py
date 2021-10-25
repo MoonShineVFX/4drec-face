@@ -24,17 +24,15 @@ class CompressedCache:
 
 
 class ResolvePackage:
-    def __init__(self, job_id, job_folder_name, resolution, frame):
+    def __init__(self, job_id, job_folder_path, resolution, frame):
         self._geo_cache = None
         self._tex_cache = None
         self._job_id = job_id
-        self._job_folder_name = job_folder_name
+        self._job_folder_path = job_folder_path
         self._frame = frame
         self._resolution = resolution
 
     def get_name(self):
-        if self._frame is None:
-            return f'{self._job_id}_rig'
         return f'{self._job_id}_{self._frame:08d}'
 
     def get_meta(self):
@@ -59,7 +57,7 @@ class ResolvePackage:
 
         # open file
         load_path = (
-            f'{setting.submit.job_path}{self._job_folder_name}/'
+            f'{self._job_folder_path}/'
             f'{setting.submit.output_folder_name}/'
         )
 

@@ -29,7 +29,7 @@ def get_mock_client() -> mongomock.MongoClient:
     db_jobs.insert_one({
         '_id': 'job_id_token',
         'shot_id': 'shot_id_token',
-        'opencue_job_id': 'opencue_job_id',
+        'deadline_ids': 'deadline_ids',
         'name': 'test_job',
         'frame_range': [5, 17],
         'parameters': {},

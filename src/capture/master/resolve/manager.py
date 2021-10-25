@@ -84,7 +84,7 @@ class ResolveManager(threading.Thread):
 
         job = project_manager.current_job
         job_id = job.get_id()
-        job_folder_name = job.get_folder_name()
+        job_folder_path = job.get_folder_path
         real_frame_range = job.get_real_frame_range()
         
         tasks = []
@@ -93,7 +93,7 @@ class ResolveManager(threading.Thread):
                 self.send_ui(None)
                 continue
             tasks.append(
-                (job_id, job_folder_name, self._prefer_resolution, f)
+                (job_id, job_folder_path, self._prefer_resolution, f)
             )
         
         self._multi_executor.add_task('cache_all', tasks)
@@ -120,9 +120,9 @@ class ResolveManager(threading.Thread):
             self.send_ui(package)
         # load frame 4df
         elif frame is not None:
-            job_folder_name = job.get_folder_name()
+            job_folder_path = job.get_folder_path()
             package = ResolvePackage(
-                job_id, job_folder_name,
+                job_id, job_folder_path,
                 self._prefer_resolution,
                 frame
             )
@@ -137,9 +137,9 @@ class ResolveManager(threading.Thread):
         project_name = project.name
         shot_name = shot.name
         job_id = job.get_id()
-        job_folder_name = job.get_folder_name()
+        job_folder_path = job.get_folder_path()
         self._multi_executor.add_task(
             'export_all',
             (f'{project_name}_{shot_name}', job_id,
-             job_folder_name, frame_range, export_path)
+             job_folder_path, frame_range, export_path)
         )

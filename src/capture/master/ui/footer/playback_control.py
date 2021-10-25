@@ -108,7 +108,7 @@ class PlaybackControl(QVBoxLayout):
         state.cast(
             'audio',
             'play_audio_file',
-            shot.get_folder_name(), slider_value
+            shot.get_folder_path(), slider_value
         )
 
         self._playback_bar.on_slider_value_changed(slider_value)
@@ -339,13 +339,13 @@ class PlaybackSlider(QSlider, EntityBinder):
       margin: -4px 0px -8px 0px;
     }
     '''
-    _opencue_color = {
-        TaskState.WAITING: QColor('#a3a3a3'),
-        TaskState.EATEN: QColor('#212121'),
-        TaskState.RUNNING: QColor('#057907'),
-        TaskState.SUCCEEDED: QColor('#055679'),
-        TaskState.DEAD: QColor('#791e05'),
-        TaskState.DEPEND: QColor('#795c05')
+    _deadline_color = {
+        TaskState.QUEUED: QColor('#a3a3a3'),
+        TaskState.SUSPENDED: QColor('#212121'),
+        TaskState.RENDERING: QColor('#057907'),
+        TaskState.COMPLETED: QColor('#055679'),
+        TaskState.FAILED: QColor('#791e05'),
+        TaskState.PENDING: QColor('#795c05')
     }
     _crop_size = (8, 8, 10)
     _bar_height = 10
@@ -527,7 +527,7 @@ class PlaybackSlider(QSlider, EntityBinder):
                     task_state = task_progress[f]
                     painter.fillRect(
                         QRect(i * tw, (h - hh) / 2, math.ceil(tw), hh),
-                        self._opencue_color[task_state]
+                        self._deadline_color[task_state]
                     )
 
                 i += 1

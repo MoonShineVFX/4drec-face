@@ -190,8 +190,8 @@ class MainWindow(QMainWindow):
         elif event.type is UIEventType.CAMERA_FOCUS:
             state.set('Focus', event.get_payload())
 
-        elif event.type is UIEventType.OPENCUE_STATUS:
-            state.set('opencue_status', event.get_payload())
+        elif event.type is UIEventType.DEADLINE_STATUS:
+            state.set('deadline_status', event.get_payload())
 
         elif event.type is UIEventType.HAS_ARDUINO:
             state.set('has_arduino', event.get_payload())

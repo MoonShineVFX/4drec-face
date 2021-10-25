@@ -37,7 +37,7 @@ class UIEventType(Enum):
     RECORDING = auto()
     NOTIFICATION = auto()
     RESOLVE_GEOMETRY = auto()
-    OPENCUE_STATUS = auto()
+    DEADLINE_STATUS = auto()
     HAS_ARDUINO = auto()
     CALI_LIST = auto()
     TICK_EXPORT = auto()
@@ -126,12 +126,12 @@ class MessageType(Enum):
 
 
 class TaskState(Enum):
-    WAITING = 0
-    EATEN = 6
-    RUNNING = 2
-    SUCCEEDED = 3
-    DEAD = 5
-    DEPEND = 4
+    QUEUED = 2
+    SUSPENDED = 3
+    RENDERING = 4
+    COMPLETED = 5
+    FAILED = 6
+    PENDING = 8
 
 
 class AudioSource(Enum):
@@ -145,7 +145,7 @@ class SubmitOrder:
     frame_range: [int]
     export_only: bool
     offset_frame: int
-    cali_id: str = ''
+    cali_path: str = ''
     parms: dict = field(default_factory=dict)
 
     def get_frame_length(self):

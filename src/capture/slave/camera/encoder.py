@@ -199,7 +199,7 @@ class CameraShotSubmitter(MixThread):
 
     def _run(self):
         while self._running:
-            project_id, shot_id, job_name, frame_range, offset_frame, shot_file_paths, is_cali = self._queue.get()
+            project_id, shot_id, job_name, frame_range, offset_frame, shot_file_paths, is_cali, shot_path = self._queue.get()
 
             if shot_id is None:
                 break
@@ -211,9 +211,9 @@ class CameraShotSubmitter(MixThread):
 
             # 創建資料夾
             if not is_cali:
-                submit_path = f'{setting.submit.shot_path}{project_id}/{shot_id}/'
+                submit_path = f'{shot_path}/images/'
             else:
-                submit_path = f'{setting.submit.cali_path}/{shot_id}/'
+                submit_path = f'{shot_path}/'
             Path(submit_path).mkdir(parents=True, exist_ok=True)
             self._log.debug(f'Save to {submit_path}')
 

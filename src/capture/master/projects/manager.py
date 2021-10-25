@@ -1,13 +1,13 @@
 from utility.logger import log
 from utility.message import message_manager
 from utility.define import EntityEvent, UIEventType, MessageType
-from utility.opencue_bridge import OpenCueBridge
 
 from master.ui import ui
 
+from .deadline import check_deadline_server
 from .database import (
     get_projects, ProjectEntity, ShotEntity,
-    JobEntity, get_calibrations
+    JobEntity
 )
 
 
@@ -206,29 +206,33 @@ class ProjectManager:
             memory += job.get_cache_size()
         return memory / (1024 ** 3)
 
-    def check_opencue_server(self):
-        check_result = OpenCueBridge.check_server()
+    def check_deadline_server(self):
+        check_result = check_deadline_server()
         if check_result != '':
             ui.dispatch_event(
                 UIEventType.NOTIFICATION,
                 {
-                    'title': 'OpenCue Connection Error',
+                    'title': 'Deadline Connection Error',
                     'description': check_result
                 }
             )
 
         ui.dispatch_event(
-            UIEventType.OPENCUE_STATUS,
+            UIEventType.DEADLINE_STATUS,
             check_result == ''
         )
 
     def update_cali_list(self):
-        calis = get_calibrations()
+        calis = []
+        for project in self._projects:
+            for shot in project.shots:
+                if shot.is_cali():
+                    calis.append(shot)
+
         result = []
         for cali in calis:
-            name = f'{cali["name"]}  -  '\
-                   f'{cali["created_at"].strftime("%m/%d %H:%M")}'
-            value = cali['_id']
+            name = f'{cali.name}  -  {cali.create_at_str}'
+            value = cali.get_folder_path()
             result.append((name, value))
 
         ui.dispatch_event(

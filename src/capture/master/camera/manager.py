@@ -292,7 +292,7 @@ class CameraManager:
             # Record audio
             if not is_cali:
                 audio_manager.start_record(
-                    project_manager.current_shot.get_folder_name()
+                    project_manager.current_shot.get_folder_path()
                 )
         # 關閉錄製
         else:
@@ -397,7 +397,7 @@ class CameraManager:
             )
 
     def submit_shot(self, submit_order: SubmitOrder):
-        """到 opencue 放算"""
+        """到 deadline 放算"""
         shot = project_manager.current_shot
         log.info(f'Preparing to submit shot: {shot}')
         offset_frame_range = submit_order.get_offset_frame_range()
@@ -416,7 +416,8 @@ class CameraManager:
                 'job_name': submit_order.name,
                 'frame_range': offset_frame_range,
                 'offset_frame': submit_order.offset_frame,
-                'is_cali': shot.is_cali()
+                'is_cali': shot.is_cali(),
+                'shot_path': shot.get_folder_path()
             }
         )
 

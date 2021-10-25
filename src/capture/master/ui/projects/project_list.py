@@ -205,9 +205,9 @@ class ProjectItem(LayoutWidget, EntityBinder):
     def _build_menu(self):
         menu = QMenu()
 
-        rename_action = QAction('Rename', self)
-        rename_action.triggered.connect(self._rename)
-        menu.addAction(rename_action)
+        # rename_action = QAction('Rename', self)
+        # rename_action.triggered.connect(self._rename)
+        # menu.addAction(rename_action)
 
         delete_action = QAction('Delete', self)
         delete_action.triggered.connect(self._remove)

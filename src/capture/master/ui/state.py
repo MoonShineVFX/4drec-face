@@ -37,7 +37,7 @@ class UIState():
         self._state['second_screen'] = False
 
         # projects
-        self._state['opencue_status'] = False
+        self._state['deadline_status'] = False
         self._state['current_project'] = None
         self._state['projects'] = []
 

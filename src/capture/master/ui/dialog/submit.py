@@ -63,7 +63,7 @@ class ShotSubmitDialog(QDialog):
         self._submit_button = None
         self._setup_ui()
 
-        state.on_changed('opencue_status', self._update_server_state)
+        state.on_changed('deadline_status', self._update_server_state)
 
         self._check_server()
 
@@ -164,11 +164,11 @@ class ShotSubmitDialog(QDialog):
 
     def _check_server(self):
         state.cast(
-            'project', 'check_opencue_server'
+            'project', 'check_deadline_server'
         )
 
     def _update_server_state(self):
-        check_result = state.get('opencue_status')
+        check_result = state.get('deadline_status')
         self._submit_button.setEnabled(check_result)
 
     def showEvent(self, event):
@@ -198,7 +198,7 @@ class ShotSubmitDialog(QDialog):
             name=self._text_name.text(),
             frame_range=[start_frame, end_frame],
             offset_frame=offset_frame,
-            cali_id=self._comboBox.currentData(),
+            cali_path=self._comboBox.currentData(),
             export_only=self._export_only,
             parms=parms
         )
