@@ -1,12 +1,9 @@
+#!/usr/bin/env python3
 from System import *
 from System.Diagnostics import *
 from System.IO import *
-
 from Deadline.Plugins import *
 from Deadline.Scripting import *
-
-from launch import launch
-from define import ResolveStage, ResolveEvent
 
 
 def GetDeadlinePlugin():
@@ -21,8 +18,6 @@ def CleanupDeadlinePlugin(deadlinePlugin):
 
 class FourDRecPlugin(DeadlinePlugin):
     """4DREC Plugin"""
-    _app_path = '\\\\4dk-sto\\storage\\app\\'
-
     def __init__(self):
         self.InitializeProcessCallback += self.InitializeProcess
         self.StartJobCallback += self.StartJob
@@ -46,6 +41,8 @@ class FourDRecPlugin(DeadlinePlugin):
 
     def RenderTasks(self):
         """render"""
+        from launch import launch
+        from define import ResolveStage
         job = self.GetJob()
         resolve_stage = job.GetJobExtraInfoKeyValue('resolve_stage')
         yaml_path = job.GetJobExtraInfoKeyValue('yaml_path')
@@ -59,8 +56,12 @@ class FourDRecPlugin(DeadlinePlugin):
         )
 
     def _on_event_emit(self, event, payload=None):
+        from define import ResolveEvent
         if event is ResolveEvent.COMPLETE:
-            self.ExitWithSuccess()
+            try:
+                self.ExitWithSuccess()
+            except Exception as error:
+                self.LogWarning(str(error))
         elif event is ResolveEvent.FAIL:
             self.FailRender(payload)
         elif event is ResolveEvent.LOG_INFO:

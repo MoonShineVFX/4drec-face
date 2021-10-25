@@ -10,10 +10,11 @@ OnEventCall = Callable[[ResolveEvent, Optional[Any]], None]
 
 
 class LoggingEventHandler(logging.StreamHandler):
-    def __init__(self, on_event: OnEventCall = None):
+    def __init__(self, on_event: OnEventCall):
         super(LoggingEventHandler, self).__init__()
         self.__on_event = on_event
         self.__stdout = sys.stdout
+        self.__is_completed = False
         sys.stdout = self
 
     def write(self, message: str):
@@ -25,6 +26,8 @@ class LoggingEventHandler(logging.StreamHandler):
         try:
             if hasattr(record, 'resolve_state'):
                 if record.resolve_state == 'COMPLETE':
+                    sys.stdout = self.__stdout
+                    self.__is_completed = True
                     self.__on_event(ResolveEvent.COMPLETE)
                     return
                 elif record.resolve_state == 'PROGRESS':
@@ -36,6 +39,8 @@ class LoggingEventHandler(logging.StreamHandler):
             elif record.levelname in ('CRITICAL', 'ERROR'):
                 self.__on_event(ResolveEvent.FAIL, record.message)
         except:
+            if self.__is_completed:
+                return
             self.handleError(record)
 
 
@@ -55,7 +60,7 @@ def launch(current_frame: int,
 
     # Add Event if assign
     if on_event is not None:
-        event_handler = LoggingEventHandler()
+        event_handler = LoggingEventHandler(on_event)
         logging.getLogger().addHandler(event_handler)
 
     # launch

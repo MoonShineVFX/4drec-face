@@ -14,7 +14,7 @@ job_info = {
     'ChunkSize': '1',
     'Frames': '0',
     'OutputDirectory0': r'G:\jobs\9e9802\test_shot\test_job',
-    'ExtraInfoKeyValue0': 'resolve_stage=INITIALIZE',
+    'ExtraInfoKeyValue0': 'resolve_stage=initialize',
     'ExtraInfoKeyValue1': r'yaml_path=G:\jobs\9e9802\test_shot\test_job\job.yml'
 }
 
@@ -34,7 +34,7 @@ job_info = {
     'Frames': '0-1593',
     'OutputDirectory0': r'G:\jobs\9e9802\test_shot\test_job',
     'JobDependencies': init_id,
-    'ExtraInfoKeyValue0': 'resolve_stage=RESOLVE',
+    'ExtraInfoKeyValue0': 'resolve_stage=resolve',
     'ExtraInfoKeyValue1': r'yaml_path=G:\jobs\9e9802\test_shot\test_job\job.yml'
 }
 

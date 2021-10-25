@@ -72,9 +72,15 @@ class ResolveProject:
         # Import images
         import_data = SETTINGS.get_import_camera_and_images()
         progress_import_step = 10.0 / len(import_data.keys())
+        camera_count = 1
+        camera_total_count = len(import_data.keys())
         for camera, photos in import_data.items():
-            self.__logging_progress(progress_import_step, 'Import camera')
+            self.__logging_progress(
+                progress_import_step,
+                f'Import camera {camera_count}/{camera_total_count}'
+            )
             chunk.addPhotos(photos, layout=Metashape.MultiframeLayout)
+            camera_count += 1
 
         # Camera calibration sensor
         ref_sensor: Metashape.Sensor = chunk.sensors[0]
