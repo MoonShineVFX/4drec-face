@@ -4,6 +4,7 @@ import pytz
 from bson.codec_options import CodecOptions
 from pathlib import Path
 import yaml
+import shutil
 
 from utility.logger import log
 from utility.define import EntityEvent, CameraCacheType, TaskState,\
@@ -230,7 +231,7 @@ class ProjectEntity(Entity):
     def _initial_shots(self):
         query = DB_SHOTS.find(
             {'project_id': self._doc_id}
-        ).sort([('created_at', -1)])
+        ).sort([('_id', -1)])
 
         shots = list(query)
 
@@ -246,6 +247,17 @@ class ProjectEntity(Entity):
         # 名稱
         if name is None or name == '':
             name = 'shot_{}'.format(self.shot_count)
+
+        # 重複的話加後綴
+        is_name_duplicated = True
+        while is_name_duplicated:
+            is_name_duplicated = False
+            for shot in self.shots:
+                if shot.name == name:
+                    is_name_duplicated = True
+                    break
+            if is_name_duplicated:
+                name += 'd'
 
         # 創建
         shot = ShotEntity(
@@ -388,6 +400,17 @@ class ShotEntity(Entity):
         if name is None or name == '':
             name = f'submit_{len(self.jobs) + 1}'
 
+        # 重複的話加後綴
+        is_name_duplicated = True
+        while is_name_duplicated:
+            is_name_duplicated = False
+            for job in self.jobs:
+                if job.name == name:
+                    is_name_duplicated = True
+                    break
+            if is_name_duplicated:
+                name += 'd'
+
         # 創建
         job = JobEntity(
             self,
@@ -474,6 +497,7 @@ class ShotEntity(Entity):
         if deadline_ids is None:
             log.error('Deadline submit server error!')
             job.remove()
+            shutil.rmtree(job.get_folder_path())
             return
 
         log.info(f'Deadline submit done: {self}')

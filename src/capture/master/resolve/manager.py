@@ -84,7 +84,7 @@ class ResolveManager(threading.Thread):
 
         job = project_manager.current_job
         job_id = job.get_id()
-        job_folder_path = job.get_folder_path
+        job_folder_path = job.get_folder_path()
         real_frame_range = job.get_real_frame_range()
         
         tasks = []

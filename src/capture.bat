@@ -31,7 +31,7 @@ goto EXEC
 :LEAVE
 if NOT ["%errorlevel%"]==["0"] pause
 tasklist /FI "IMAGENAME eq python.exe" 2>NUL | find /I /N "python.exe">NUL
-echo ~~~~~~~~~~IMAMFAMFSAMFSAMASF
+
 if "%ERRORLEVEL%"=="0" taskkill /f /im python.exe
 
 :EXIT

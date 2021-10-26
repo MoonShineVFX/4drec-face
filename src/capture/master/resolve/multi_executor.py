@@ -12,7 +12,6 @@ def load_geometry(job_id, job_folder_path, res, frame):
     # no files
     if result is None:
         return None
-
     return package
 
 
@@ -43,7 +42,6 @@ class MultiExecutor(threading.Thread):
                     load_geometry, job_id, job_folder_path, res, f
                 )
                 future_list.append(future)
-
             for future in as_completed(future_list):
                 package = future.result()
                 if package is not None:

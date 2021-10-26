@@ -1,4 +1,3 @@
-import json
 from pymongo import MongoClient
 import os
 os.environ['HTTP_PROXY'] = ''
@@ -46,19 +45,21 @@ def submit_deadline(shot, job):
 
     result = deadline.Jobs.SubmitJob(job_info, {})
     if not (isinstance(result, dict) and '_id' in result):
+        log.error(result)
         return None
 
     init_id = result['_id']
 
     job_info.update({
         'Name': f'{shot.name} - {job.name} (resolve)',
-        'Frames': job.frame_range,
+        'Frames': f'{job.frame_range[0]}-{job.frame_range[1]}',
         'ExtraInfoKeyValue0': 'resolve_stage=resolve',
         'JobDependencies': init_id
     })
 
     result = deadline.Jobs.SubmitJob(job_info, {})
     if not (isinstance(result, dict) and '_id' in result):
+        log.error(result)
         return None
 
     resolve_id = result['_id']

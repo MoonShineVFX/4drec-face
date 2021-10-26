@@ -553,21 +553,23 @@ class PlaybackSlider(QSlider, EntityBinder):
                 clip_range = 'loop_range'
             sc, ec = state.get(clip_range)
 
-            if sc is not None and ec is not None:
-                painter.fillRect(
-                    tw * sc, h - ch - oh,
-                    tw * (ec - sc), ch / 2,
-                    self.palette().base().color()
-                )
             if sc is not None:
+                sc -= self.minimum()
                 painter.fillPath(
                     self._crop_path.translated(tw * sc - cw / 2, h - ch - oh),
                     self._crop_brush
                 )
             if ec is not None:
+                ec -= self.minimum()
                 painter.fillPath(
                     self._crop_path.translated(tw * ec - cw / 2, h - ch - oh),
                     self._crop_brush
+                )
+            if sc is not None and ec is not None:
+                painter.fillRect(
+                    tw * sc, h - ch - oh,
+                    tw * (ec - sc), ch / 2,
+                    self.palette().base().color()
                 )
         painter.translate(-hw / 2, 0)
 
