@@ -9,8 +9,8 @@ from define import ResolveStage
 
 # Default license path
 if 'agisoft_LICENSE' not in os.environ:
-    logging.info('Env "agisoft_LICENSE" not found, using default install path instead')
-    os.environ['agisoft_LICENSE'] = 'C:\\Program Files\\Agisoft\\Metashape Pro\\'
+    logging.warning('Env "agisoft_LICENSE" not found, using default install path instead')
+    os.environ['agisoft_LICENSE'] = 'G:\\app\\'
 
 
 class ResolveSettings:

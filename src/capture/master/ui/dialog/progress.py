@@ -78,7 +78,11 @@ class ProgressDialog(QDialog):
 
 class ExportProgressDialog(ProgressDialog):
     def __init__(self, parent, export_path):
-        super().__init__(parent, 'Exporting', state.get('playbar_frame_count'))
+        frame_range = get_slider_range()
+        super().__init__(
+            parent, 'Exporting',
+            frame_range[1] - frame_range[0] + 1
+        )
         self._export_path = export_path
 
     def _prepare(self):
@@ -86,12 +90,10 @@ class ExportProgressDialog(ProgressDialog):
 
     def _on_show(self):
         offset_frame = state.get('playbar_frame_offset')
-        frame_range = state.get('playbar_frame_range')
+        frame_range = get_slider_range()
         state.cast(
             'resolve',
             'export_model',
-            state.get('current_project'),
-            state.get('current_shot'),
             state.get('current_job'),
             [frame_range[0] + offset_frame, frame_range[1] + offset_frame],
             self._export_path

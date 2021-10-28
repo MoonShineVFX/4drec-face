@@ -73,6 +73,11 @@ class ModelPanel(LayoutWidget):
             self.buttons.buttons['Cache'].animateClick()
 
     def _export_model(self):
-        directory = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if directory is not None and directory != '':
-            popup(dialog=ExportProgressDialog, dialog_args=(directory,))
+        shot = state.get('current_shot')
+        result = QFileDialog.getSaveFileName(
+            self, 'Export Model', f'{shot.get_parent().name}-{shot.name}',
+            'Alembic (*.abc);;Houdini (*.4dh);;Wavefront (*.obj)'
+        )
+        file_path, ext = result
+        if file_path is not None and file_path != '':
+            popup(dialog=ExportProgressDialog, dialog_args=(file_path,))
