@@ -2,6 +2,8 @@ import numpy as np
 import struct
 import io
 
+from utility.setting import setting
+
 from .image import CameraImage
 
 
@@ -120,6 +122,10 @@ class CameraShotFileLoader(CameraShotFileCore):
         # 取得資訊
         file_cursor, image_size, w, h = self._frames[frame]
 
+        # 強制修正解析度
+        w = setting.camera_resolution[0]
+        h = setting.camera_resolution[1]
+
         # 讀取片段
         self._image_file.seek(file_cursor)
         image_bytes = self._image_file.read(image_size)
@@ -158,6 +164,7 @@ class CameraShotFileDumper(CameraShotFileCore):
             camera_image: CameraImage
 
         """
+        size = camera_image.get_size()
         # 藉由 tell() 去算出檔案大小
         start_cursor = self._image_file.tell()
         camera_image.write(self._image_file)
@@ -165,7 +172,7 @@ class CameraShotFileDumper(CameraShotFileCore):
 
         # 包裝 binary
         meta = struct.pack(
-            self.binary_format, frame, image_size, *camera_image.get_size()
+            self.binary_format, frame, image_size, *size
         )
         self._meta_file.write(meta)
 

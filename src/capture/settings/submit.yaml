@@ -1,4 +1,4 @@
-bypass_exist_size: 307200
+bypass_exist_size: 1474560 # 1440 KB
 submit_path: 'G:/submit/'
 deadline_mongo:
   ip: '192.168.29.10'

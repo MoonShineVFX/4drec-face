@@ -252,8 +252,13 @@ class CameraShotSubmitter(MixThread):
                             exist_size = os.stat(image_path).st_size
 
                             # 大小超過閥值，略過
-                            if exist_size > setting.bypass_exist_size:
+                            size_ratio = setting.bypass_exist_size / exist_size
+                            if 0.6 < size_ratio < 1.4:
                                 is_exist = True
+                            else:
+                                self._log.warning(
+                                    f'Exist image size mismatch: ({size_ratio}) {image_path}'
+                                )
 
                         # 轉檔與儲存
                         if not is_exist:
