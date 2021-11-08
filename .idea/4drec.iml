@@ -5,6 +5,12 @@
       <sourceFolder url="file://$MODULE_DIR$/src/capture" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/resolve" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/.python/DLLs" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/.python/Lib" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/.python/Lib/site-packages" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/.python/Lib/site-packages/pythonwin" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/.python/Lib/site-packages/win32" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/.python/Lib/site-packages/win32/lib" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/deadline/module" />
       <excludeFolder url="file://$MODULE_DIR$/src/.python" />
       <excludeFolder url="file://$MODULE_DIR$/src/.python37" />

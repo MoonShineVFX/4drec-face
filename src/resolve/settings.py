@@ -25,6 +25,7 @@ class ResolveSettings:
         self.chunk_name = 'MainChunk'
         self.archive_name = 'cali_archive'
         self.temp_name = 'fourd_temp'
+        self.masks_name = 'masks'
 
         # Camera
         self.sensor_pixel_width = 0.00345
@@ -58,6 +59,7 @@ class ResolveSettings:
         self.archive_path = Path('')
         self.temp_path = Path('')
         self.temp_project_path = Path('')
+        self.temp_masks_path = Path('')
 
     def initialize(self,
                    current_frame: int,
@@ -103,6 +105,7 @@ class ResolveSettings:
         self.archive_path = self.job_path / f'{self.archive_name}.zip'
         self.temp_path = Path.home() / self.temp_name
         self.temp_project_path = self.temp_path / f'{self.metashape_project_name}.psx'
+        self.temp_masks_path = self.temp_path / self.masks_name
 
         self.is_initialized = True
 

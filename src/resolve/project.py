@@ -6,6 +6,9 @@ import logging
 from time import perf_counter
 import shutil
 from typing import Optional
+from common.bg_remover import detect
+from PIL import Image
+from pathlib import Path
 
 from common.fourd_frame import FourdFrameManager
 
@@ -159,6 +162,9 @@ class ResolveProject:
             self.__mark_timer('Triangulate Points')
         self.__logging_progress(19, 'Match Photos')
 
+        # Apply mask
+        self.__load_image_masks()
+
         # Build dense
         frame.buildDepthMaps()
         self.__mark_timer('Depth Map')
@@ -273,6 +279,33 @@ class ResolveProject:
         duration = now - self.__step_timer
         self.__step_timer = now
         logging.info(f'[Timer] {text}: {duration:.2f}s')
+
+    def __load_image_masks(self):
+        logging.info('Generate Mask')
+        # Get images
+        frame = self.get_current_chunk()
+        image_path_list = []
+        for camera in frame.cameras:
+            image_path_list.append(camera.photo.path)
+
+        images = [
+            (image_path, np.array(Image.open(image_path).convert('RGB')))
+            for image_path in image_path_list
+        ]
+        h, w, c = images[0][1].shape
+
+        # Generate masks
+        logging.info('Generating')
+        SETTINGS.temp_masks_path.mkdir(parents=True, exist_ok=True)
+        detect.generate_mask(images, w, h, str(SETTINGS.temp_masks_path))
+
+        # Apply masks
+        for camera in frame.cameras:
+            filename = Path(camera.photo.path).stem
+            mask_image_path = str(SETTINGS.temp_masks_path / f'{filename}.png')
+            mask = Metashape.Mask()
+            mask.load(mask_image_path)
+            camera.mask = mask
 
     @staticmethod
     def get_average_position(camera_list: [Metashape.Camera]) -> Metashape.Vector:
