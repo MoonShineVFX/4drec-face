@@ -6,9 +6,9 @@ import logging
 from time import perf_counter
 import shutil
 from typing import Optional
-from common.bg_remover import detect
 from PIL import Image
 from pathlib import Path
+from common.bg_remover import detect
 
 from common.fourd_frame import FourdFrameManager
 

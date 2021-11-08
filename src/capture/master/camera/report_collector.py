@@ -234,6 +234,17 @@ class SubmitReportContainer(ReportContainer):
             self._progress_list[camera_id] = 0
             self._complete_check_list[camera_id] = False
 
+        # 不傳檔直接發布
+        if self._submit_order.bypass_conversion:
+            from master.ui import ui
+            camera_count = len(setting.get_working_camera_ids())
+            for i in range(self._submit_order.get_frame_length() * camera_count):
+                ui.dispatch_event(
+                    UIEventType.TICK_SUBMIT,
+                    sum(self._progress_list.values())
+                )
+            self._summarize_report()
+
     def _import_report(self, report):
         """匯入報告"""
         from master.ui import ui

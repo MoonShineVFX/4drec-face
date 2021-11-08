@@ -145,6 +145,7 @@ class SubmitOrder:
     frame_range: [int]
     export_only: bool
     offset_frame: int
+    bypass_conversion: bool
     cali_path: str = ''
     parms: dict = field(default_factory=dict)
 

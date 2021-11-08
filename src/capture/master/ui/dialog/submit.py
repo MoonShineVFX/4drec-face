@@ -1,6 +1,6 @@
 from PyQt5.Qt import (
     QDialog, Qt, QLabel, QDialogButtonBox, QLineEdit, QHBoxLayout, QWidget,
-    QSpinBox, QDoubleSpinBox, QScrollArea, QVBoxLayout, QComboBox
+    QSpinBox, QDoubleSpinBox, QScrollArea, QVBoxLayout, QComboBox, QCheckBox
 )
 
 from utility.setting import setting
@@ -61,6 +61,7 @@ class ShotSubmitDialog(QDialog):
         self._comboBox = None
         self._export_only = False
         self._submit_button = None
+        self._bypass_button = None
         self._setup_ui()
 
         state.on_changed('deadline_status', self._update_server_state)
@@ -142,6 +143,10 @@ class ShotSubmitDialog(QDialog):
         scroll.setWidget(submit_widget)
         layout.addWidget(scroll)
 
+        # Bypass Conversion
+        self._bypass_button = QCheckBox('Bypass Conversion')
+        layout.addWidget(self._bypass_button)
+
         # 底部按鈕組
         self._buttons = QDialogButtonBox()
         self._submit_button = self._buttons.addButton('Submit', QDialogButtonBox.AcceptRole)
@@ -198,6 +203,7 @@ class ShotSubmitDialog(QDialog):
             name=self._text_name.text(),
             frame_range=[start_frame, end_frame],
             offset_frame=offset_frame,
+            bypass_conversion=self._bypass_button.isChecked(),
             cali_path=self._comboBox.currentData(),
             export_only=self._export_only,
             parms=parms

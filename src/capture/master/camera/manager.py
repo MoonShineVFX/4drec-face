@@ -407,19 +407,20 @@ class CameraManager:
             submit_order
         )
 
-        # 通知 Slaves 傳輸轉檔 Shot
-        message_manager.send_message(
-            MessageType.SUBMIT_SHOT,
-            {
-                'project_id': shot.get_parent().get_id(),
-                'shot_id': shot.get_id(),
-                'job_name': submit_order.name,
-                'frame_range': offset_frame_range,
-                'offset_frame': submit_order.offset_frame,
-                'is_cali': shot.is_cali(),
-                'shot_path': shot.get_folder_path()
-            }
-        )
+        if not submit_order.bypass_conversion:
+            # 通知 Slaves 傳輸轉檔 Shot
+            message_manager.send_message(
+                MessageType.SUBMIT_SHOT,
+                {
+                    'project_id': shot.get_parent().get_id(),
+                    'shot_id': shot.get_id(),
+                    'job_name': submit_order.name,
+                    'frame_range': offset_frame_range,
+                    'offset_frame': submit_order.offset_frame,
+                    'is_cali': shot.is_cali(),
+                    'shot_path': shot.get_folder_path()
+                }
+            )
 
     def cache_whole_shot(self, closeup_camera):
         shot = project_manager.current_shot
