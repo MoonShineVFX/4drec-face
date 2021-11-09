@@ -13,7 +13,7 @@ from common.bg_remover import detect
 from common.fourd_frame import FourdFrameManager
 
 from settings import SETTINGS
-from define import ResolveStage, ResolveEvent
+from define import ResolveStage
 
 
 MAX_CALIBRATE_FRAMES = 50
@@ -160,10 +160,12 @@ class ResolveProject:
 
             frame.triangulatePoints()
             self.__mark_timer('Triangulate Points')
-        self.__logging_progress(19, 'Match Photos')
+        self.__logging_progress(8, 'Match Photos')
 
         # Apply mask
         self.__load_image_masks()
+        self.__mark_timer('Background Removal')
+        self.__logging_progress(11, 'Background Removal')
 
         # Build dense
         frame.buildDepthMaps()

@@ -3,7 +3,8 @@ import os
 import numpy as np
 import torch
 from torchvision import transforms
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 from common.bg_remover import data_loader, u2net
 
@@ -67,7 +68,7 @@ def generate_mask(images, width, height, output_path):
 
     print('Preprocess')
     samples = []
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         future_list = []
         for image in images:
             future = executor.submit(
@@ -78,7 +79,7 @@ def generate_mask(images, width, height, output_path):
         count = 1
         for future in as_completed(future_list):
             samples.append(future.result())
-            print(f'{count}/{len(future_list)}')
+            print(f'Preprocess {count}/{len(future_list)}')
             count += 1
 
     result = []
@@ -92,7 +93,7 @@ def generate_mask(images, width, height, output_path):
         idx = 1
         for sample_item in samples:
             path, sample = sample_item
-            print(f'Image {idx}/{count}')
+            print(f'Detect {idx}/{count}')
             inputs_test = torch.cuda.FloatTensor(
                 sample["image"].unsqueeze(0).cuda().float()
             )
@@ -110,7 +111,7 @@ def generate_mask(images, width, height, output_path):
             idx += 1
 
     print('Save')
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         future_list = []
         for path, predict_np in result:
             future = executor.submit(
@@ -121,7 +122,8 @@ def generate_mask(images, width, height, output_path):
 
         count = 1
         for future in as_completed(future_list):
-            print(f'{count}/{len(future_list)}')
+            save_path = future.result()
+            print(f'{count}/{len(future_list)} {save_path}')
             count += 1
 
 
@@ -131,5 +133,7 @@ def save_mask(path, predict_np, width, height, output_path):
     output_image = output_image.resize(
         (width, height), Image.LANCZOS
     ).convert("RGB")
-    filename = path.split('\\')[-1].split('.')[0]
-    output_image.save(rf'{output_path}\{filename}.png')
+    filename = Path(path).stem
+    save_path = rf'{output_path}\{filename}.png'
+    output_image.save(save_path)
+    return save_path
