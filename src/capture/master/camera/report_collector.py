@@ -238,11 +238,10 @@ class SubmitReportContainer(ReportContainer):
         if self._submit_order.bypass_conversion:
             from master.ui import ui
             camera_count = len(setting.get_working_camera_ids())
-            for i in range(self._submit_order.get_frame_length() * camera_count):
-                ui.dispatch_event(
-                    UIEventType.TICK_SUBMIT,
-                    sum(self._progress_list.values())
-                )
+            ui.dispatch_event(
+                UIEventType.TICK_SUBMIT,
+                self._submit_order.get_frame_length() * camera_count
+            )
             self._summarize_report()
 
     def _import_report(self, report):
