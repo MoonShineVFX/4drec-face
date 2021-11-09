@@ -110,6 +110,8 @@ def generate_mask(images, width, height, output_path):
             del d1, d2, d3, d4, d5, d6, d7, pred, predict, predict_np, inputs_test, sample
             idx += 1
 
+    del net
+
     print('Save')
     with ThreadPoolExecutor(max_workers=8) as executor:
         future_list = []
@@ -125,6 +127,9 @@ def generate_mask(images, width, height, output_path):
             save_path = future.result()
             print(f'{count}/{len(future_list)} {save_path}')
             count += 1
+
+    print('Release VRAM')
+    torch.cuda.empty_cache()
 
 
 def save_mask(path, predict_np, width, height, output_path):

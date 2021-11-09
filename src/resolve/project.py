@@ -8,7 +8,6 @@ import shutil
 from typing import Optional
 from PIL import Image
 from pathlib import Path
-from common.bg_remover import detect
 
 from common.fourd_frame import FourdFrameManager
 
@@ -283,6 +282,8 @@ class ResolveProject:
         logging.info(f'[Timer] {text}: {duration:.2f}s')
 
     def __load_image_masks(self):
+        from common.bg_remover import detect
+
         logging.info('Generate Mask')
         # Get images
         frame = self.get_current_chunk()
