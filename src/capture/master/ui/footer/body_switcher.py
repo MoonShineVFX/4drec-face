@@ -1,14 +1,15 @@
-from PyQt5.Qt import Qt, QPushButton
+from PyQt5.Qt import Qt, QPushButton, QIcon
 
 from utility.define import BodyMode
 
 from master.ui.custom_widgets import LayoutWidget
 from master.ui.state import state, EntityBinder
+from master.ui.resource import icons
 
 
 class BodySwitcher(LayoutWidget, EntityBinder):
-    def __init__(self):
-        super().__init__(alignment=Qt.AlignCenter)
+    def __init__(self, parent=None):
+        super().__init__(parent=parent, alignment=Qt.AlignCenter)
         self._switches = []
         self._setup_ui()
         self._state = None
@@ -33,6 +34,8 @@ class BodySwitcher(LayoutWidget, EntityBinder):
         for button in self._switches:
             button.show()
 
+        self.setVisible(shot.state != 0)
+
         if shot.state == 0:
             self._set((0, 3, 2))
         elif shot.state == 1 or shot.is_cali():
@@ -56,7 +59,7 @@ class BodySwitchButton(QPushButton):
     }
 
     *:hover {
-      color: palette(highlight);
+      background-color: palette(base);
     }
 
     *:checked {
@@ -76,19 +79,27 @@ class BodySwitchButton(QPushButton):
         self._mode = mode
         self.clicked.connect(self.on_clicked)
         state.on_changed('body_mode', self._update)
+        self._icon = None
+        self._icon_hl = None
         self._setup_ui()
         self._update()
 
     def _setup_ui(self):
         self.setFocusPolicy(Qt.NoFocus)
-        self.setFixedSize(100, 40)
+        self.setFixedSize(80, 60)
         self.setStyleSheet(self._default)
         self.setCheckable(True)
-        text = '3D' if self._mode is BodyMode.MODEL else '2D'
-        self.setText(text)
+        text = 'model' if self._mode is BodyMode.MODEL else 'roll'
+        self._icon = QIcon(icons.get(text))
+        self._icon_hl = QIcon(icons.get(text + '_hl'))
+        self.setIconSize(self._icon.availableSizes()[0])
 
     def _update(self):
         self.setChecked(self._mode is state.get('body_mode'))
+        if self.isChecked():
+            self.setIcon(self._icon_hl)
+        else:
+            self.setIcon(self._icon)
 
     def on_clicked(self):
         if self._mode is state.get('body_mode'):

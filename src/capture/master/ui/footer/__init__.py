@@ -7,7 +7,7 @@ from .live_view_panel import LiveViewPanel
 from .roll_panel import RollPanel
 from .playback_control import PlaybackControl
 from .model_panel import ModelPanel
-from .decibel_meter import DecibelMeter
+from .body_switcher import BodySwitcher
 
 
 class Footer(LayoutWidget):
@@ -19,8 +19,8 @@ class Footer(LayoutWidget):
     }
     '''
 
-    def __init__(self):
-        super().__init__(margin=(32, 16, 32, 16))
+    def __init__(self, parent):
+        super().__init__(parent=parent, margin=(32, 16, 32, 16))
         self._widgets = []
         self._setup_ui()
         state.on_changed('body_mode', self._update)
@@ -41,11 +41,12 @@ class Footer(LayoutWidget):
 
         self._layout = make_layout(stack=True)
 
-        playback_control = PlaybackControl()
-        decibel_meter = DecibelMeter()
-        self._layout.addWidget(LiveViewPanel(decibel_meter))
-        self._layout.addWidget(RollPanel(decibel_meter, playback_control))
-        self._layout.addWidget(ModelPanel(decibel_meter, playback_control))
+        playback_control = PlaybackControl(self)
+        body_switcher = BodySwitcher(self)
+
+        self._layout.addWidget(LiveViewPanel(self))
+        self._layout.addWidget(RollPanel(playback_control, body_switcher, self))
+        self._layout.addWidget(ModelPanel(playback_control, body_switcher, self))
 
         self.addLayout(self._layout)
 

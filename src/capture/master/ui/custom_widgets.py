@@ -7,8 +7,8 @@ from PyQt5.Qt import (
 from master.ui.resource import icons
 
 
-def make_split_line(vertical=False):
-    line = QFrame()
+def make_split_line(vertical=False, parent=None):
+    line = QFrame(parent=parent)
 
     if vertical:
         line.setFrameShape(QFrame.VLine)
@@ -121,9 +121,10 @@ class PushButton(QPushButton):
 class ToolButton(QAbstractButton):
     def __init__(
         self, text=None, checkable=False,
-        spacing=12, margin=(0, 0, 0, 0), source=None
+        spacing=10, margin=(0, 0, 0, 0), source=None,
+        parent=None
     ):
-        super().__init__()
+        super().__init__(parent=parent)
         self._icon = None
         self._hover_icon = None
         self._text = text
@@ -166,7 +167,7 @@ class ToolButton(QAbstractButton):
             painter.translate(1, 1)
 
         font = QFont()
-        font.setPixelSize(14)
+        font.setPixelSize(12)
         painter.setFont(font)
         if self._hover or self.isChecked():
             color = self.palette().highlight().color()

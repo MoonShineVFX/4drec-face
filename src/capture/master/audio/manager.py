@@ -75,7 +75,7 @@ class AudioManager(threading.Thread):
                 self.__read_buffer = None
 
             if not Path(file_path).is_file():
-                log.warning(f'No audio file found: [{file_path}]')
+                log.warning(f'No audio file found: {file_path}')
                 return
 
             with open(file_path, 'rb') as f:

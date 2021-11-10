@@ -568,7 +568,7 @@ class JobEntity(Entity):
         self._deadline_tasks = self._get_deadline_tasks()
         self._memory = 0
 
-        if self.state == 0:
+        if self.state == 0 and not setting.is_testing():
             self._repeater = Repeater(self._update_deadline_tasks, 60, True)
 
     def _get_deadline_tasks(self):

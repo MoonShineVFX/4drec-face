@@ -23,8 +23,8 @@ class ShotList(LayoutWidget):
     }
     '''
 
-    def __init__(self):
-        super().__init__(horizon=False, spacing=16, alignment=Qt.AlignTop)
+    def __init__(self, parent):
+        super().__init__(horizon=False, spacing=16, alignment=Qt.AlignTop, parent=parent)
         self._shot_widgets = {}
         state.on_changed('shots', self._update)
         self._setup_ui()
@@ -191,7 +191,7 @@ class ShotItem(LayoutWidget, EntityBinder):
             len(self._shot.jobs) > 0
         ):
             if self._job_list is None:
-                self._job_list = JobList(self._shot._jobs)
+                self._job_list = JobList(self._shot._jobs, self)
                 self.addWidget(self._job_list)
         else:
             if self._job_list is not None:
@@ -228,7 +228,9 @@ class ShotItem(LayoutWidget, EntityBinder):
             layout.addWidget(label)
             bottom_layout.addLayout(layout)
             if i != len(self._field_info_list) - 1:
-                bottom_layout.addWidget(make_split_line(vertical=True))
+                bottom_layout.addWidget(
+                    make_split_line(vertical=True, parent=self)
+                )
             self._field_info_labels.append(label)
 
         self.addLayout(top_layout)

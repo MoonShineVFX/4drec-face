@@ -1,7 +1,3 @@
-import sys
-import os
-
-
 def start_master() -> int:
     """master 總啟動程序"""
     from utility.message import message_manager

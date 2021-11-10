@@ -20,48 +20,48 @@ exposuretime 22
 wb 22
 
 -- play
-pause 23
-play 23
-next 23
-previous 23
-clipleft 23
-clipright 23
-clipleft_hl 23
-clipright_hl 23
-play_hl 23 
-next_hl 23
-previous_hl 23
-pause_hl 23
+pause 20
+play 20
+next 20
+previous 20
+clipleft 20
+clipright 20
+clipleft_hl 20
+clipright_hl 20
+play_hl 20 
+next_hl 20
+previous_hl 20
+pause_hl 20
 
 -- live
 record 32 highlight
 record_red 32 #ff1c1c
-serial 30
-focus 30
-calibrate 30
-serial_hl 30
-focus_hl 30
-calibrate_hl 30
+serial 20
+focus 20
+calibrate 20
+serial_hl 20
+focus_hl 20
+calibrate_hl 20
 
 -- roll
 submit 36 highlight
-cache 30
-crop 30
-save 30
-cache_hl 30
-crop_hl 30
-save_hl 30
+cache 20
+crop 20
+save 20
+cache_hl 20
+crop_hl 20
+save_hl 20
 
 -- 3d
 export 36 highlight
-wireframe 30
-rig 30
-wireframe_hl 30
-rig_hl 30
-loop 30
-loop_hl 30
-screenshot 30
-screenshot_hl 30
+wireframe 20
+rig 20
+wireframe_hl 20
+rig_hl 20
+loop 20
+loop_hl 20
+screenshot 20
+screenshot_hl 20
 
 -- project list
 resolve 18
@@ -78,3 +78,9 @@ state_1 8 #C8C569
 state_2 8 #69BBC8
 state_3 8 #6FC869
 state_4 8 #C86969
+
+-- mode switch
+roll 30
+roll_hl 30
+model 30
+model_hl 30

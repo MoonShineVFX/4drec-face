@@ -1,4 +1,4 @@
-from PyQt5.Qt import QObject, pyqtSignal
+from PyQt5.Qt import QObject, pyqtSignal, QApplication
 
 from utility.setting import setting
 from utility.define import EntityEvent, BodyMode

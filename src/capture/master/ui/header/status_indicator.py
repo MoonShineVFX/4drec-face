@@ -1,15 +1,18 @@
-from PyQt5.Qt import Qt, QLabel, QPushButton, QIcon
+from PyQt5.Qt import Qt, QLabel, QPushButton, QIcon, QApplication
 
 from master.ui.custom_widgets import LayoutWidget
 from master.ui.resource import icons
 from master.ui.state import state
 
+from .decibel_meter import DecibelMeter
+
 
 class StatusIndicator(LayoutWidget):
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__(
             alignment=Qt.AlignRight,
-            spacing=24
+            spacing=24,
+            parent=parent
         )
         self._widgets = {}
         state.on_changed('status', self._update)
@@ -33,17 +36,20 @@ class StatusIndicator(LayoutWidget):
     def _setup_ui(self):
         self.addWidget(ScreenButton())
         self.addWidget(TriggerButton())
+
         for text in ('slaves', 'bias', 'cache_size'):
-            widget = StatusItem(text)
+            widget = StatusItem(text, self)
             self._widgets[text] = widget
             self.addWidget(widget)
+
+        self.addWidget(DecibelMeter())
 
 
 class StatusItem(LayoutWidget):
     _default = 'font-size: 18px; padding-bottom: 5px'
 
-    def __init__(self, icon):
-        super().__init__(spacing=5)
+    def __init__(self, icon, parent):
+        super().__init__(spacing=5, parent=parent)
         self._text = ''
         self._text_label = None
         self._icon = icon
@@ -85,6 +91,9 @@ class ScreenButton(HeaderButton):
 
     def _setup_ui(self):
         self.setCheckable(True)
+        screen_count = QApplication.desktop().screenCount()
+        if screen_count <= 1:
+            self.setVisible(False)
 
     def _toggle_screen(self):
         state.set('second_screen', self.isChecked())

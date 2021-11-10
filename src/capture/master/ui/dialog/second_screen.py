@@ -4,8 +4,9 @@ from master.ui.state import state
 
 
 class SecondScreenView(QLabel):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setVisible(False)
         self._setup_ui()
         state.on_changed('closeup_camera', self._toggle_pixmap)
         state.on_changed('pixmap_closeup', self._set_pixmap)

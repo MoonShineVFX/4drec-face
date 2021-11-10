@@ -1,43 +1,28 @@
 from master.ui.custom_widgets import LayoutWidget, PushButton
-from master.ui.dialog import CacheProgressDialog
 from master.ui.popup import popup
 from master.ui.dialog import ShotSubmitDialog, SubmitProgressDialog
 from master.ui.state import state
 
 from utility.define import SubmitOrder
 
-from .support_button import SupportButtonGroup
-
 
 class RollPanel(LayoutWidget):
-    def __init__(self, decibel_meter, playback_control):
-        super().__init__(spacing=24)
+    def __init__(self, playback_control, body_switcher, parent):
+        super().__init__(spacing=12, parent=parent)
         self._playback_control = playback_control
-        self._decibel_meter = decibel_meter
+        self._body_switcher = body_switcher
         self._setup_ui()
 
     def _setup_ui(self):
-        buttons = SupportButtonGroup(('Serial', 'Cache', 'Crop'))
-        buttons.buttons['Cache'].clicked.connect(self._on_cache)
-
-        self.addLayout(
-            buttons
-        )
-
-        self.layout().addSpacing(12)
-
         self.addWidget(SubmitButton())
 
     def showEvent(self, event):
-        self.layout().insertWidget(1, self._decibel_meter)
+        self.layout().insertWidget(0, self._body_switcher)
         self.layout().insertLayout(1, self._playback_control)
 
     def hideEvent(self, event):
         self.layout().removeItem(self._playback_control)
-        self.layout().removeWidget(self._decibel_meter)
-
-    def _on_cache(self):
-        popup(dialog=CacheProgressDialog)
+        self.layout().removeWidget(self._body_switcher)
 
 
 class SubmitButton(PushButton):

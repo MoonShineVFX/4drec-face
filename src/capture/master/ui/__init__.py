@@ -4,10 +4,11 @@
 藉由 UIEvent 來跟外部溝通
 
 """
-
 import threading
 import sys
-from PyQt5.Qt import QApplication, QIcon
+import os
+from PyQt5.Qt import QApplication, QIcon, QPixmap, QSplashScreen
+from PyQt5 import QtCore
 
 from utility.logger import log
 from utility.define import UIEventType
@@ -27,6 +28,7 @@ class MasterUI(threading.Thread):
     def __init__(self, lock):
         super().__init__()
         self._lock = lock
+        self._main = None
 
         # 直接開始執行
         self.start()
@@ -37,21 +39,31 @@ class MasterUI(threading.Thread):
         return getattr(self._main, prop)
 
     def run(self):
-        """執行 Qt"""
-        app = QApplication(sys.argv)
-        app.setWindowIcon(QIcon('source/icon/ico.svg'))
-        apply_theme(app)
-        log.info('Initialize UI')
-        main_window = MainWindow()
-        self._main = main_window
-
-        self._lock.acquire()
-        self._lock.notify()
-        self._lock.release()
-
         # Catch QT exception
         sys._excepthook = sys.excepthook
         sys.excepthook = self._qt_exception_hook
+
+        # Execute QT
+        os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+        app = QApplication(sys.argv)
+        app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
+        app.setWindowIcon(QIcon('source/icon/ico.svg'))
+        apply_theme(app)
+
+        # Splash Screen
+        splash_pix = QPixmap('source/splash.png')
+        splash = QSplashScreen(
+            splash_pix, QtCore.Qt.WindowStaysOnTopHint
+        )
+        splash.show()
+
+        log.info('Initialize UI')
+        main_window = MainWindow(splash)
+
+        self._main = main_window
+        self._lock.acquire()
+        self._lock.notify()
+        self._lock.release()
 
         sys.exit(app.exec_())
 

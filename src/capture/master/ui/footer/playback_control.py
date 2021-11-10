@@ -15,11 +15,12 @@ from master.ui.custom_widgets import LayoutWidget, make_layout, ToolButton
 
 
 class PlaybackControl(QVBoxLayout):
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
         self._player = None
         self._entity = None
         self._playback_bar = None
+        self._temp_parent = parent
         self._setup_ui()
         state.on_changed('current_slider_value', self._on_slider_value_changed)
         state.on_changed('closeup_camera', self._on_slider_value_changed)
@@ -68,12 +69,12 @@ class PlaybackControl(QVBoxLayout):
         self.setSpacing(0)
         self.setContentsMargins(0, 0, 0, 0)
 
-        self._playback_bar = PlaybackBar()
+        self._playback_bar = PlaybackBar(self._temp_parent)
         self.addWidget(self._playback_bar)
 
-        layout = make_layout(alignment=Qt.AlignCenter, spacing=60)
+        layout = make_layout(alignment=Qt.AlignCenter, spacing=48)
         for source in ('clipleft', 'previous', 'play', 'next', 'clipright'):
-            button = PlaybackButton(source)
+            button = PlaybackButton(source, parent=self._playback_bar)
             button.clicked.connect(partial(self._on_click, source))
 
             layout.addWidget(button)
@@ -252,8 +253,9 @@ class PlaybackBar(LayoutWidget):
     }
     '''
 
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__(
+            parent=parent,
             alignment=Qt.AlignCenter, spacing=16, margin=(32, 0, 32, 0)
         )
         self._labels = []
@@ -330,7 +332,7 @@ class PlaybackBar(LayoutWidget):
 class PlaybackSlider(QSlider, EntityBinder):
     _default = '''
     PlaybackSlider {
-        height: 60px
+        height: 66px
     }
     PlaybackSlider::add-page, PlaybackSlider::sub-page {
       background: none;
@@ -476,7 +478,7 @@ class PlaybackSlider(QSlider, EntityBinder):
         shot = state.get('current_shot')
         job = state.get('current_job')
         body_mode = state.get('body_mode')
-        if shot is not None and body_mode is BodyMode.PLAYBACK:
+        if shot is not None and body_mode is BodyMode.PLAYBACK and shot.frame_range is not None:
             progress = shot.get_cache_progress()
             t_color = self.palette().midlight().color()
             c_color = QColor('#DB2A71')
@@ -596,8 +598,8 @@ class PlaybackSlider(QSlider, EntityBinder):
 
 
 class PlaybackButton(ToolButton):
-    def __init__(self, source):
-        super().__init__(source=source)
+    def __init__(self, source, parent=None):
+        super().__init__(parent=parent, source=source)
         if source == 'play':
             state.on_changed('playing', self._update_source)
         elif source.startswith('clip'):

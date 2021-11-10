@@ -35,6 +35,7 @@ class ProjectTitle(QLabel, EntityBinder):
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
+        self.setFixedWidth(300)
 
     def enterEvent(self, event):
         self.setStyleSheet(self._default + self._hover)

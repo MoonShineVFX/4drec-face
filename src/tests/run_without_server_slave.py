@@ -15,6 +15,7 @@ capture_path = src_path / 'capture'
 
 sys.path.insert(0, str(src_path))
 sys.path.insert(0, str(capture_path))
+sys.path.insert(0, str(capture_path))
 
 # Mock sys.argv
 main_py = capture_path / 'main.py'

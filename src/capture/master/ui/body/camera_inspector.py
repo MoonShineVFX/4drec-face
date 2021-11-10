@@ -11,8 +11,8 @@ from master.ui.state import state
 
 
 class CameraInspector(LayoutWidget):
-    def __init__(self):
-        super().__init__(horizon=False, alignment=Qt.AlignCenter)
+    def __init__(self, parent):
+        super().__init__(horizon=False, alignment=Qt.AlignCenter, parent=parent)
         self._serial = None
         self._core = None
 
@@ -23,7 +23,7 @@ class CameraInspector(LayoutWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        self._core = CameraInspectorCore()
+        self._core = CameraInspectorCore(self)
         self.addWidget(self._core)
 
     def _update_pixmap(self):
@@ -89,8 +89,8 @@ class CameraInspectorCore(QGraphicsView):
     _w = setting.camera_resolution[0]
     _h = setting.camera_resolution[1]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent=parent)
         self._zoom = 0
         self._scene = None
         self._image = None

@@ -6,14 +6,14 @@ from master.ui.custom_widgets import LayoutWidget, ElideLabel
 
 
 class JobList(LayoutWidget):
-    def __init__(self, jobs):
-        super().__init__(horizon=False, spacing=8)
+    def __init__(self, jobs, parent):
+        super().__init__(horizon=False, spacing=8, parent=parent)
         self._jobs = jobs
         self._setup_ui()
 
     def _setup_ui(self):
         for job in self._jobs:
-            self.addWidget(JobItem(job))
+            self.addWidget(JobItem(job, self))
 
     def showEvent(self, event):
         job = state.get('current_job')
@@ -39,8 +39,8 @@ class JobItem(LayoutWidget, EntityBinder):
     }
     '''
 
-    def __init__(self, job):
-        super().__init__(margin=(16, 4, 16, 4), spacing=16)
+    def __init__(self, job, parent):
+        super().__init__(margin=(16, 4, 16, 4), spacing=16, parent=parent)
         self._job = job
         self._state_label = None
         self._name_label = None

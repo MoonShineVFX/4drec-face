@@ -1,6 +1,5 @@
 from PyQt5.Qt import (
-    QHBoxLayout, QGridLayout, Qt, QLabel, QSlider, QIcon, QPushButton,
-    QSpacerItem
+    QHBoxLayout, QGridLayout, Qt, QLabel, QSlider, QIcon, QPushButton
 )
 from functools import partial
 
@@ -10,28 +9,15 @@ from master.ui.custom_widgets import LayoutWidget, PushButton
 from master.ui.resource import icons
 from master.ui.state import state
 
-from .support_button import SupportButtonGroup
-
 
 class LiveViewPanel(LayoutWidget):
-    def __init__(self, decibel_meter):
-        super().__init__(spacing=36, margin=(0, 0, 0, 0))
-        self._decibel_meter = decibel_meter
+    def __init__(self, parent):
+        super().__init__(spacing=36, margin=(0, 0, 0, 0), parent=parent)
         self._setup_ui()
 
     def _setup_ui(self):
-        self.addLayout(
-            SupportButtonGroup(('Serial', 'Calibrate', 'Focus'))
-        )
         self.addLayout(ParameterFields())
-        self.addWidget(self._decibel_meter)
         self.addWidget(RecordButton())
-
-    def showEvent(self, event):
-        self.layout().insertWidget(2, self._decibel_meter)
-
-    def hideEvent(self, event):
-        self.layout().removeWidget(self._decibel_meter)
 
 
 class RecordButton(PushButton):

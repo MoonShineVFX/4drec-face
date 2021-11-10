@@ -11,12 +11,14 @@ from .opengl_core import OpenGLCore
 class ModelView(QWidget):
     _offset_parm_value = 0.1
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent=parent)
 
         self._interface = ModelInterface()
         self._res_select = TextureResolutionComboBox()
+
         self._core = OpenGLCore(self, self._interface)
+
         self._interface.setParent(self)
         self._res_select.setParent(self)
         self._cache = {}

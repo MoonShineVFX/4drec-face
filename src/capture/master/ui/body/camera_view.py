@@ -14,8 +14,8 @@ from .camera_inspector import CameraInspector
 
 
 class CameraViewLayout(LayoutWidget):
-    def __init__(self):
-        super().__init__(stack=True)
+    def __init__(self, parent):
+        super().__init__(stack=True, parent=parent)
         self._camera_views = []
         self._inspector = None
         self._is_recording = False
@@ -29,17 +29,17 @@ class CameraViewLayout(LayoutWidget):
         self._generate_camera_views()
         counts = int(len(self._camera_views) / 2)
 
-        self._inspector = CameraInspector()
+        self._inspector = CameraInspector(self)
 
-        page_overview_widgets = [CameraViewGrid(self._camera_views)]
+        page_overview_widgets = [CameraViewGrid(self._camera_views, parent=self)]
         page_inspector_widgets = [
-            CameraViewGrid(self._camera_views[:counts], half=True),
+            CameraViewGrid(self._camera_views[:counts], half=True, parent=self),
             self._inspector,
-            CameraViewGrid(self._camera_views[counts:], half=True)
+            CameraViewGrid(self._camera_views[counts:], half=True, parent=self)
         ]
 
         for widgets in (page_overview_widgets, page_inspector_widgets):
-            self.addWidget(CameraPage(widgets))
+            self.addWidget(CameraPage(widgets, self))
 
         self._update()
 
@@ -60,7 +60,8 @@ class CameraViewLayout(LayoutWidget):
 
             camera_view = CameraView(
                 camera_number, camera_id,
-                resize_leader=set_resize_leader
+                resize_leader=set_resize_leader,
+                parent=self
             )
 
             if set_resize_leader:
@@ -116,8 +117,8 @@ class CameraViewLayout(LayoutWidget):
 
 
 class CameraPage(LayoutWidget):
-    def __init__(self, widgets):
-        super().__init__()
+    def __init__(self, widgets, parent):
+        super().__init__(parent=parent)
         self._widgets = widgets
         self._setup_ui()
 
@@ -130,8 +131,8 @@ class CameraPage(LayoutWidget):
 
 
 class CameraViewGrid(LayoutWidget):
-    def __init__(self, camera_views, half=False):
-        super().__init__(grid=True, margin=8, spacing=8)
+    def __init__(self, camera_views, half=False, parent=None):
+        super().__init__(grid=True, margin=8, spacing=8, parent=parent)
         self._camera_views = camera_views
         self._is_half = half
         self._setup_ui()
@@ -162,8 +163,8 @@ class CameraViewGrid(LayoutWidget):
 
 
 class CameraView(LayoutWidget):
-    def __init__(self, camera_number, camera_id, resize_leader=False):
-        super().__init__(horizon=False, alignment=Qt.AlignCenter)
+    def __init__(self, camera_number, camera_id, resize_leader=False, parent=None):
+        super().__init__(horizon=False, alignment=Qt.AlignCenter, parent=parent)
         self._camera_number = camera_number
         self._camera_id = camera_id
         self._image = None
@@ -192,7 +193,7 @@ class CameraView(LayoutWidget):
         self._image = CameraImage(self._resize_leader)
         self.addWidget(self._image)
 
-        self._info = CameraViewInfo(self._camera_number, self._camera_id)
+        self._info = CameraViewInfo(self._camera_number, self._camera_id, self)
         self.addWidget(self._info)
 
         self.layout().setStretch(0, 1)
@@ -309,8 +310,8 @@ class CameraImage(QWidget):
 
 
 class CameraViewInfo(LayoutWidget):
-    def __init__(self, camera_number, camera_id):
-        super().__init__(stack=True)
+    def __init__(self, camera_number, camera_id, parent):
+        super().__init__(stack=True, parent=parent)
         self._camera_number = camera_number
         self._camera_id = camera_id
         self._number_text = self._make_number_text()
@@ -323,7 +324,7 @@ class CameraViewInfo(LayoutWidget):
 
     def _setup_ui(self):
         for text, icon in ((self._number_text, 'camera'), (self._camera_id, 'tag')):
-            layout = LayoutWidget(spacing=8, alignment=Qt.AlignCenter)
+            layout = LayoutWidget(spacing=8, alignment=Qt.AlignCenter, parent=self)
             icon_label = QLabel()
             icon_label.setPixmap(icons.get(icon))
             text_label = QLabel(text)

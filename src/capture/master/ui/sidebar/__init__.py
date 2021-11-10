@@ -21,8 +21,8 @@ class Sidebar(LayoutWidget):
     }
     '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent=parent)
         state.on_changed('shot_new_dialog', self._new_shot)
         self._setup_ui()
 
@@ -33,7 +33,7 @@ class Sidebar(LayoutWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setWidget(ShotList())
+        scroll.setWidget(ShotList(self))
 
         self.addWidget(scroll)
 

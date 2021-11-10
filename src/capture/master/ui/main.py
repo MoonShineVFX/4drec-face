@@ -1,4 +1,3 @@
-import sys
 from PyQt5.Qt import QMainWindow, QApplication, Qt, QWidget
 
 from utility.message import message_manager
@@ -10,12 +9,13 @@ class MainWindow(QMainWindow):
     """主介面總成"""
     _default = 'MainWindow {background-color: palette(dark)}'
 
-    def __init__(self):
+    def __init__(self, splash):
         super().__init__()
 
         # 基礎屬性
         self.setWindowTitle('4DREC [FACE]')  # 程式名稱
         self._second_screen = None
+        self._splash = splash
 
         # 綁定事件
         from .state import state
@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         from .footer import Footer
         from .sidebar import Sidebar
         from .dialog import SecondScreenView
+
         self.setStyleSheet(self._default)
         log.info('finish widgets')
 
@@ -53,18 +54,19 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 80, 1520, 850)
 
         # 版面
-        widget = LayoutWidget(horizon=False)
+        widget = LayoutWidget(parent=self, horizon=False)
+
         hlayout = make_layout()
         vlayout = make_layout(horizon=False)
 
-        vlayout.addLayout(Body())
-        vlayout.addWidget(Footer())
+        vlayout.addWidget(Body(self))
+        vlayout.addWidget(Footer(self))
 
-        hlayout.addWidget(Sidebar())
+        hlayout.addWidget(Sidebar(self))
         hlayout.addLayout(vlayout)
 
         # 設定
-        widget.addWidget(Header())
+        widget.addWidget(Header(self))
         widget.addLayout(hlayout)
 
         self.setCentralWidget(widget)
@@ -77,7 +79,7 @@ class MainWindow(QMainWindow):
         self.move(dcenter - center)
 
         # 全螢幕預覽
-        self._second_screen = SecondScreenView()
+        self._second_screen = SecondScreenView(self)
 
     def _on_receive_event(self, event):
         """事件接收回調
@@ -90,7 +92,7 @@ class MainWindow(QMainWindow):
 
         if event.type is UIEventType.UI_SHOW:
             self.show()
-
+            self._splash.close()
         elif event.type is UIEventType.UI_CONNECT:
             state.connect(event.get_payload())
 
@@ -220,6 +222,12 @@ class MainWindow(QMainWindow):
             popup(self, dialog=ProjectListDialog)
 
     def _on_second_screen_toggle(self):
+        for tl in QApplication.topLevelWidgets():
+            name = tl.__class__.__name__
+            if name == 'QFrame':
+                print(tl.isVisible())
+                # tl.setVisible(True)
+        return
         toggle = self._state.get('second_screen')
         if toggle:
             self._second_screen.show()
