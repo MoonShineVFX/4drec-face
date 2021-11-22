@@ -3,8 +3,8 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\back_to_d-test_f\texture'
-output_path = r'C:\Users\eli.hung\Desktop\back_to_d-test_f\texture_2kn'
+input_path = r'C:\Users\eli.hung\Desktop\unreal4d\back_to_d-test_f\texture'
+output_path = r'C:\Users\eli.hung\Desktop\unreal4d\back_to_d-test_f\texture1k'
 size = 2048
 
 
@@ -20,6 +20,7 @@ def resize_image(input_image_path, output_image_path):
 
 
 if __name__ == '__main__':
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     with ProcessPoolExecutor() as executor:
         future_list = []
         for jpg_path in Path(input_path).glob('*.jpg'):
