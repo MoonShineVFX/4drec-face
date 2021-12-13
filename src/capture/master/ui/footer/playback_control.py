@@ -428,14 +428,15 @@ class PlaybackSlider(QSlider, EntityBinder):
         if state.get('caching') or not self.isVisible():
             return
 
-        progress = self._entity.get_cache_progress()
+        if self._entity is not None:
+            progress = self._entity.get_cache_progress()
 
-        if isinstance(progress, tuple):
-            offset_tasks = {}
-            offset_frame = state.get('playbar_frame_offset')
-            for k, v in progress[1].items():
-                offset_tasks[k - offset_frame] = v
-            self._tasks = offset_tasks
+            if isinstance(progress, tuple):
+                offset_tasks = {}
+                offset_frame = state.get('playbar_frame_offset')
+                for k, v in progress[1].items():
+                    offset_tasks[k - offset_frame] = v
+                self._tasks = offset_tasks
 
         self._paint_progress()
         self._update()

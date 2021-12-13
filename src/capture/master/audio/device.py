@@ -3,6 +3,7 @@ import pyaudio
 from queue import Queue
 import math
 import numpy as np
+from time import perf_counter
 
 from utility.setting import setting
 from utility.logger import log
@@ -16,6 +17,10 @@ AUDIO_CORE = pyaudio.PyAudio()
 
 
 def send_ui_decibel(audio_data: bytes, source: AudioSource):
+    if send_ui_decibel.time is not None:
+        if perf_counter() - send_ui_decibel.time < 0.033:
+            return
+
     samples = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
     samples /= 32767
     volume = np.sum(samples ** 2) / len(samples)
@@ -28,6 +33,11 @@ def send_ui_decibel(audio_data: bytes, source: AudioSource):
             source, db
         }
     )
+
+    send_ui_decibel.time = perf_counter()
+
+
+send_ui_decibel.time = None
 
 
 class MicDevice(threading.Thread):
