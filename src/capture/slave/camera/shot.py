@@ -2,8 +2,6 @@ import numpy as np
 import struct
 import io
 
-from utility.setting import setting
-
 from .image import CameraImage
 
 
@@ -121,10 +119,6 @@ class CameraShotFileLoader(CameraShotFileCore):
 
         # 取得資訊
         file_cursor, image_size, w, h = self._frames[frame]
-
-        # 強制修正解析度
-        w = setting.camera_resolution[0]
-        h = setting.camera_resolution[1]
 
         # 讀取片段
         self._image_file.seek(file_cursor)
