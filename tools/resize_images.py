@@ -3,8 +3,8 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\unreal4d\back_to_d-test_f\texture'
-output_path = r'C:\Users\eli.hung\Desktop\unreal4d\back_to_d-test_f\texture1k'
+input_path = r'C:\Users\eli.hung\Desktop\unreal4d\walkdog\texture'
+output_path = r'C:\Users\eli.hung\Desktop\unreal4d\walkdog\texture_2k'
 size = 2048
 
 

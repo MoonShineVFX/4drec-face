@@ -23,9 +23,8 @@ slaves:
   - '4DK-S08'
   - '4DK-S09'
   - '4DK-S10'
-  - '4DK-S11'
 
-cameras_count_per_slave: 2
+cameras_count_per_slave: 3
 
 record:
   folder_name: '4drec_data'
