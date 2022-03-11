@@ -131,6 +131,15 @@ class CameraManager:
             log.error("Can't change parameter due to wrong camera state")
             return
 
+        # bypass parm check
+        if parm_name == 'LUTEnable':
+            log.debug(f'Parameter <{parm_name}> changes to {value}')
+            message_manager.send_message(
+                MessageType.CAMERA_PARM,
+                {'camera_parm': (parm_name, value)}
+            )
+            return
+
         parm = self._parameters[parm_name]
         result = parm.set(value)
 

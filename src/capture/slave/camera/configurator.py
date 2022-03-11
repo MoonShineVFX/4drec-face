@@ -48,6 +48,7 @@ class CameraConfigurator(MixThread):
         'BalanceWhiteAuto': PySpin.BalanceWhiteAuto_Off,
         'BlackLevelSelector': PySpin.BlackLevelSelector_All,
         'GammaEnable': True,
+        'LUTEnable': True
     }
 
     def __init__(self, camera, log):
@@ -90,6 +91,17 @@ class CameraConfigurator(MixThread):
     def apply_default_config(self):
         """套用預設設定，初始化時用"""
         self.apply_config(self.default_config.copy(), block=True)
+
+        # 套 LUT
+        with open('source/camera.lut') as f:
+            for li in f:
+                line = li.strip()
+                if line == '':
+                    break
+                in_v, out_v = line.split(',')
+                self._camera.LUTIndex.SetValue(int(in_v))
+                self._camera.LUTValue.SetValue(int(out_v))
+
 
     def apply_config(self, config, block=False):
         """套用設定

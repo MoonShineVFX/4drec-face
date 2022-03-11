@@ -168,6 +168,8 @@ class ParameterBar(QHBoxLayout):
 class PresetButtons(QHBoxLayout):
     def __init__(self):
         super().__init__()
+        self._lut_button = None
+
         self._setup_ui()
 
     def _setup_ui(self):
@@ -179,6 +181,14 @@ class PresetButtons(QHBoxLayout):
             button.clicked.connect(partial(self._on_click, name))
             self.addWidget(button)
 
+        # lut button
+        self._lut_button = QPushButton('LUT')
+        self._lut_button.setFixedSize(50, 25)
+        self._lut_button.setCheckable(True)
+        self._lut_button.setChecked(True)
+        self._lut_button.clicked.connect(partial(self._on_click, 'lut'))
+        self.addWidget(self._lut_button)
+
     def _on_click(self, preset_type):
         if preset_type == 'Base':
             state.cast('camera', 'load_parameters', 'Base')
@@ -186,3 +196,5 @@ class PresetButtons(QHBoxLayout):
             state.cast('camera', 'load_parameters', 'User')
         elif preset_type == 'Save':
             state.cast('camera', 'save_parameters')
+        elif preset_type == 'lut':
+            state.cast('camera', 'change_parameter', 'LUTEnable', self._lut_button.isChecked())
