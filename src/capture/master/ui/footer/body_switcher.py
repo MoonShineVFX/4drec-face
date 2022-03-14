@@ -24,12 +24,15 @@ class BodySwitcher(LayoutWidget, EntityBinder):
     def _update(self):
         shot = state.get('current_shot')
         if shot is None:
+            self.setVisible(False)
             return
 
         self.bind_entity(shot, self._update)
 
-        if shot.state != self._state:
-            self._state = shot.state
+        if shot.state == self._state:
+            return
+
+        self._state = shot.state
 
         for button in self._switches:
             button.show()
@@ -44,12 +47,16 @@ class BodySwitcher(LayoutWidget, EntityBinder):
             self._set((3, 1, 0))
 
     def _set(self, set_list):
+        mode_to_change = None
         for i, button in zip(set_list, self._switches):
             button.setEnabled(i < 2)
             button.setVisible(i < 3)
 
             if i == 0:
-                button.on_clicked()
+                mode_to_change = button.on_clicked
+
+        if mode_to_change is not None:
+            mode_to_change()
 
 
 class BodySwitchButton(QPushButton):
@@ -69,7 +76,7 @@ class BodySwitchButton(QPushButton):
     }
 
     *:disabled {
-      color: palette(dark);
+      
     }
 
     '''
@@ -81,6 +88,7 @@ class BodySwitchButton(QPushButton):
         state.on_changed('body_mode', self._update)
         self._icon = None
         self._icon_hl = None
+        self._icon_dis = None
         self._setup_ui()
         self._update()
 
@@ -92,12 +100,15 @@ class BodySwitchButton(QPushButton):
         text = 'model' if self._mode is BodyMode.MODEL else 'roll'
         self._icon = QIcon(icons.get(text))
         self._icon_hl = QIcon(icons.get(text + '_hl'))
+        self._icon_dis = QIcon(icons.get(text + '_dis'))
         self.setIconSize(self._icon.availableSizes()[0])
 
     def _update(self):
         self.setChecked(self._mode is state.get('body_mode'))
         if self.isChecked():
             self.setIcon(self._icon_hl)
+        elif not self.isEnabled():
+            self.setIcon(self._icon_dis)
         else:
             self.setIcon(self._icon)
 

@@ -22,6 +22,7 @@ class PlaybackControl(QVBoxLayout):
         self._playback_bar = None
         self._temp_parent = parent
         self._setup_ui()
+
         state.on_changed('current_slider_value', self._on_slider_value_changed)
         state.on_changed('closeup_camera', self._on_slider_value_changed)
         state.on_changed('texture_resolution', self._request_geometry)
@@ -38,7 +39,8 @@ class PlaybackControl(QVBoxLayout):
             return
         elif new_body_mode is BodyMode.LIVEVIEW:
             self._entity = None
-        self._on_entity_changed()
+            return
+        self._on_shot_changed()
 
     def _on_shot_changed(self):
         shot = state.get('current_shot')
@@ -69,14 +71,13 @@ class PlaybackControl(QVBoxLayout):
         self.setSpacing(0)
         self.setContentsMargins(0, 0, 0, 0)
 
-        self._playback_bar = PlaybackBar(self._temp_parent)
+        self._playback_bar = PlaybackBar()
         self.addWidget(self._playback_bar)
 
         layout = make_layout(alignment=Qt.AlignCenter, spacing=48)
         for source in ('clipleft', 'previous', 'play', 'next', 'clipright'):
             button = PlaybackButton(source, parent=self._playback_bar)
             button.clicked.connect(partial(self._on_click, source))
-
             layout.addWidget(button)
 
         self.addLayout(layout)

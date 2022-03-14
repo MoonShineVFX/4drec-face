@@ -82,5 +82,7 @@ state_4 8 #C86969
 -- mode switch
 roll 30
 roll_hl 30
+roll_dis 30 #262f36
 model 30
 model_hl 30
+model_dis 30 #262f36
