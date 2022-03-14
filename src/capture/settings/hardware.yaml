@@ -28,7 +28,7 @@ cameras_count_per_slave: 3
 
 record:
   folder_name: '4drec_data'
-  drives: ['E', 'F']
+  drives: ['D', 'E', 'F']
 
 audio:
   record_filename: 'audio.wav'
