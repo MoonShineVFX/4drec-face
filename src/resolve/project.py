@@ -104,7 +104,7 @@ class ResolveProject:
         chunk: Metashape.Chunk = self.__doc.chunk
 
         # Detect Markers
-        chunk.detectMarkers(frames=[0])
+        chunk.detectMarkers(tolerance=10, inverted=True, frames=[0])
 
         # Build points
         interval = SETTINGS.match_photos_interval
@@ -120,7 +120,7 @@ class ResolveProject:
         for frame_number, frame in enumerate(chunk.frames):
             if frame_number % interval != 0:
                 continue
-            frame.matchPhotos()
+            frame.matchPhotos(tiepoint_limit=8000)
             self.__logging_progress(
                 progress_point_step,
                 f'Match photos - {frame_number} / {len(chunk.frames)}'
@@ -128,6 +128,10 @@ class ResolveProject:
 
         # Align photos
         chunk.alignCameras()
+
+        # Redetect markers for low parity markers
+        chunk.remove(chunk.markers)
+        chunk.detectMarkers(tolerance=50, inverted=True, frames=[0])
 
         # Align chunk
         self.__normalize_chunk_transform()
@@ -260,7 +264,7 @@ class ResolveProject:
     def __normalize_chunk_transform(self):
         chunk = self.__doc.chunk
 
-        # Define marker locatifons and update chunk transform
+        # Define marker locations and update chunk transform
         for marker in chunk.markers:
             marker_num = marker.label.split(' ')[-1]
             if marker_num in SETTINGS.nct_marker_locations.keys():

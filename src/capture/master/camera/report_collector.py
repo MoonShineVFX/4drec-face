@@ -196,7 +196,7 @@ class RecordReportContainer(ReportContainer):
         for r in self._reports:
             frames = r['missing_frames']
             missing_frames[r['camera_id']] = (
-                [f for f in frames if f >= start_frame and f <= end_frame]
+                [f for f in frames if start_frame <= f <= end_frame]
             )
 
         data = {
