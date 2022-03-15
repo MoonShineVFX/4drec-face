@@ -265,12 +265,21 @@ class ResolveProject:
         chunk = self.__doc.chunk
 
         # Define marker locations and update chunk transform
+        markers_ref_count = len(SETTINGS.nct_marker_locations.keys())
+        markers_real_count = 0
         for marker in chunk.markers:
             marker_num = marker.label.split(' ')[-1]
             if marker_num in SETTINGS.nct_marker_locations.keys():
                 marker.reference.location = Metashape.Vector(
                     SETTINGS.nct_marker_locations[marker_num]
                 )
+                markers_real_count += 1
+
+        if markers_ref_count != markers_real_count:
+            error_message = f'Markers count not match: {markers_real_count} ({markers_ref_count})'
+            logging.critical(error_message)
+            raise ValueError(error_message)
+
         chunk.updateTransform()
 
         self.__align_region()
