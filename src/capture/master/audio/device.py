@@ -23,6 +23,7 @@ def send_ui_decibel(audio_data: bytes, source: AudioSource):
 
     samples = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
     samples /= 32767
+    np.seterr(divide='ignore', invalid='ignore')
     volume = np.sum(samples ** 2) / len(samples)
     rms = math.sqrt(volume)
     db = 20 * math.log10(rms)

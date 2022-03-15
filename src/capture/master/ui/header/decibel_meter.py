@@ -1,3 +1,5 @@
+import math
+
 from PyQt5.Qt import (
     Qt, QProgressBar
 )
@@ -67,6 +69,9 @@ class DecibelMeter(QProgressBar):
             self._peak -= 1
 
         # Progress
+        if math.isnan(real_decibel):
+            return
+
         decibel = int(real_decibel * self.__scale_ratio)
         if decibel < self.minimum():
             value = self.minimum()

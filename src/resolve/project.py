@@ -15,7 +15,7 @@ from settings import SETTINGS
 from define import ResolveStage
 
 
-MAX_CALIBRATE_FRAMES = 50
+MAX_CALIBRATE_FRAMES = 5
 
 
 class ResolveProject:
@@ -134,6 +134,7 @@ class ResolveProject:
         chunk.detectMarkers(tolerance=50, inverted=True, frames=[0])
 
         # Align chunk
+        logging.info('Normalize chunk transform')
         self.__normalize_chunk_transform()
 
         # Save and archive

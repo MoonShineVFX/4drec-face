@@ -29,9 +29,6 @@ class BodySwitcher(LayoutWidget, EntityBinder):
 
         self.bind_entity(shot, self._update)
 
-        if shot.state == self._state:
-            return
-
         self._state = shot.state
 
         for button in self._switches:
@@ -112,8 +109,10 @@ class BodySwitchButton(QPushButton):
         else:
             self.setIcon(self._icon)
 
+    def setEnabled(self, enable):
+        super().setEnabled(enable)
+        self._update()
+
     def on_clicked(self):
-        if self._mode is state.get('body_mode'):
-            self.setChecked(True)
-        else:
-            state.set('body_mode', self._mode)
+        state.set('body_mode', self._mode)
+        self._update()
