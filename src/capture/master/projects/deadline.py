@@ -33,7 +33,7 @@ def check_deadline_server():
 def submit_deadline(shot, job):
     job_info = {
         'Plugin': '4DREC',
-        'BatchName': f'{shot.name} - {job.name}',
+        'BatchName': f'[{shot.get_parent().name}] {shot.name} - {job.name}',
         'Name': f'{shot.name} - {job.name} (calibrate)',
         'UserName': 'autobot',
         'ChunkSize': '1',

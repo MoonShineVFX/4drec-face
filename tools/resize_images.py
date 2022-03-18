@@ -3,8 +3,8 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\unreal4d\walkdog\texture'
-output_path = r'C:\Users\eli.hung\Desktop\unreal4d\walkdog\texture_2k'
+input_path = r'C:\Users\eli.hung\Desktop\unreal4d\mei_bf\texture'
+output_path = input_path + '_2k'
 size = 2048
 
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     with ProcessPoolExecutor() as executor:
         future_list = []
         for jpg_path in Path(input_path).glob('*.jpg'):
-            output_file = Path(output_path) / jpg_path.name
+            output_file = Path(output_path) / (jpg_path.stem.split('_')[-1] + '.jpg')
             future = executor.submit(
                 resize_image, str(jpg_path), str(output_file)
             )
