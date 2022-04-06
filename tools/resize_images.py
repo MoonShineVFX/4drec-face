@@ -3,7 +3,7 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\unreal4d\mei_bf\texture'
+input_path = r'C:\Users\eli.hung\Desktop\unreal4d\mi\texture'
 output_path = input_path + '_2k'
 size = 2048
 

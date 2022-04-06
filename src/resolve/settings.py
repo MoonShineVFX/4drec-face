@@ -120,6 +120,8 @@ class ResolveSettings:
             camera_photos = []
 
             cali_image = self.cali_path / f'{camera_id}.jpg'
+            if not cali_image.exists():
+                raise ValueError(f'Calibration image not exists: {cali_image}')
             camera_photos.append(str(cali_image))
             for f in range(self.start_frame, self.end_frame + 1):
                 real_frame = f + self.offset_frame
