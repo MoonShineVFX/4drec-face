@@ -167,9 +167,13 @@ class ResolveProject:
         self.__logging_progress(8, 'Match Photos')
 
         # Apply mask
-        self.__load_image_masks()
-        self.__mark_timer('Background Removal')
-        self.__logging_progress(11, 'Background Removal')
+        if SETTINGS.skip_masks:
+            self.__mark_timer('Skip Background Removal')
+            self.__logging_progress(11, 'Skip Background Removal')
+        else:
+            self.__load_image_masks()
+            self.__mark_timer('Background Removal')
+            self.__logging_progress(11, 'Background Removal')
 
         # Build dense
         frame.buildDepthMaps()

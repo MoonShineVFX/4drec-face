@@ -129,7 +129,8 @@ class ShotSubmitDialog(QDialog):
             'mesh_clean_faces_threshold',
             'smooth_model',
             'texture_size',
-            'region_size'
+            'region_size',
+            'skip_masks'
         }
         for parm_name in submit_parameters:
             parm_value = setting.submit[parm_name]
@@ -228,6 +229,9 @@ class ShotSubmitParameter(QHBoxLayout):
                 self._create_widget(v)
                 for v in value
             ]
+        elif isinstance(value, bool):
+            widget = QCheckBox()
+            widget.setChecked(value)
         else:
             if isinstance(value, int):
                 widget = QSpinBox()
@@ -242,7 +246,9 @@ class ShotSubmitParameter(QHBoxLayout):
             widget.setValue(value)
 
         widget.setFixedWidth(100)
-        widget.setAlignment(Qt.AlignRight)
+
+        if hasattr(widget, 'setAlignment'):
+            widget.setAlignment(Qt.AlignRight)
         return widget
 
     def _get_widget_value(self, widget):
@@ -250,6 +256,8 @@ class ShotSubmitParameter(QHBoxLayout):
             return [self._get_widget_value(w) for w in widget]
         if isinstance(widget, QLineEdit):
             return widget.text()
+        if isinstance(widget, QCheckBox):
+            return widget.isChecked()
         return widget.value()
         
     def _setup_ui(self):

@@ -34,3 +34,5 @@ submit:
     '75': [0.75, 1.075, 0]
     '84': [0, 1.165, 0]
   nct_center_offset: [0.375, 1.4, -0.62]
+  # Skip masks
+  skip_masks: false

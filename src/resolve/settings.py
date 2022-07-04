@@ -37,6 +37,7 @@ class ResolveSettings:
         self.smooth_model = 1.0
         self.texture_size = 8192
         self.region_size = [0.5, 0.5, 0.5]
+        self.skip_masks = False
 
         # Normalize chunk transform
         self.nct_marker_locations = {}

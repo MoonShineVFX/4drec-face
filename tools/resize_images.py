@@ -3,9 +3,9 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\unreal4d\mi\texture'
-output_path = input_path + '_2k'
-size = 2048
+input_path = r'C:\Users\eli.hung\Desktop\unreal4d\jia\texture'
+output_path = input_path + '_1k'
+size = 1024
 
 
 def resize_image(input_image_path, output_image_path):
@@ -14,7 +14,7 @@ def resize_image(input_image_path, output_image_path):
     cv2.imwrite(
         output_image_path,
         resized_image,
-        [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+        [int(cv2.IMWRITE_JPEG_QUALITY), 65]
     )
     return output_image_path
 
