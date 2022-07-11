@@ -3,9 +3,9 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\unreal4d\jia\texture'
-output_path = input_path + '_1k'
-size = 1024
+input_path = r'C:\Users\eli.hung\Desktop\benq_b\texture'
+output_path = input_path + '_2k'
+size = 2048
 
 
 def resize_image(input_image_path, output_image_path):

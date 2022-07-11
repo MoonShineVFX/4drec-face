@@ -8,6 +8,7 @@ import shutil
 from typing import Optional
 from PIL import Image
 from pathlib import Path
+import math
 
 from common.fourd_frame import FourdFrameManager
 
@@ -16,6 +17,7 @@ from define import ResolveStage
 
 
 MAX_CALIBRATE_FRAMES = 5
+MIN_VALID_MARKERS = 3
 
 
 class ResolveProject:
@@ -274,14 +276,44 @@ class ResolveProject:
         markers_real_count = 0
         for marker in chunk.markers:
             marker_num = marker.label.split(' ')[-1]
+            # Find specify markers
             if marker_num in SETTINGS.nct_marker_locations.keys():
+                # Get marker error pix
+                if not marker.position:
+                    logging.warning(f'Marker[{marker_num}] has no position.')
+                    continue
+
+                proj_error = []
+                proj_sqsum = 0
+                for camera in marker.projections.keys():
+                    if not camera.transform:
+                        continue  # skipping not aligned cameras
+                    proj = marker.projections[camera].coord
+                    reproj = camera.project(marker.position)
+                    error = reproj - proj
+                    proj_error.append(error.norm())
+                    proj_sqsum += error.norm() ** 2
+
+                if len(proj_error) == 0:
+                    logging.warning(f'Marker[{marker_num}] has no valid projections.')
+                    continue
+
+                error_pix = math.sqrt(proj_sqsum / len(proj_error))
+
+                # Filter by error_pix
+                if error_pix > 1:
+                    logging.warning(f'Marker[{marker_num}] error pix is too big ({error_pix}).')
+                    continue
+
+                # Apply location data
                 marker.reference.location = Metashape.Vector(
                     SETTINGS.nct_marker_locations[marker_num]
                 )
+                logging.info(f'Marker[{marker_num} apply location with error pix {error_pix}')
                 markers_real_count += 1
 
-        if markers_ref_count != markers_real_count:
-            error_message = f'Markers count not match: {markers_real_count} ({markers_ref_count})'
+        if markers_real_count < MIN_VALID_MARKERS:
+            error_message = f'Markers valid count not enough: {markers_real_count} ({MIN_VALID_MARKERS})'
             logging.critical(error_message)
             raise ValueError(error_message)
 
