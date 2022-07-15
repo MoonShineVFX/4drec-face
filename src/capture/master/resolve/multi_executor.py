@@ -176,7 +176,7 @@ class MultiExecutor(threading.Thread):
             archive.setCompressionHint(1)
 
             # Add TimeSampling
-            time_sampling = alembic.AbcCoreAbstract.TimeSampling(fps, fps / 2)
+            time_sampling = alembic.AbcCoreAbstract.TimeSampling(fps, 0.0)
             mesh_obj = alembic.AbcGeom.OPolyMesh(archive.getTop(), filename)
             mesh = mesh_obj.getSchema()
             mesh.setTimeSampling(time_sampling)

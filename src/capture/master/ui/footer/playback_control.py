@@ -107,6 +107,9 @@ class PlaybackControl(QVBoxLayout):
             )
 
         shot = state.get('current_shot')
+        if shot is None:
+            return
+
         state.cast(
             'audio',
             'play_audio_file',
