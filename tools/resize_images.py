@@ -3,7 +3,7 @@ from pathlib import Path
 import cv2
 
 
-input_path = r'C:\Users\eli.hung\Desktop\benq_b\texture'
+input_path = r'C:\Users\eli.hung\Desktop\bridge_curse_2-jiachi_2\texture'
 output_path = input_path + '_2k'
 size = 2048
 
@@ -14,7 +14,7 @@ def resize_image(input_image_path, output_image_path):
     cv2.imwrite(
         output_image_path,
         resized_image,
-        [int(cv2.IMWRITE_JPEG_QUALITY), 65]
+        [int(cv2.IMWRITE_JPEG_QUALITY), 75]
     )
     return output_image_path
 
