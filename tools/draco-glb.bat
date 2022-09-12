@@ -1,2 +1,3 @@
-if not exist "..\gltf_mini_drc" mkdir ..\gltf_mini_drc
-for /r %%i in (*) do draco_transcoder -i %%i -o ..\gltf_mini_drc\%%~ni.glb
+for %%I in (.) do set TargetDirName=%%~nxI_drc
+if not exist "..\%TargetDirName%" mkdir ..\%TargetDirName%
+for /r %%i in (*) do draco_transcoder -i %%i -o ..\%TargetDirName%\%%~ni.glb

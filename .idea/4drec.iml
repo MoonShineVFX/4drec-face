@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/deadline/module" />
       <excludeFolder url="file://$MODULE_DIR$/src/.python" />
       <excludeFolder url="file://$MODULE_DIR$/src/.python37" />
+      <excludeFolder url="file://$MODULE_DIR$/tools/backup" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.7 (4drec-face)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
