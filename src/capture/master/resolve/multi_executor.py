@@ -5,7 +5,9 @@ import alembic
 import numpy as np
 import imath
 import imathnumpy
+import subprocess
 
+from utility.logger import log
 from .package import ResolvePackage
 
 
@@ -116,13 +118,17 @@ class MultiExecutor(threading.Thread):
         import re
         from pathlib import Path
 
-        job_id, job_folder_path, frame_range, export_path = tasks
+        job_id, job_folder_path, frame_range, shot_folder_path, shot_frame_range, export_path = tasks
 
         # filter export_path
         export_path = Path(export_path)
         filetype = export_path.suffix
         filename = export_path.stem
         export_path = export_path.parent
+
+        folder_name = re.sub(r'[^\w\d-]', '_', filename)
+        export_path = Path(f'{export_path}/{folder_name}/')
+        export_path.mkdir(parents=True, exist_ok=True)
 
         # define
         load_path = (
@@ -131,13 +137,35 @@ class MultiExecutor(threading.Thread):
         )
         offset_frame = frame_range[0]
 
+        # Export audio
+        log.info('Export Audio')
+        audio_source_path = Path(shot_folder_path) / 'audio.wav'
+        if audio_source_path.exists():
+            audio_target_path = export_path / 'audio.wav'
+            audio_start_time = (frame_range[0] - shot_frame_range[0]) / setting.frame_rate
+            audio_duration = (frame_range[1] - frame_range[0]) / setting.frame_rate
+            cmd = f'ffmpeg -i {audio_source_path} ' \
+                  f'-ss {audio_start_time} ' \
+                  f'-t {audio_duration} ' \
+                  f'{audio_target_path}'
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True
+            )
+            for line in process.stdout:
+                log.info(f'[ffmpeg] {line}')
+        else:
+            log.warning(f'Audio {audio_source_path} not exists, skip audio conversion.')
+
+        log.info(f'Export Model: {filetype}')
+        # Export model
         if filetype != '.abc':
             # Export obj or 4dh
-            folder_name = re.sub(r'[^\w\d-]', '_', filename)
-            export_path = Path(f'{export_path}/{folder_name}/')
             if filetype == '.obj':
                 (export_path / 'obj').mkdir(parents=True, exist_ok=True)
-            if filetype == '.4dh':
+            elif filetype == '.4dh':
                 (export_path / 'geo').mkdir(parents=True, exist_ok=True)
             (export_path / 'texture').mkdir(parents=True, exist_ok=True)
 

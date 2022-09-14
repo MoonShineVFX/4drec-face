@@ -618,6 +618,9 @@ class JobEntity(Entity):
             ]
         )
 
+    def get_parent(self) -> ShotEntity:
+        return self._parent
+
     def get_folder_path(self) -> str:
         return f'{self._parent.get_folder_path()}/jobs/{self.name}'
 
