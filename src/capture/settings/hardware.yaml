@@ -12,19 +12,17 @@ speed_offset: 0.83333 # 0.83333
 default_texture_display_resolution: 3000
 
 slaves:
-  - '4DK-S00'
-  - '4DK-S01'
-  - '4DK-S02'
-  - '4DK-S03'
-  - '4DK-S04'
-  - '4DK-S05'
-  - '4DK-S06'
-  - '4DK-S07'
-  - '4DK-S08'
-  - '4DK-S09'
-  - '4DK-S10'
-
-cameras_count_per_slave: 3
+  '4DK-S00': 2
+  '4DK-S01': 3
+  '4DK-S02': 3
+  '4DK-S03': 3
+  '4DK-S04': 3
+  '4DK-S05': 3
+  '4DK-S06': 3
+  '4DK-S07': 3
+  '4DK-S08': 3
+  '4DK-S09': 3
+  '4DK-S10': 3
 
 record:
   folder_name: '4drec_data'

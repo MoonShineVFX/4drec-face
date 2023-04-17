@@ -1,7 +1,7 @@
 from PyQt5.Qt import (
     QPainter, QPen, QBrush, QGraphicsView, QFont,
-    QGraphicsScene, QGraphicsPixmapItem, QFrame,
-    Qt, QRectF, QLabel, QHBoxLayout, QPixmap
+    QGraphicsScene, QGraphicsPixmapItem, QFrame, QColor,
+    Qt, QRectF, QLabel, QHBoxLayout, QPixmap, QLineF
 )
 
 from utility.setting import setting
@@ -140,16 +140,24 @@ class CameraInspectorCore(QGraphicsView):
         self._scene.addItem(self._image)
 
         # hud
-        hud_color = self.palette().highlight().color().lighter(150)
+        hud_color =QColor(255, 0, 255)
         self._overlay = self._scene.addEllipse(
             QRectF(),
-            QPen(hud_color, 4),
+            QPen(hud_color, 6),
             QBrush(Qt.NoBrush)
         )
         self._crosshair = self._scene.addEllipse(
             QRectF(),
-            QPen(hud_color, 2),
+            QPen(hud_color, 6),
             QBrush(Qt.NoBrush)
+        )
+        self._verticalLineA = self._scene.addLine(
+            QLineF(),
+            QPen(hud_color, 6)
+        )
+        self._verticalLineB = self._scene.addLine(
+            QLineF(),
+            QPen(hud_color, 6)
         )
 
         rect = QRectF(0, 0, self._w, self._h)
@@ -163,9 +171,17 @@ class CameraInspectorCore(QGraphicsView):
         self._crosshair.setRect(
             QRectF(cx - rc / 2, cy - rc / 2, rc, rc)
         )
+        self._verticalLineA.setLine(
+            QLineF(cx, 0, cx, cy - rc / 2)
+        )
+        self._verticalLineB.setLine(
+            QLineF(cx, cy + rc / 2, cx, rect.height())
+        )
 
         self._overlay.setVisible(False)
         self._crosshair.setVisible(False)
+        self._verticalLineA.setVisible(False)
+        self._verticalLineB.setVisible(False)
 
         # scene
         self.setScene(self._scene)
@@ -176,6 +192,8 @@ class CameraInspectorCore(QGraphicsView):
     def toggle_overlay(self, toggle):
         self._overlay.setVisible(toggle)
         self._crosshair.setVisible(toggle)
+        self._verticalLineA.setVisible(toggle)
+        self._verticalLineB.setVisible(toggle)
 
     def change_camera(self, serial):
         self._info.update_info(serial=serial)
