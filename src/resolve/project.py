@@ -106,7 +106,7 @@ class ResolveProject:
         chunk: Metashape.Chunk = self.__doc.chunk
 
         # Detect Markers
-        chunk.detectMarkers(tolerance=10, inverted=True, frames=[0])
+        chunk.detectMarkers(tolerance=50, inverted=False, frames=[0])
 
         # Build points
         interval = SETTINGS.match_photos_interval
