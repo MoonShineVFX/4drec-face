@@ -28,6 +28,9 @@ record:
   folder_name: '4drec_data'
   drives: ['D', 'E', 'F']
 
+export:
+  path: 'G:\postprocess\export'
+
 audio:
   record_filename: 'audio.wav'
   sample_rate: 44100

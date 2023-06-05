@@ -5,6 +5,8 @@ from master.ui.dialog import ExportProgressDialog
 from master.ui.popup import popup
 from master.ui.state import state
 
+from utility.setting import setting
+
 
 class ModelPanel(LayoutWidget):
     def __init__(self, playback_control, body_switcher, parent):
@@ -32,7 +34,7 @@ class ModelPanel(LayoutWidget):
     def _export_model(self):
         shot = state.get('current_shot')
         result = QFileDialog.getSaveFileName(
-            self, 'Export Model', f'{shot.get_parent().name}-{shot.name}',
+            self, 'Export Model', f'{setting.export.path}\\{shot.get_parent().name}-{shot.name}',
             'Alembic (*.abc);;Houdini (*.4dh);;Wavefront (*.obj)'
         )
         file_path, ext = result
