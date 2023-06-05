@@ -35,7 +35,7 @@ class ModelPanel(LayoutWidget):
         shot = state.get('current_shot')
         result = QFileDialog.getSaveFileName(
             self, 'Export Model', f'{setting.export.path}\\{shot.get_parent().name}-{shot.name}',
-            'Alembic (*.abc);;Houdini (*.4dh);;Wavefront (*.obj)'
+            'Houdini (*.4dh);;Alembic (*.abc);;Wavefront (*.obj)'
         )
         file_path, ext = result
         if file_path is not None and file_path != '':
