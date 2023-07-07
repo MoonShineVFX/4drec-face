@@ -161,7 +161,7 @@ class CameraConnector(Process):
                     self._camera_rotation
                 )
 
-                if self._is_live_view or (self._is_recording and self._current_frame % 10 == 0):  # 錄製時，預覽變成十張更新一次
+                if self._is_live_view and not self._is_recording:  # 不要改!!! 錄製時不要預覽，三台相機撐不住
                     self._live_viewer.set_buffer(camera_image)
 
                 if self._is_recording:
