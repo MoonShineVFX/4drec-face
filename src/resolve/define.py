@@ -4,6 +4,7 @@ from enum import Enum
 class ResolveStage(Enum):
     INITIALIZE = 'initialize'
     RESOLVE = 'resolve'
+    CONVERSION = 'conversion'
 
     def __str__(self):
         return self.value

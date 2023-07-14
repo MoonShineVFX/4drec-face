@@ -63,6 +63,10 @@ class ResolvePackage:
 
         file_path = f'{load_path}{self._frame:06d}.4df'
 
+        # version 2
+        if not os.path.isfile(file_path):
+            file_path = f'{self._job_folder_path}/export/4df/{self._frame:06d}.4df'
+
         # Check file exists
         if os.path.isfile(file_path):
             fourd_frame = FourdFrameManager.load(file_path)

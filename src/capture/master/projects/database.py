@@ -580,7 +580,7 @@ class JobEntity(Entity):
         if len(self.deadline_ids) == 0:
             return
 
-        task_list = get_task_list(self.deadline_ids[-1])
+        task_list = get_task_list(self.deadline_ids[1])
         if task_list is None:  # Not Found
             log.warning(f'Job [{self._parent.name} - {self.name}] not found on deadline.')
             self._repeater.stop()

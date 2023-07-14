@@ -8,6 +8,8 @@ deadline_connect:
   port: 8081
 
 submit:
+  # Version
+  version: 2
   # Job
   offset_frame: 0
   start_frame: 0

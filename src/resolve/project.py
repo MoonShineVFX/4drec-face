@@ -9,6 +9,7 @@ from typing import Optional
 from PIL import Image
 from pathlib import Path
 import math
+import subprocess
 
 from common.fourd_frame import FourdFrameManager
 
@@ -32,7 +33,8 @@ class ResolveProject:
             raise ValueError(error_message)
 
         # Check metashape documents
-        self.__doc = Metashape.Document()
+        if SETTINGS.resolve_stage is ResolveStage.INITIALIZE or SETTINGS.resolve_stage is ResolveStage.RESOLVE:
+            self.__doc = Metashape.Document()
 
         # Initial load project file
         if SETTINGS.resolve_stage is ResolveStage.INITIALIZE:
@@ -48,7 +50,7 @@ class ResolveProject:
                 SETTINGS.project_path.parent.mkdir(parents=True, exist_ok=True)
                 self.__doc.save(str(SETTINGS.project_path), absolute_paths=True)
         # Resolve load archive zip
-        else:
+        elif SETTINGS.resolve_stage is ResolveStage.RESOLVE:
             logging.info('Project file exists, extract to local')
             if not SETTINGS.archive_path.exists():
                 raise ValueError(f'Project file {SETTINGS.archive_path} not found!')
@@ -204,9 +206,9 @@ class ResolveProject:
         self.__mark_timer('Build Texture')
         self.__logging_progress(15, 'Build Texture')
 
-        # Export 4df
+        # Export 4d data
         self.export_4df(frame)
-        self.__mark_timer('Export 4DF')
+        self.__mark_timer('Export 4D Data')
 
         # Clean data
         Metashape.Document()
@@ -224,6 +226,9 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.RESOLVE:
             logging.info('Project run: RESOLVE')
             self.resolve()
+        elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
+            logging.info('Project run: CONVERSION')
+            self.convert_by_houdini()
         else:
             error_message = f'ResolveStage {SETTINGS.resolve_stage} not implemented'
             logging.critical(error_message)
@@ -420,3 +425,65 @@ class ResolveProject:
         FourdFrameManager.save_from_metashape(
             geo_arr, tex_arr, export_4df_path.__str__(), SETTINGS.current_frame_real
         )
+
+    @staticmethod
+    def __get_houdini_path():
+        se_folder = Path('C:\\Program Files\\Side Effects Software')
+        if not se_folder.exists() or not se_folder.is_dir():
+            return None
+        for folder in Path('C:\\Program Files\\Side Effects Software').glob('Houdini 19*'):
+            if folder.is_dir():
+                return folder
+        return None
+
+    def convert_by_houdini(self):
+        # version 2
+        # export 4dh
+        logging.info('Export 4DH')
+        fourdf_path = SETTINGS.export_path / f'{SETTINGS.current_frame_real:06d}.4df'
+        fourd_frame = FourdFrameManager.load(fourdf_path.__str__())
+        export_path = SETTINGS.export_path.parent
+
+        fourdh_path = export_path / 'geo' / f'{SETTINGS.current_frame:04d}.4dh'
+        fourdh_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(fourdh_path, 'wb') as f:
+            f.write(fourd_frame.get_houdini_data())
+
+        fourdtexture_path = export_path / 'texture' / f'{SETTINGS.current_frame:04d}.jpg'
+        fourdtexture_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(fourdtexture_path, 'wb') as f:
+            f.write(fourd_frame.get_texture_data(raw=True))
+
+        # Run hython
+        logging.info('Run Houdini')
+
+        houdini_path = self.__get_houdini_path()
+        if houdini_path is None:
+            logging.critical('Houdini not found')
+            raise ValueError('Houdini not found')
+
+        hython_path = houdini_path / 'bin' / 'hython3.9.exe'
+        if not hython_path.exists():
+            logging.critical('Hython not found')
+            raise ValueError('Hython not found')
+
+        process = subprocess.Popen(
+            [
+                str(hython_path),
+                str(Path(__file__).parent / 'conversion.py'),
+                '-i',
+                str(export_path / 'geo'),
+                '-f',
+                str(SETTINGS.current_frame)
+            ],
+            stdout=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        for line in process.stdout:
+            logging.info(line.strip())
+        process.stdout.close()
+
+        return_code = process.wait()
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, process.args)

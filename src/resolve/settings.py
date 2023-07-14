@@ -19,6 +19,9 @@ class ResolveSettings:
         self.current_frame = -1
         self.resolve_stage: Optional[ResolveStage] = None
 
+        # Version
+        self.version = 1
+
         # Names
         self.metashape_project_name = 'metashape_project'
         self.output_folder_name = 'output'
@@ -107,6 +110,10 @@ class ResolveSettings:
         self.temp_path = Path.home() / self.temp_name
         self.temp_project_path = self.temp_path / f'{self.metashape_project_name}.psx'
         self.temp_masks_path = self.temp_path / self.masks_name
+
+        # version 2
+        if self.version == 2:
+            self.export_path = self.job_path / 'export' / '4df'
 
         self.is_initialized = True
 

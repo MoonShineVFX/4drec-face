@@ -64,7 +64,22 @@ def submit_deadline(shot, job):
 
     resolve_id = result['_id']
 
-    return init_id, resolve_id
+    # version 2:
+    job_info.update({
+        'Name': f'{shot.name} - {job.name} (conversion)',
+        'Frames': f'{job.frame_range[0]}-{job.frame_range[1]}',
+        'ExtraInfoKeyValue0': 'resolve_stage=conversion',
+        'JobDependencies': resolve_id
+    })
+
+    result = deadline.Jobs.SubmitJob(job_info, {})
+    if not (isinstance(result, dict) and '_id' in result):
+        log.error(result)
+        return None
+
+    conversion_id = result['id']
+
+    return init_id, resolve_id, conversion_id
 
 
 def get_task_list(deadline_id):
