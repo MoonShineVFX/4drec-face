@@ -10,6 +10,7 @@ from PIL import Image
 from pathlib import Path
 import math
 import subprocess
+import json
 
 from common.fourd_frame import FourdFrameManager
 
@@ -229,6 +230,10 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
             logging.info('Project run: CONVERSION')
             self.convert_by_houdini()
+        elif SETTINGS.resolve_stage is ResolveStage.POSTPROCESS:
+            logging.info('Project run: POSTPROCESS')
+            self.convert_texture_video()
+            self.export_for_web()
         else:
             error_message = f'ResolveStage {SETTINGS.resolve_stage} not implemented'
             logging.critical(error_message)
@@ -436,20 +441,37 @@ class ResolveProject:
                 return folder
         return None
 
+    @staticmethod
+    def __run_process(commands: [str]):
+        process = subprocess.Popen(
+            commands,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+
+        for line in process.stdout:
+            logging.info(line.strip())
+        process.stdout.close()
+
+        return_code = process.wait()
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, process.args)
+
     def convert_by_houdini(self):
         # version 2
         # export 4dh
         logging.info('Export 4DH')
         fourdf_path = SETTINGS.export_path / f'{SETTINGS.current_frame_real:06d}.4df'
         fourd_frame = FourdFrameManager.load(fourdf_path.__str__())
-        export_path = SETTINGS.export_path.parent
+        root_path = SETTINGS.export_path.parent
 
-        fourdh_path = export_path / 'geo' / f'{SETTINGS.current_frame:04d}.4dh'
+        fourdh_path = root_path / 'geo' / f'{SETTINGS.current_frame:04d}.4dh'
         fourdh_path.parent.mkdir(parents=True, exist_ok=True)
         with open(fourdh_path, 'wb') as f:
             f.write(fourd_frame.get_houdini_data())
 
-        fourdtexture_path = export_path / 'texture' / f'{SETTINGS.current_frame:04d}.jpg'
+        fourdtexture_path = root_path / 'texture' / f'{SETTINGS.current_frame:04d}.jpg'
         fourdtexture_path.parent.mkdir(parents=True, exist_ok=True)
         with open(fourdtexture_path, 'wb') as f:
             f.write(fourd_frame.get_texture_data(raw=True))
@@ -467,23 +489,56 @@ class ResolveProject:
             logging.critical('Hython not found')
             raise ValueError('Hython not found')
 
-        process = subprocess.Popen(
-            [
-                str(hython_path),
-                str(Path(__file__).parent / 'conversion.py'),
-                '-i',
-                str(export_path / 'geo'),
-                '-f',
-                str(SETTINGS.current_frame)
-            ],
-            stdout=subprocess.PIPE,
-            universal_newlines=True
-        )
+        self.__run_process([
+            str(hython_path),
+            str(Path(__file__).parent / 'conversion.py'),
+            '-i',
+            str(root_path / 'geo'),
+            '-f',
+            str(SETTINGS.current_frame)
+        ])
 
-        for line in process.stdout:
-            logging.info(line.strip())
-        process.stdout.close()
+    def convert_texture_video(self):
+        root_path = SETTINGS.export_path.parent
+        self.__run_process([
+            'g:\\app\\ffmpeg',
+            '-r', '30',
+            '-start_number', '0',
+            '-i',
+            str(root_path / 'texture' / '%04d.jpg'),
+            '-i',
+            str(SETTINGS.shot_path.parent / 'audio.wav'),
+            '-vf', 'scale=2048:-1',
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
+            '-y',
+            str(root_path / 'texture.mp4')
+        ])
+        self.__logging_progress(40, 'Convert texture video')
 
-        return_code = process.wait()
-        if return_code:
-            raise subprocess.CalledProcessError(return_code, process.args)
+    def export_for_web(self):
+        web_path = SETTINGS.web_path / f'{SETTINGS.job_name}-{SETTINGS.shot_name}'
+        shutil.rmtree(web_path, ignore_errors=True)
+        web_path.mkdir(parents=True, exist_ok=True)
+
+        root_path = SETTINGS.export_path.parent
+
+        shutil.copy(root_path / 'texture.mp4', web_path / 'texture.mp4')
+        self.__logging_progress(10, 'Copy texture.mp4')
+
+        mesh_path = web_path / 'mesh'
+        shutil.copytree(root_path / 'gltf_mini_drc', mesh_path)
+        self.__logging_progress(15, 'Copy mesh data')
+
+        hires_path = web_path / 'hires'
+        shutil.copytree(root_path / 'gltf', hires_path)
+        self.__logging_progress(30, 'Copy hires data')
+
+        with open(web_path / 'metadata.json', 'w', encoding='utf8') as f:
+            json.dump({
+                'hires': True,
+                'endFrame': SETTINGS.end_frame - 1,
+                'meshFrameOffset': -1,
+                'modelPositionOffset': [0, 0.05, 0]
+            }, f)
+        self.__logging_progress(5, 'Generate metadata.json')

@@ -5,6 +5,7 @@ class ResolveStage(Enum):
     INITIALIZE = 'initialize'
     RESOLVE = 'resolve'
     CONVERSION = 'conversion'
+    POSTPROCESS = 'postprocess'
 
     def __str__(self):
         return self.value

@@ -29,6 +29,8 @@ class ResolveSettings:
         self.archive_name = 'cali_archive'
         self.temp_name = 'fourd_temp'
         self.masks_name = 'masks'
+        self.job_name = None
+        self.shot_name = None
 
         # Camera
         self.sensor_pixel_width = 0.00345
@@ -61,6 +63,7 @@ class ResolveSettings:
         self.files_path = Path('')
         self.export_path = Path('')
         self.archive_path = Path('')
+        self.web_path = Path('g:/postprocess/web')
         self.temp_path = Path('')
         self.temp_project_path = Path('')
         self.temp_masks_path = Path('')
@@ -114,6 +117,12 @@ class ResolveSettings:
         # version 2
         if self.version == 2:
             self.export_path = self.job_path / 'export' / '4df'
+
+        # get names
+        names = self.job_path.__str__().split('\\')
+        if len(names) >= 5:
+            self.job_name = names[2]
+            self.shot_name = names[4]
 
         self.is_initialized = True
 
