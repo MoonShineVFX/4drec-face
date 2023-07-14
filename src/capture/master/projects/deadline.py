@@ -78,7 +78,7 @@ def submit_deadline(shot, job):
         log.error(result)
         return None
 
-    conversion_id = result['id']
+    conversion_id = result['_id']
 
     job_info.update({
         'Name': f'{shot.name} - {job.name} (postprocess)',
@@ -93,7 +93,7 @@ def submit_deadline(shot, job):
         log.error(result)
         return None
 
-    postprocess_id = result['id']
+    postprocess_id = result['_id']
 
     return init_id, resolve_id, conversion_id, postprocess_id
 
