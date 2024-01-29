@@ -113,20 +113,11 @@ def generate_mask(images, width, height, output_path):
     del net
 
     print('Save')
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        future_list = []
-        for path, predict_np in result:
-            future = executor.submit(
-                save_mask, path, predict_np,
-                width, height, output_path
-            )
-            future_list.append(future)
-
-        count = 1
-        for future in as_completed(future_list):
-            save_path = future.result()
-            print(f'{count}/{len(future_list)} {save_path}')
-            count += 1
+    count = 1
+    for path, predict_np in result:
+        save_path = save_mask(path, predict_np, width, height, output_path)
+        print(f'{count}/{len(future_list)} {save_path}')
+        count += 1
 
     print('Release VRAM')
     torch.cuda.empty_cache()
@@ -141,4 +132,6 @@ def save_mask(path, predict_np, width, height, output_path):
     filename = Path(path).stem
     save_path = rf'{output_path}\{filename}.png'
     output_image.save(save_path)
+
+    del predict_np, output_image
     return save_path
