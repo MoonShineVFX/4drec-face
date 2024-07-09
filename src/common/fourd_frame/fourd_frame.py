@@ -225,6 +225,7 @@ class FourdFrameManager:
         header['format'] = b'4dr1'
         header['geo_buffer_size'] = len(geo_buffer)
         header['geo_faces'] = int(len(pos_arr) / 3)
+        header['texture_buffer_size'] = len(texture_buffer)
         header_buffer = struct.pack(cls.header_format, *header.values())
         header_buffer = header_buffer.ljust(cls.header_size, b'\0')
 
