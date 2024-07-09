@@ -227,20 +227,20 @@ class FourdFrameManager:
         # pack frame
         frame_header = {
             'frame_number': 0,
-            'geo_format': b'drc',
+            'geo_format': b'DRC',
             'geo_buffer_size': len(geo_buffer),
-            'tex_format': b'jpg',
+            'tex_format': b'JPEG',
             'tex_buffer_size': len(texture_buffer),
         }
         frame_buffer = struct.pack(
-            'I3sI3sI',
+            'I4sI4sI',
             *frame_header.values()
         ) + geo_buffer + texture_buffer
 
         # pack file
         print('save 4dr')
         root_header = {
-            'format': b'4dr1',
+            'format': b'4DR1',
             'frames': 1,
         }
         frames_buffer_size = np.array([len(frame_buffer)], np.uint32)
