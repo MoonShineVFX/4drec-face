@@ -191,17 +191,22 @@ class FourdFrameManager:
             ):
                 f.write(buffer)
 
-    # Test for vision OS
     @classmethod
-    def save_from_frame_for_test(
+    def convert_4dr(
             cls, frame: FourdFrame, save_path: str
     ):
         # convert geo to draco
         # reduce tex to 4k
 
         # geo
-        print('Convert geo')
+        print('Compress geo')
         pos_arr, uv_arr = frame.get_geo_data()
+
+        # transform uv
+        uv_arr = uv_arr.copy()
+        uv_arr *= [1, -1]
+        uv_arr += [0, 1.0]
+
         face_arr = np.arange(len(pos_arr), dtype=np.uint32)
         geo_buffer = DracoPy.encode(
             # quick fix for: assert np.issubdtype(tex_coord.dtype, float)
@@ -219,19 +224,34 @@ class FourdFrameManager:
         image.thumbnail((4096, 4096), Image.LANCZOS)
         texture_buffer = jpeg_coder.encode(np.array(image), quality=85)
 
-        # pack with new header
+        # pack frame
+        frame_header = {
+            'frame_number': 0,
+            'geo_format': b'drc',
+            'geo_buffer_size': len(geo_buffer),
+            'tex_format': b'jpg',
+            'tex_buffer_size': len(texture_buffer),
+        }
+        frame_buffer = struct.pack(
+            'I3sI3sI',
+            *frame_header.values()
+        ) + geo_buffer + texture_buffer
+
+        # pack file
         print('save 4dr')
-        header = frame.header
-        header['format'] = b'4dr1'
-        header['geo_buffer_size'] = len(geo_buffer)
-        header['geo_faces'] = int(len(pos_arr) / 3)
-        header['texture_buffer_size'] = len(texture_buffer)
-        header_buffer = struct.pack(cls.header_format, *header.values())
-        header_buffer = header_buffer.ljust(cls.header_size, b'\0')
+        root_header = {
+            'format': b'4dr1',
+            'frames': 1,
+        }
+        frames_buffer_size = np.array([len(frame_buffer)], np.uint32)
+        header_buffer = struct.pack(
+            '4sI',
+            *root_header.values()
+        ) + frames_buffer_size.tobytes()
 
         with open(save_path, 'wb') as f:
             for buffer in (
-                    header_buffer, geo_buffer, texture_buffer
+                    header_buffer, frame_buffer
             ):
                 f.write(buffer)
 

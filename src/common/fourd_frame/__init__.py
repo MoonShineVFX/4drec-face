@@ -1,1 +1,1 @@
-from .fourd_frame import FourdFrameManager
+from .fourd_frame import FourdFrameManager, FourdFrame
