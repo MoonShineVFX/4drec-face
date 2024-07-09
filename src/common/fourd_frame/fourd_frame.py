@@ -4,6 +4,7 @@ import numpy as np
 import struct
 import json
 import DracoPy
+from pathlib import Path
 
 from common.jpeg_coder import jpeg_coder, TJPF_RGB
 
@@ -104,6 +105,49 @@ class FourdFrame:
         data += uv_data
         return data
 
+    def get_fourd_roll_data(self, frame_number=-1):
+        # geo
+        print('Compress geo')
+        pos_arr, uv_arr = self.get_geo_data()
+
+        # transform uv
+        uv_arr = uv_arr.copy()
+        uv_arr *= [1, -1]
+        uv_arr += [0, 1.0]
+
+        face_arr = np.arange(len(pos_arr), dtype=np.uint32)
+        geo_buffer = DracoPy.encode(
+            # quick fix for: assert np.issubdtype(tex_coord.dtype, float)
+            pos_arr, faces=face_arr, tex_coord=uv_arr.astype(np.float),
+            quantization_bits=11, compression_level=1,
+            quantization_range=-1, quantization_origin=None,
+            create_metadata=False, preserve_order=False,
+        )
+
+        # texture
+        print('Convert texture')
+        texture_file = self.get_file_data('texture')
+        texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
+        image = Image.fromarray(texture_data).convert('RGB')
+        image.thumbnail((4096, 4096), Image.LANCZOS)
+        texture_buffer = jpeg_coder.encode(np.array(image), quality=85)
+
+        # pack frame
+        frame_header = {
+            'frame_number':
+                self.header['frame'] if frame_number == -1 else frame_number,
+            'geo_format': b'DRC',
+            'geo_buffer_size': len(geo_buffer),
+            'tex_format': b'JPEG',
+            'tex_buffer_size': len(texture_buffer),
+        }
+        frame_buffer = struct.pack(
+            'I4sI4sI',
+            *frame_header.values()
+        ) + geo_buffer + texture_buffer
+
+        return frame_buffer
+
     def get_submit_data(self):
         if self._submit_data is None:
             submit_file = self.get_file_data('submit')
@@ -171,7 +215,7 @@ class FourdFrameManager:
         header['geo_faces'] = int(len(geo_arr) / 3)
 
         # texture
-        print('Convert texture')
+        print('Resize texture')
         tex_arr = np.copy(tex_arr)
         texture_buffer = jpeg_coder.encode(
             tex_arr, quality=header['texture_quality']
@@ -193,66 +237,39 @@ class FourdFrameManager:
 
     @classmethod
     def convert_4dr(
-            cls, frame: FourdFrame, save_path: str
+            cls, load_path: str, save_path: str
     ):
-        # convert geo to draco
-        # reduce tex to 4k
+        frame_file_paths = Path(load_path).glob('*.4df')
+        frame_buffers = []
 
-        # geo
-        print('Compress geo')
-        pos_arr, uv_arr = frame.get_geo_data()
-
-        # transform uv
-        uv_arr = uv_arr.copy()
-        uv_arr *= [1, -1]
-        uv_arr += [0, 1.0]
-
-        face_arr = np.arange(len(pos_arr), dtype=np.uint32)
-        geo_buffer = DracoPy.encode(
-            # quick fix for: assert np.issubdtype(tex_coord.dtype, float)
-            pos_arr, faces=face_arr, tex_coord=uv_arr.astype(np.float),
-            quantization_bits=11, compression_level=1,
-            quantization_range=-1, quantization_origin=None,
-            create_metadata=False, preserve_order=False,
-        )
-
-        # texture
-        print('Convert texture')
-        texture_file = frame.get_file_data('texture')
-        texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
-        image = Image.fromarray(texture_data).convert('RGB')
-        image.thumbnail((4096, 4096), Image.LANCZOS)
-        texture_buffer = jpeg_coder.encode(np.array(image), quality=85)
-
-        # pack frame
-        frame_header = {
-            'frame_number': 0,
-            'geo_format': b'DRC',
-            'geo_buffer_size': len(geo_buffer),
-            'tex_format': b'JPEG',
-            'tex_buffer_size': len(texture_buffer),
-        }
-        frame_buffer = struct.pack(
-            'I4sI4sI',
-            *frame_header.values()
-        ) + geo_buffer + texture_buffer
+        # load frames
+        count = 0
+        total = len(list(frame_file_paths))
+        for frame_file_path in frame_file_paths:
+            print(f'Load {frame_file_path} ({count}/{total})')
+            frame = FourdFrame(frame_file_path)
+            frame_buffers.append(frame.get_fourd_roll_data())
+            frame.close()
 
         # pack file
         print('save 4dr')
         root_header = {
             'format': b'4DR1',
-            'frames': 1,
+            'frames': total,
         }
-        frames_buffer_size = np.array([len(frame_buffer)], np.uint32)
+        frames_buffer_size = np.array(
+            [len(frame_buffer) for frame_buffer in frame_buffers], np.uint32
+        )
         header_buffer = struct.pack(
             '4sI',
             *root_header.values()
         ) + frames_buffer_size.tobytes()
 
+        # write
+        print('Write')
         with open(save_path, 'wb') as f:
-            for buffer in (
-                    header_buffer, frame_buffer
-            ):
+            f.write(header_buffer)
+            for buffer in frame_buffers:
                 f.write(buffer)
 
     @classmethod
