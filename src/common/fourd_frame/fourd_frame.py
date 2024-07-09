@@ -3,15 +3,134 @@ from PIL import Image
 import numpy as np
 import struct
 import json
+import zlib
 
 from common.jpeg_coder import jpeg_coder, TJPF_RGB
+
+
+class FourdFrame:
+    def __init__(self, file_path):
+        self._file = open(file_path, 'rb')
+        self.header = self._load_header()
+        self._geo_data = None
+        self._texture_data = None
+        self._submit_data = None
+        self._sfm_data = None
+
+    def _load_header(self):
+        header_size = struct.calcsize(FourdFrameManager.header_format)
+        header_data = struct.unpack(
+            FourdFrameManager.header_format, self._file.read(header_size)
+        )
+
+        header = FourdFrameManager.get_header_template()
+        for key, data in zip(header.keys(), header_data):
+            header[key] = data
+
+        return header
+
+    def get_texture_resolution(self):
+        return self.header['texture_width']
+
+    def get_file_data(self, seek_buffer_name):
+        if self.header['format'] == b'4dk1':
+            seek_pos = 80
+        else:
+            seek_pos = FourdFrameManager.header_size
+
+        for buffer_name in ('geo', 'texture', 'submit', 'sfm'):
+            if seek_buffer_name == buffer_name:
+                self._file.seek(seek_pos)
+                return self._file.read(
+                    self.header[f'{buffer_name}_buffer_size']
+                )
+            seek_pos += self.header[f'{buffer_name}_buffer_size']
+
+    def get_geo_data(self, raw=False):
+        if self._geo_data is None:
+            geo_file = self.get_file_data('geo')
+            try:
+                buffer = lz4framed.decompress(geo_file)
+            except:
+                buffer = zlib.decompress(geo_file)
+            # # print first 10 bytes in uint8
+            # print(np.frombuffer(buffer[:10], dtype=np.uint8))
+            arr = np.frombuffer(buffer, dtype=np.float32)
+            arr = arr.reshape(-1, 5)
+            if raw:
+                return arr
+            self._geo_data = [arr[:, :3], arr[:, 3:]]
+        return self._geo_data
+
+    def get_texture_data(self, raw=False):
+        if raw:
+            texture_file = self.get_file_data('texture')
+            texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
+            return jpeg_coder.encode(texture_data)
+        if self._texture_data is None:
+            texture_file = self.get_file_data('texture')
+            self._texture_data = jpeg_coder.decode(texture_file)
+        return self._texture_data
+
+    def get_obj_data(self):
+        pos_list, uv_list = self.get_geo_data()
+
+        uv_list = uv_list.copy()
+        uv_list -= [0, 1.0]
+        uv_list *= [1, -1]
+
+        pos_strings = [f'v {x} {y} {z}' for x, y, z in pos_list]
+        uv_strings = [f'vt {u} {v}' for u, v in uv_list]
+        face_strings = [f'f {f}/{f} {f + 1}/{f + 1} {f + 2}/{f + 2}' for f in
+                        range(1, pos_list.shape[0], 3)]
+
+        obj_data = ['g'] + pos_strings + uv_strings + ['g'] + face_strings
+        obj_data = '\n'.join(obj_data)
+
+        return obj_data
+
+    def get_houdini_data(self):
+        import zlib
+        pos_list, uv_list = self.get_geo_data()
+        pos_list_data = pos_list.tobytes()
+        point_count = int(len(pos_list_data) / 4 / 3)
+        pos_data = zlib.compress(pos_list_data)
+        uv_data = zlib.compress(uv_list.tobytes())
+        data = struct.pack(
+            'III',
+            point_count,
+            len(pos_data),
+            len(uv_data)
+        )
+        data += pos_data
+        data += uv_data
+        return data
+
+    def get_submit_data(self):
+        if self._submit_data is None:
+            submit_file = self.get_file_data('submit')
+            buffer = lz4framed.decompress(submit_file)
+            self._submit_data = json.loads(buffer.decode())
+        return self._submit_data
+
+    def get_sfm_data(self):
+        if self._sfm_data is None:
+            sfm_file = self.get_file_data('sfm')
+            buffer = lz4framed.decompress(sfm_file)
+            self._sfm_data = json.loads(buffer.decode())
+        return self._sfm_data
+
+    def close(self):
+        self._file.close()
+        for prop in ('geo', 'texture', 'submit', 'sfm'):
+            setattr(self, f'_{prop}_data', None)
 
 
 class FourdFrameManager:
     # header will be first 1k
     # v1: no pad for header which is 80
     header = {
-        'format': b'4dk2',
+        'format': b'4dF1',
         'job_id': b'',
         'frame': 0,
         # stats.json
@@ -51,7 +170,7 @@ class FourdFrameManager:
         print('Convert geo')
         geo_buffer = lz4framed.compress(geo_arr.tobytes())
         header['geo_buffer_size'] = len(geo_buffer)
-        header['geo_faces'] = int(len(geo_arr) / 4 / 5 / 3)
+        header['geo_faces'] = int(len(geo_arr) / 3)
 
         # texture
         print('Convert texture')
@@ -65,6 +184,36 @@ class FourdFrameManager:
 
         # pack
         print('save 4df')
+        header_buffer = struct.pack(cls.header_format, *header.values())
+        header_buffer = header_buffer.ljust(cls.header_size, b'\0')
+
+        with open(save_path, 'wb') as f:
+            for buffer in (
+                    header_buffer, geo_buffer, texture_buffer
+            ):
+                f.write(buffer)
+
+    # Test for vision OS
+    @classmethod
+    def save_from_frame(
+            cls, frame: FourdFrame, save_path: str
+    ):
+        header = frame.header
+
+        # geo
+        print('Convert geo')
+        geo_data = frame.get_geo_data(raw=True)
+        # geo_buffer = zlib.compress(geo_data.tobytes())
+        geo_buffer = geo_data.tobytes()
+        header['geo_buffer_size'] = len(geo_buffer)
+        header['geo_faces'] = int(len(geo_data) / 3)
+
+        # texture
+        print('Convert texture')
+        texture_buffer = frame.get_file_data('texture')
+
+        # pack
+        print('save 4dr')
         header_buffer = struct.pack(cls.header_format, *header.values())
         header_buffer = header_buffer.ljust(cls.header_size, b'\0')
 
@@ -176,112 +325,3 @@ class FourdFrameManager:
     @classmethod
     def load(cls, file_path):
         return FourdFrame(file_path)
-
-
-class FourdFrame:
-    def __init__(self, file_path):
-        self._file = open(file_path, 'rb')
-        self.header = self._load_header()
-        self._geo_data = None
-        self._texture_data = None
-        self._submit_data = None
-        self._sfm_data = None
-
-    def _load_header(self):
-        header_size = struct.calcsize(FourdFrameManager.header_format)
-        header_data = struct.unpack(
-            FourdFrameManager.header_format, self._file.read(header_size)
-        )
-
-        header = FourdFrameManager.get_header_template()
-        for key, data in zip(header.keys(), header_data):
-            header[key] = data
-
-        return header
-
-    def get_texture_resolution(self):
-        return self.header['texture_width']
-
-    def get_file_data(self, seek_buffer_name):
-        if self.header['format'] == b'4dk1':
-            seek_pos = 80
-        else:
-            seek_pos = FourdFrameManager.header_size
-        for buffer_name in ('geo', 'texture', 'submit', 'sfm'):
-            if seek_buffer_name == buffer_name:
-                self._file.seek(seek_pos)
-                return self._file.read(
-                    self.header[f'{buffer_name}_buffer_size']
-                )
-            seek_pos += self.header[f'{buffer_name}_buffer_size']
-
-    def get_geo_data(self):
-        if self._geo_data is None:
-            geo_file = self.get_file_data('geo')
-            buffer = lz4framed.decompress(geo_file)
-            arr = np.frombuffer(buffer, dtype=np.float32)
-            arr = arr.reshape(-1, 5)
-            self._geo_data = [arr[:, :3], arr[:, 3:]]
-        return self._geo_data
-
-    def get_texture_data(self, raw=False):
-        if raw:
-            texture_file = self.get_file_data('texture')
-            texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
-            return jpeg_coder.encode(texture_data)
-        if self._texture_data is None:
-            texture_file = self.get_file_data('texture')
-            self._texture_data = jpeg_coder.decode(texture_file)
-        return self._texture_data
-
-    def get_obj_data(self):
-        pos_list, uv_list = self.get_geo_data()
-
-        uv_list = uv_list.copy()
-        uv_list -= [0, 1.0]
-        uv_list *= [1, -1]
-
-        pos_strings = [f'v {x} {y} {z}' for x, y, z in pos_list]
-        uv_strings = [f'vt {u} {v}' for u, v in uv_list]
-        face_strings = [f'f {f}/{f} {f + 1}/{f + 1} {f + 2}/{f + 2}' for f in range(1, pos_list.shape[0], 3)]
-
-        obj_data = ['g'] + pos_strings + uv_strings + ['g'] + face_strings
-        obj_data = '\n'.join(obj_data)
-
-        return obj_data
-
-    def get_houdini_data(self):
-        import zlib
-        pos_list, uv_list = self.get_geo_data()
-        pos_list_data = pos_list.tobytes()
-        point_count = int(len(pos_list_data) / 4 / 3)
-        pos_data = zlib.compress(pos_list_data)
-        uv_data = zlib.compress(uv_list.tobytes())
-        data = struct.pack(
-            'III',
-            point_count,
-            len(pos_data),
-            len(uv_data)
-        )
-        data += pos_data
-        data += uv_data
-        return data
-
-    def get_submit_data(self):
-        if self._submit_data is None:
-            submit_file = self.get_file_data('submit')
-            buffer = lz4framed.decompress(submit_file)
-            self._submit_data = json.loads(buffer.decode())
-        return self._submit_data
-
-    def get_sfm_data(self):
-        if self._sfm_data is None:
-            sfm_file = self.get_file_data('sfm')
-            buffer = lz4framed.decompress(sfm_file)
-            self._sfm_data = json.loads(buffer.decode())
-        return self._sfm_data
-
-    def close(self):
-        self._file.close()
-        for prop in ('geo', 'texture', 'submit', 'sfm'):
-            setattr(self, f'_{prop}_data', None)
