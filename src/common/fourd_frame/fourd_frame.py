@@ -3,7 +3,7 @@ from PIL import Image
 import numpy as np
 import struct
 import json
-import zlib
+import DracoPy
 
 from common.jpeg_coder import jpeg_coder, TJPF_RGB
 
@@ -46,20 +46,18 @@ class FourdFrame:
                 )
             seek_pos += self.header[f'{buffer_name}_buffer_size']
 
-    def get_geo_data(self, raw=False):
+    def get_geo_data(self):
         if self._geo_data is None:
             geo_file = self.get_file_data('geo')
-            try:
+            if self.header['format'] != b'4dr1':
                 buffer = lz4framed.decompress(geo_file)
-            except:
-                buffer = zlib.decompress(geo_file)
-            # # print first 10 bytes in uint8
-            # print(np.frombuffer(buffer[:10], dtype=np.uint8))
-            arr = np.frombuffer(buffer, dtype=np.float32)
-            arr = arr.reshape(-1, 5)
-            if raw:
-                return arr
-            self._geo_data = [arr[:, :3], arr[:, 3:]]
+                arr = np.frombuffer(buffer, dtype=np.float32)
+                arr = arr.reshape(-1, 5)
+                self._geo_data = [arr[:, :3], arr[:, 3:]]
+            else:
+                draco_mesh = DracoPy.decode(geo_file)
+                self._geo_data = [draco_mesh.data_struct['points'], draco_mesh.data_struct['tex_coord']]
+
         return self._geo_data
 
     def get_texture_data(self, raw=False):
@@ -195,25 +193,38 @@ class FourdFrameManager:
 
     # Test for vision OS
     @classmethod
-    def save_from_frame(
+    def save_from_frame_for_test(
             cls, frame: FourdFrame, save_path: str
     ):
-        header = frame.header
+        # convert geo to draco
+        # reduce tex to 4k
 
         # geo
         print('Convert geo')
-        geo_data = frame.get_geo_data(raw=True)
-        # geo_buffer = zlib.compress(geo_data.tobytes())
-        geo_buffer = geo_data.tobytes()
-        header['geo_buffer_size'] = len(geo_buffer)
-        header['geo_faces'] = int(len(geo_data) / 3)
+        pos_arr, uv_arr = frame.get_geo_data()
+        face_arr = np.arange(len(pos_arr), dtype=np.uint32)
+        geo_buffer = DracoPy.encode(
+            # quick fix for: assert np.issubdtype(tex_coord.dtype, float)
+            pos_arr, faces=face_arr, tex_coord=uv_arr.astype(np.float),
+            quantization_bits=11, compression_level=1,
+            quantization_range=-1, quantization_origin=None,
+            create_metadata=False, preserve_order=False,
+        )
 
         # texture
         print('Convert texture')
-        texture_buffer = frame.get_file_data('texture')
+        texture_file = frame.get_file_data('texture')
+        texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
+        image = Image.fromarray(texture_data).convert('RGB')
+        image.thumbnail((4096, 4096), Image.LANCZOS)
+        texture_buffer = jpeg_coder.encode(np.array(image), quality=85)
 
-        # pack
+        # pack with new header
         print('save 4dr')
+        header = frame.header
+        header['format'] = b'4dr1'
+        header['geo_buffer_size'] = len(geo_buffer)
+        header['geo_faces'] = int(len(pos_arr) / 3)
         header_buffer = struct.pack(cls.header_format, *header.values())
         header_buffer = header_buffer.ljust(cls.header_size, b'\0')
 
