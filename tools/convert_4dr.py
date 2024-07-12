@@ -4,12 +4,12 @@ import struct
 
 # From houdini drc and texture
 NAME = '阿木試拍'
-RES = 'HD'
-GEOMETRY_PATH = r'G:\postprocess\export\mu-shot_3\drc_hd'
-TEXTURE_PATH = r'G:\postprocess\export\mu-shot_3\texture_4k'
-TEXTURE_RESOLUTION = 4096
-# AUDIO_PATH = r'G:\postprocess\export\mu-shot_3\audio_trim.wav'
-EXPORT_PATH = r'C:\Users\eli.hung\Desktop\mu_hd_4k.4dr'
+RES = 'SD'
+GEOMETRY_PATH = r'G:\postprocess\export\mu-shot_3\drc_sd'
+TEXTURE_PATH = r'G:\postprocess\export\mu-shot_3\texture_2k'
+TEXTURE_RESOLUTION = 2048
+AUDIO_PATH = r'G:\postprocess\export\mu-shot_3\audio_trim.wav'
+EXPORT_PATH = r'C:\Users\eli.hung\Desktop\mu_sd_2k.4dr'
 
 # Check audio path
 if 'AUDIO_PATH' not in locals():
@@ -24,7 +24,7 @@ header = {
     "geometry_resolution": RES,  # HD, SD
     "texture_format": "JPEG",  # MP4, NULL
     "texture_resolution": TEXTURE_RESOLUTION,
-    "audio_format": "WAV",  # MP3, NULL
+    "audio_format": "WAV" if AUDIO_PATH is not None else "NULL",  # MP3, NULL
     "geometry_buffer_positions": [],
     "texture_buffer_positions": [],  # ONLY 1 if MP4
     "audio_buffer_positions": [],  # ONLY 1
@@ -36,6 +36,8 @@ tex_file_paths = list(Path(TEXTURE_PATH).rglob('*.jpg'))
 
 if len(tex_file_paths) != len(drc_file_paths):
     raise ValueError('Texture and drc files are not matched')
+
+header['frame_count'] = len(drc_file_paths)
 
 # Dump data
 filehandler = open(EXPORT_PATH, 'wb')
