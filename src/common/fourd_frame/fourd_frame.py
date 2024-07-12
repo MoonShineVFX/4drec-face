@@ -239,17 +239,18 @@ class FourdFrameManager:
     def convert_4dr(
             cls, load_path: str, save_path: str
     ):
-        frame_file_paths = Path(load_path).glob('*.4df')
+        frame_file_paths = list(Path(load_path).glob('*.4df'))
         frame_buffers = []
 
         # load frames
         count = 0
-        total = len(list(frame_file_paths))
+        total = len(frame_file_paths)
         for frame_file_path in frame_file_paths:
             print(f'Load {frame_file_path} ({count}/{total})')
             frame = FourdFrame(frame_file_path)
-            frame_buffers.append(frame.get_fourd_roll_data())
+            frame_buffers.append(frame.get_fourd_roll_data(frame_number=count))
             frame.close()
+            count += 1
 
         # pack file
         print('save 4dr')
