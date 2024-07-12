@@ -4,18 +4,19 @@ import struct
 
 # From houdini drc and texture
 NAME = '阿木試拍'
-RES = 'SD'
-GEOMETRY_PATH = r'G:\postprocess\export\mu-shot_3\drc_sd'
-TEXTURE_PATH = r'G:\postprocess\export\mu-shot_3\texture_2k'
-TEXTURE_RESOLUTION = 2048
-AUDIO_PATH = r'G:\postprocess\export\mu-shot_3\audio_trim.wav'
-EXPORT_PATH = r'C:\Users\eli.hung\Desktop\mu_sd_2k.4dr'
+RES = 'HD'
+GEOMETRY_PATH = r'G:\postprocess\export\mu-shot_3\drc_hd'
+TEXTURE_PATH = r'G:\postprocess\export\mu-shot_3\texture_4k'
+TEXTURE_RESOLUTION = 4096
+# AUDIO_PATH = r'G:\postprocess\export\mu-shot_3\audio_trim.wav'
+EXPORT_PATH = r'C:\Users\eli.hung\Desktop\mu_hd_4k.4dr'
 
 # Check audio path
 if 'AUDIO_PATH' not in locals():
     AUDIO_PATH = None
 
 # Prepare header
+# Buffer position should be more 1 than count, because of range
 header = {
     "version": "1",
     "name": NAME,
@@ -65,6 +66,7 @@ for drc_file_path in drc_file_paths:
         header['geometry_buffer_positions'].append(filehandler.tell())
         filehandler.write(drc_data)
         progress.next()
+header['geometry_buffer_positions'].append(filehandler.tell())
 
 for tex_file_path in tex_file_paths:
     with open(tex_file_path, 'rb') as f:
@@ -72,6 +74,7 @@ for tex_file_path in tex_file_paths:
         header['texture_buffer_positions'].append(filehandler.tell())
         filehandler.write(tex_data)
         progress.next()
+header['texture_buffer_positions'].append(filehandler.tell())
 
 if AUDIO_PATH is not None:
     with open(AUDIO_PATH, 'rb') as f:
@@ -79,19 +82,21 @@ if AUDIO_PATH is not None:
         header['audio_buffer_positions'].append(filehandler.tell())
         filehandler.write(audio_data)
         progress.next()
-
+header['audio_buffer_positions'].append(filehandler.tell())
 
 # Pack header
+header_position = filehandler.tell()
 header_json = json.dumps(header)
 filehandler.write(header_json.encode('utf-8'))
 
 # Pack footer
 footer_hint = {
     'format': b'4DR1',
+    'header_position': header_position,
     'header_size': len(header_json),
 }
 footer_buffer = struct.pack(
-    '4sI',
+    '4sII',
     *footer_hint.values()
 )
 filehandler.write(footer_buffer)
