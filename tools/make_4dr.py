@@ -8,10 +8,10 @@ def make_4dr(root_path, isHD=False):
 
     name = root_path.stem
 
-    geometry_path = root_path / 'drc' if not isHD else 'drc_hd'
-    texture_path = root_path / 'texture_2k' if not isHD else 'texture_4k'
+    geometry_path = root_path / ('drc' if not isHD else 'drc_hd')
+    texture_path = root_path / ('texture_2k' if not isHD else 'texture_4k')
     texture_resolution = 2048 if not isHD else 4096
-    export_path = root_path / 'vision.4dr' if not isHD else 'vision_hd.4dr'
+    export_path = root_path / ('vision.4dr' if not isHD else 'vision_hd.4dr')
 
     # Get audio
     audio_path = root_path / 'audio.wav'
@@ -45,9 +45,6 @@ def make_4dr(root_path, isHD=False):
 
     # Dump data
     filehandler = open(export_path, 'wb')
-    total_count = (len(drc_file_paths) +
-                   len(tex_file_paths) +
-                   (1 if audio_path is not None else 0))
 
     for drc_file_path in drc_file_paths:
         with open(drc_file_path, 'rb') as f:
@@ -87,3 +84,5 @@ def make_4dr(root_path, isHD=False):
     )
     filehandler.write(footer_buffer)
     filehandler.close()
+
+    return str(export_path)
