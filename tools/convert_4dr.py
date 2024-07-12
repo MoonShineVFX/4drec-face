@@ -9,7 +9,11 @@ GEOMETRY_PATH = r'G:\postprocess\export\mu-shot_3\drc_hd'
 TEXTURE_PATH = r'G:\postprocess\export\mu-shot_3\texture_4k'
 TEXTURE_RESOLUTION = 4096
 # AUDIO_PATH = r'G:\postprocess\export\mu-shot_3\audio_trim.wav'
-EXPORT_PATH = r'C:\Users\eli.hung\Desktop\mu_hd_4k.4dr'
+EXPORT_PATH = r'C:\Users\eli.hung\Desktop\mu.4dr'
+
+# Change path
+if RES == 'HD':
+    EXPORT_PATH = EXPORT_PATH.replace('.4dr', '_hd.4dr')
 
 # Check audio path
 if 'AUDIO_PATH' not in locals():

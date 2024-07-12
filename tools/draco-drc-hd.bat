@@ -15,7 +15,7 @@ REM Get the parent path of the source folder
 for %%I in ("%SourceDir%") do set "ParentDir=%%~dpI"
 
 REM Target folder name
-set "TargetDirName=drc"
+set "TargetDirName=drc_hd"
 
 REM Target folder path
 set "TargetDir=%ParentDir%%TargetDirName%"
@@ -26,7 +26,7 @@ if not exist "%TargetDir%" mkdir "%TargetDir%"
 REM Iterate through all files in the source folder and convert them
 for /r "%SourceDir%" %%i in (*) do (
     if "%%~dpi" neq "%TargetDir%\" (
-        draco_encoder -i "%%i" -o "%TargetDir%\%%~ni.drc"
+        draco_encoder -i "%%i" -o "%TargetDir%\%%~ni.drc" -qp 14 -qt 12
     )
 )
 
