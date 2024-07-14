@@ -11,7 +11,10 @@ def make_4dr(root_path, isHD=False):
     geometry_path = root_path / ('drc' if not isHD else 'drc_hd')
     texture_path = root_path / ('texture_2k' if not isHD else 'texture_4k')
     texture_resolution = 2048 if not isHD else 4096
-    export_path = root_path / ('vision.4dr' if not isHD else 'vision_hd.4dr')
+
+    export_folder_path = root_path / '4dr'
+    export_folder_path.mkdir(exist_ok=True, parents=True)
+    export_path = export_folder_path / (f'{name}.4dr' if not isHD else f'{name}_hd.4dr')
 
     # Get audio
     audio_path = root_path / 'audio.wav'

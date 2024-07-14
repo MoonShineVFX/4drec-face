@@ -3,7 +3,6 @@ from PIL import Image
 import numpy as np
 import struct
 import json
-import DracoPy
 from pathlib import Path
 
 from common.jpeg_coder import jpeg_coder, TJPF_RGB
@@ -50,14 +49,10 @@ class FourdFrame:
     def get_geo_data(self):
         if self._geo_data is None:
             geo_file = self.get_file_data('geo')
-            if self.header['format'] != b'4dr1':
-                buffer = lz4framed.decompress(geo_file)
-                arr = np.frombuffer(buffer, dtype=np.float32)
-                arr = arr.reshape(-1, 5)
-                self._geo_data = [arr[:, :3], arr[:, 3:]]
-            else:
-                draco_mesh = DracoPy.decode(geo_file)
-                self._geo_data = [draco_mesh.data_struct['points'], draco_mesh.data_struct['tex_coord']]
+            buffer = lz4framed.decompress(geo_file)
+            arr = np.frombuffer(buffer, dtype=np.float32)
+            arr = arr.reshape(-1, 5)
+            self._geo_data = [arr[:, :3], arr[:, 3:]]
 
         return self._geo_data
 
@@ -104,49 +99,6 @@ class FourdFrame:
         data += pos_data
         data += uv_data
         return data
-
-    def get_fourd_roll_data(self, frame_number=-1):
-        # geo
-        print('Compress geo')
-        pos_arr, uv_arr = self.get_geo_data()
-
-        # transform uv
-        uv_arr = uv_arr.copy()
-        uv_arr *= [1, -1]
-        uv_arr += [0, 1.0]
-
-        face_arr = np.arange(len(pos_arr), dtype=np.uint32)
-        geo_buffer = DracoPy.encode(
-            # quick fix for: assert np.issubdtype(tex_coord.dtype, float)
-            pos_arr, faces=face_arr, tex_coord=uv_arr.astype(np.float),
-            quantization_bits=11, compression_level=1,
-            quantization_range=-1, quantization_origin=None,
-            create_metadata=False, preserve_order=False,
-        )
-
-        # texture
-        print('Convert texture')
-        texture_file = self.get_file_data('texture')
-        texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
-        image = Image.fromarray(texture_data).convert('RGB')
-        image.thumbnail((4096, 4096), Image.LANCZOS)
-        texture_buffer = jpeg_coder.encode(np.array(image), quality=85)
-
-        # pack frame
-        frame_header = {
-            'frame_number':
-                self.header['frame'] if frame_number == -1 else frame_number,
-            'geo_format': b'DRC',
-            'geo_buffer_size': len(geo_buffer),
-            'tex_format': b'JPEG',
-            'tex_buffer_size': len(texture_buffer),
-        }
-        frame_buffer = struct.pack(
-            'I4sI4sI',
-            *frame_header.values()
-        ) + geo_buffer + texture_buffer
-
-        return frame_buffer
 
     def get_submit_data(self):
         if self._submit_data is None:
