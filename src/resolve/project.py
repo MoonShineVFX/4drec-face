@@ -590,7 +590,10 @@ class ResolveProject:
         tex_file_paths = list(Path(texture_path).rglob('*.jpg'))
 
         if len(tex_file_paths) != len(drc_file_paths):
-            raise ValueError('Texture and drc files are not matched')
+            raise ValueError(
+                f'Texture and drc files are not matched:' +
+                f'{geometry_path} ({len(drc_file_paths)}) <-> {texture_path} ({len(tex_file_paths)})'
+            )
 
         header['frame_count'] = len(drc_file_paths)
 
