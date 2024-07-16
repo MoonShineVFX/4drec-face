@@ -237,7 +237,7 @@ class ResolveProject:
             logging.info("Project run: POSTPROCESS")
             self.convert_texture_video()
             self.export_for_web()
-            ResolveProject.export_fourdrec_roll()
+            ResolveProject.export_fourdrec_roll(with_hd=True)
         else:
             error_message = (
                 f"ResolveStage {SETTINGS.resolve_stage} not implemented"
