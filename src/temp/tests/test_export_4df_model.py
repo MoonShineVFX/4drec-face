@@ -12,7 +12,7 @@ SETTINGS.initialize(
     ResolveStage.RESOLVE,
     r'G:\jobs\4cdd8d\87be91\3d9a44\job.yml'
 )
-SETTINGS.export_path = Path(r'C:\Users\eli.hung\Desktop')
+SETTINGS.export_4df_path = Path(r'C:\Users\eli.hung\Desktop')
 project = ResolveProject()
 
 project.export_4df(project.get_current_chunk())
