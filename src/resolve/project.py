@@ -641,6 +641,6 @@ class ResolveProject:
             audio_path=audio_path,
             hd_drc_folder_path=hd_drc_folder_path,
             hd_jpeg_folder_path=hd_jpeg_folder_path,
-            roll_id=f"{project_name}:{shot_name}:{job_name}",
+            roll_id=f"{project_name}:{shot_name}:{job_name}:{'hd' if with_hd else 'sd'}",
             on_progress_update=on_progress_update,
         )
