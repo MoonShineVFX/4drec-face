@@ -230,7 +230,6 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.RESOLVE:
             logging.info("Project run: RESOLVE")
             self.resolve()
-        elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
             logging.info("Project run: CONVERSION")
             self.convert_by_houdini()
         elif SETTINGS.resolve_stage is ResolveStage.POSTPROCESS:
@@ -238,6 +237,10 @@ class ResolveProject:
             self.convert_texture_video()
             self.export_for_web()
             ResolveProject.export_fourdrec_roll(with_hd=True)
+        # Deprecated conversion stage, combine to resolve_stage
+        elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
+            logging.info("Project run: CONVERSION")
+            self.convert_by_houdini()
         else:
             error_message = (
                 f"ResolveStage {SETTINGS.resolve_stage} not implemented"

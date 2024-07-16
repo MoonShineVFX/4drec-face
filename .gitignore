@@ -148,3 +148,5 @@ cython_debug/
 
 **/backup/*.hip
 /tools/backup/
+
+.idea/

@@ -1,15 +1,25 @@
 from resolve.project import ResolveProject
-from common.fourdrec_roll.header import Header, AudioFormat
-from typing import cast
+from pathlib import Path
 
-header = Header(id="test", name="123", frame_count=1, audio_format="WAV")
-header.to_bytes(123)
 
-# ResolveProject.export_fourdrec_roll(
-#     export_path=r"G:\postprocess\export\jia",
-#     with_hd=True,
-#     project_name="Demo",
-#     shot_name="Jiajia",
-#     job_name="resolve1",
-#     on_progress_update=lambda x: print(x),
-# )
+export_root_path = Path(r"G:\postprocess\export")
+shot_names = ["banban", "xiang", "jia", "mu-shot_3"]
+
+
+def print_progress(label: str, progress: float):
+    print(f"[{label}] Progress: {round(progress * 100)}%")
+
+
+for shot_name in shot_names:
+    print("Convert", shot_name)
+
+    ResolveProject.export_fourdrec_roll(
+        export_path=str(export_root_path / shot_name),
+        project_name="Legacy",
+        shot_name=shot_name,
+        job_name="resolve1",
+        with_hd=True,
+        on_progress_update=lambda progress: print_progress(
+            shot_name, progress
+        ),
+    )
