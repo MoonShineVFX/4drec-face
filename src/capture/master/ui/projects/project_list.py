@@ -38,6 +38,9 @@ class ProjectList(QListWidget):
     ProjectList {
         background-color: palette(alternate-base);
     }
+    QScrollBar::handle:vertical {
+        background-color: palette(Base);
+    }
     """
 
     def __init__(self):
@@ -91,7 +94,8 @@ class ProjectList(QListWidget):
     def _setup_ui(self):
         self.setItemDelegate(ProjectDelegate())
         self.setStyleSheet(self._default)
-        self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setVerticalScrollMode(QListWidget.ScrollPerPixel)
+        self.verticalScrollBar().setSingleStep(15)
 
         # set select project if current project is not None
         current_project = state.get("current_project")
