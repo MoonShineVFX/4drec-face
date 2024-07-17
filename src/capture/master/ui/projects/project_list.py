@@ -1,7 +1,19 @@
 from PyQt5.Qt import (
-    QListWidget, QListWidgetItem, QWidget, QMenu, QAction,
-    QAbstractItemView, QPushButton, QLabel, QPainter,
-    QStyledItemDelegate, QIcon, QSize, Qt, QPixmap, QPainterPath
+    QListWidget,
+    QListWidgetItem,
+    QWidget,
+    QMenu,
+    QAction,
+    QAbstractItemView,
+    QPushButton,
+    QLabel,
+    QPainter,
+    QStyledItemDelegate,
+    QIcon,
+    QSize,
+    Qt,
+    QPixmap,
+    QPainterPath,
 )
 
 from master.ui.resource import icons
@@ -11,38 +23,37 @@ from master.ui.popup import popup
 
 
 def _load_project():
-    state.cast(
-        'project', 'select_project',
-        state.get('project_list_select')
-    )
-    state.set('project_list_dialog', False)
+    state.cast("project", "select_project", state.get("project_list_select"))
+    state.set("project_list_dialog", False)
 
 
 def _is_loadable():
-    current_select = state.get('project_list_select')
-    current_project = state.get('current_project')
+    current_select = state.get("project_list_select")
+    current_project = state.get("current_project")
     return current_select is not None and current_select != current_project
 
 
 class ProjectList(QListWidget):
-    _default = '''
+    _default = """
     ProjectList {
         background-color: palette(alternate-base);
     }
-    '''
+    """
 
     def __init__(self):
         super().__init__()
         self._project_widgets = {}
         self.setSelectionMode(QAbstractItemView.NoSelection)
-        state.on_changed('projects', self._update)
+        state.on_changed("projects", self._update)
         self._setup_ui()
 
-    def _update(self):
-        projects = state.get('projects')
+    def _update(self, scroll_to_select=False):
+        projects = state.get("projects")
         new_project_ids = []
 
         added_item = None
+        select_item = None
+        current_project = state.get("current_project")
         for order, project in enumerate(projects):
             project_id = project.get_id()
             if project_id not in self._project_widgets:
@@ -55,10 +66,14 @@ class ProjectList(QListWidget):
                 if added_item is None:
                     added_item = item
 
+                if project == current_project:
+                    select_item = item
+
             new_project_ids.append(project_id)
 
         deleted_widgets = [
-            widget for widget in self._project_widgets.values()
+            widget
+            for widget in self._project_widgets.values()
             if widget.get_project_id() not in new_project_ids
         ]
 
@@ -68,7 +83,9 @@ class ProjectList(QListWidget):
             self.takeItem(index.row())
             del self._project_widgets[project_id]
 
-        if added_item:
+        if scroll_to_select and select_item is not None:
+            self.scrollToItem(select_item)
+        elif added_item:
             self.scrollToItem(added_item)
 
     def _setup_ui(self):
@@ -76,7 +93,12 @@ class ProjectList(QListWidget):
         self.setStyleSheet(self._default)
         self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 
-        self._update()
+        # set select project if current project is not None
+        current_project = state.get("current_project")
+        if current_project is not None:
+            state.set("project_list_select", current_project)
+
+        self._update(scroll_to_select=True)
 
 
 class ProjectDelegate(QStyledItemDelegate):
@@ -91,7 +113,7 @@ class ProjectDelegate(QStyledItemDelegate):
 
 
 class ProjectItem(LayoutWidget, EntityBinder):
-    _default = '''
+    _default = """
     #title {
       font-size: 24px;
       color: palette(bright-text);
@@ -105,18 +127,18 @@ class ProjectItem(LayoutWidget, EntityBinder):
       font-size: 14px;
     }
 
-    '''
-    _wrapper_default = '''
+    """
+    _wrapper_default = """
     #wrapper {
         background-color: palette(base);
         border-radius: 5px;
     }
-    '''
-    _wrapper_selected = '''
+    """
+    _wrapper_selected = """
     #wrapper {
         border: 2px solid palette(midlight);
     }
-    '''
+    """
 
     def __init__(self, item, project):
         super().__init__(margin=8)
@@ -129,28 +151,24 @@ class ProjectItem(LayoutWidget, EntityBinder):
         self._setup_ui()
 
         self.bind_entity(project, self._update)
-        state.on_changed('project_list_select', self._update)
+        state.on_changed("project_list_select", self._update)
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
         self._menu = self._build_menu()
 
-        detail_layout = make_layout(
-            horizon=False, margin=(0, 8, 0, 8)
-        )
+        detail_layout = make_layout(horizon=False, margin=(0, 8, 0, 8))
 
         self._title_label = QLabel()
-        self._title_label.setObjectName('title')
+        self._title_label.setObjectName("title")
         self._title_label.setAlignment(Qt.AlignCenter)
 
         time_label = QLabel(self._project.create_at_str)
-        time_label.setObjectName('date')
+        time_label.setObjectName("date")
         time_label.setAlignment(Qt.AlignCenter)
 
         icon_layout = LayoutWidget(
-            margin=(8, 0, 8, 0),
-            alignment=Qt.AlignCenter,
-            spacing=24
+            margin=(8, 0, 8, 0), alignment=Qt.AlignCenter, spacing=24
         )
 
         for key, value in self._project.get_overview().items():
@@ -161,7 +179,7 @@ class ProjectItem(LayoutWidget, EntityBinder):
         detail_layout.addWidget(icon_layout)
 
         wrapper = LayoutWidget()
-        wrapper.setObjectName('wrapper')
+        wrapper.setObjectName("wrapper")
         wrapper.setStyleSheet(self._wrapper_default)
 
         wrapper.addLayout(detail_layout)
@@ -181,7 +199,7 @@ class ProjectItem(LayoutWidget, EntityBinder):
         icon_label.setAlignment(Qt.AlignCenter)
 
         text_label = QLabel(str(value))
-        text_label.setObjectName('icon-value')
+        text_label.setObjectName("icon-value")
 
         layout.addWidget(icon_label)
         layout.addWidget(text_label)
@@ -190,9 +208,9 @@ class ProjectItem(LayoutWidget, EntityBinder):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            current_select = state.get('project_list_select')
+            current_select = state.get("project_list_select")
             if current_select != self._project:
-                state.set('project_list_select', self._project)
+                state.set("project_list_select", self._project)
         elif event.button() == Qt.RightButton:
             pos = self.mapToGlobal(event.pos())
             self._menu.exec_(pos)
@@ -209,7 +227,7 @@ class ProjectItem(LayoutWidget, EntityBinder):
         # rename_action.triggered.connect(self._rename)
         # menu.addAction(rename_action)
 
-        delete_action = QAction('Delete', self)
+        delete_action = QAction("Delete", self)
         delete_action.triggered.connect(self._remove)
         menu.addAction(delete_action)
         return menu
@@ -217,24 +235,23 @@ class ProjectItem(LayoutWidget, EntityBinder):
     def _rename(self):
         result = popup(
             None,
-            'Rename Project',
+            "Rename Project",
             "Please input new project's name",
-            f'Project Name:{self._project.name}'
+            f"Project Name:{self._project.name}",
         )
         if result and result != self._project.name:
             self._project.rename(result)
 
     def _remove(self):
-        if (
-            popup(
-                None, 'Delete Project Confirm',
-                f'Are you sure to delete [{self._project.name}]?'
-            )
+        if popup(
+            None,
+            "Delete Project Confirm",
+            f"Are you sure to delete [{self._project.name}]?",
         ):
             self._project.remove()
 
     def _update(self):
-        current_select = state.get('project_list_select')
+        current_select = state.get("project_list_select")
         if current_select == self._project:
             self._wrapper.setStyleSheet(
                 self._wrapper_default + self._wrapper_selected
@@ -258,7 +275,7 @@ class ProjectThumbnail(QWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        self._pixmap = QPixmap('')
+        self._pixmap = QPixmap("")
         self.setFixedSize(self._pixmap.size())
 
     def paintEvent(self, event):
@@ -270,10 +287,7 @@ class ProjectThumbnail(QWidget):
         round_path = QPainterPath()
         round_path.addRoundedRect(0, 0, self.width(), self.height(), 5, 5)
         sq_path = QPainterPath()
-        sq_path.addRect(
-            0, 0,
-            10, self.height()
-        )
+        sq_path.addRect(0, 0, 10, self.height())
         draw_path = sq_path - round_path
         painter.setPen(Qt.NoPen)
         painter.setBrush(self.palette().dark().color())
@@ -286,35 +300,31 @@ class ProjectListButtonGroup(LayoutWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        self.setStyleSheet('font-size: 18px;')
+        self.setStyleSheet("font-size: 18px;")
 
-        new_button = ProjectListButton('add', 'New')
+        new_button = ProjectListButton("add", "New")
         new_button.clicked.connect(
-            lambda: state.set('project_new_dialog', True)
+            lambda: state.set("project_new_dialog", True)
         )
-        self.addWidget(
-            new_button
-        )
+        self.addWidget(new_button)
 
         self.layout().addStretch()
 
-        load_button = ProjectListButton('load', 'Load')
+        load_button = ProjectListButton("load", "Load")
         load_button.clicked.connect(_load_project)
         load_button.setDisabled(True)
-        self.addWidget(
-            load_button
-        )
+        self.addWidget(load_button)
 
 
 class ProjectListButton(QPushButton):
     def __init__(self, icon, text):
-        super().__init__(f'  {text}')
+        super().__init__(f"  {text}")
         self._icon = icon
-        state.on_changed('project_list_select', self._update)
+        state.on_changed("project_list_select", self._update)
         self._setup_ui()
 
     def _update(self):
-        if self._icon == 'load':
+        if self._icon == "load":
             if _is_loadable():
                 self.setDisabled(False)
             else:
@@ -322,7 +332,7 @@ class ProjectListButton(QPushButton):
 
     def _setup_ui(self):
         self.setFocusPolicy(Qt.NoFocus)
-        self.setStyleSheet('font-size: 16px;')
+        self.setStyleSheet("font-size: 16px;")
         icon = QIcon(icons.get(self._icon))
         self.setIcon(icon)
 
