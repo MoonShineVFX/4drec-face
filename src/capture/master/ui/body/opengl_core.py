@@ -1,15 +1,17 @@
-from PyQt5.Qt import (
-    QSize, Qt, QOpenGLWidget, QSurfaceFormat
-)
+from PyQt5.Qt import QSize, Qt, QOpenGLWidget, QSurfaceFormat
 
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GL.shaders import *
 
+import glm
 import math
 
 from .opengl_components import (
-    OpenGLCamera, OpenGLObject, FloorObject, CameraObject
+    OpenGLCamera,
+    OpenGLObject,
+    FloorObject,
+    CameraObject,
 )
 
 
@@ -18,11 +20,7 @@ class OpenGLCore(QOpenGLWidget):
     _offset_speed = 0.0035
     _zoom_wheel_speed = 0.03
     _zoom_move_speed = 0.002
-    _default_shader_parms = {
-        'gamma': 1.1,
-        'saturate': 1.1,
-        'exposure': 1.0
-    }
+    _default_shader_parms = {"gamma": 1.1, "saturate": 1.1, "exposure": 1.0}
 
     def __init__(self, parent, interface):
         super().__init__(parent)
@@ -36,6 +34,7 @@ class OpenGLCore(QOpenGLWidget):
 
         # GL
         self._objects = {}
+        self._base_rotation = glm.mat4(1.0)
 
         self._setup_ui()
 
@@ -49,7 +48,7 @@ class OpenGLCore(QOpenGLWidget):
     def _setup_ui(self):
         self._window_size = (
             self.parentWidget().width(),
-            self.parentWidget().height()
+            self.parentWidget().height(),
         )
         color = self.palette().dark().color()
         self._background_color = color.getRgbF()
@@ -61,11 +60,11 @@ class OpenGLCore(QOpenGLWidget):
 
     @staticmethod
     def load_shader(filename):
-        with open(f'master/ui/body/{filename}') as f:
+        with open(f"master/ui/body/{filename}") as f:
             return f.read()
 
     def set_geo(self, cache, turntable=0):
-        obj = self._objects['main']
+        obj = self._objects["main"]
         if cache is None:
             # clean empty
             if not obj.is_empty():
@@ -75,7 +74,7 @@ class OpenGLCore(QOpenGLWidget):
             return
         elif cache[2] is None:
             # camera rig geo
-            self._objects['camera'].update(cache[0], cache[1][0])
+            self._objects["camera"].update(cache[0], cache[1][0])
             return
 
         obj.update(
@@ -83,16 +82,13 @@ class OpenGLCore(QOpenGLWidget):
             pos_list=cache[1][0],
             uv_list=cache[1][1],
             texture=cache[2],
-            resolution=cache[3]
+            resolution=cache[3],
         )
         self._interface.update_vertex_count(cache[0])
 
         # turntable
         if turntable != 0:
-            self._camera.offset_rot(
-                0,
-                turntable
-            )
+            self._camera.offset_rot(0, turntable)
             self._camera.update()
 
         self.update()
@@ -103,9 +99,14 @@ class OpenGLCore(QOpenGLWidget):
         self.update()
 
     def toggle_rig(self, is_rig):
-        for name in ('floor', 'camera'):
+        for name in ("floor", "camera"):
             self._objects[name].set_visible(is_rig)
-        self._objects['main'].set_backfacing(is_rig)
+        self._objects["main"].set_backfacing(is_rig)
+        self.update()
+
+    def toggle_base_rotation(self, is_180: bool):
+        self._camera.set_base_rot(180 if is_180 else 0)
+        self._camera.update()
         self.update()
 
     def sizeHint(self):
@@ -113,9 +114,7 @@ class OpenGLCore(QOpenGLWidget):
 
     def resizeGL(self, width, height):
         self._window_size = (width, height)
-        self._camera.set_aspect(
-            self._window_size[0] / self._window_size[1]
-        )
+        self._camera.set_aspect(self._window_size[0] / self._window_size[1])
         self._camera.update()
         self.update()
 
@@ -143,19 +142,13 @@ class OpenGLCore(QOpenGLWidget):
             return
 
         if buttons & Qt.LeftButton:
-            self._camera.offset_rot(
-                dy * self._rot_speed,
-                dx * self._rot_speed
-            )
+            self._camera.offset_rot(dy * self._rot_speed, dx * self._rot_speed)
         elif buttons & Qt.MidButton:
             self._camera.offset_pos(
-                dx * self._offset_speed,
-                -dy * self._offset_speed
+                dx * self._offset_speed, -dy * self._offset_speed
             )
         elif buttons & Qt.RightButton:
-            self._camera.offset_zoom(
-                dy * self._zoom_move_speed
-            )
+            self._camera.offset_zoom(dy * self._zoom_move_speed)
 
         self._last_mouse_pos = event.pos()
         self._camera.update()
@@ -166,9 +159,7 @@ class OpenGLCore(QOpenGLWidget):
 
     def wheelEvent(self, event):
         delta = math.copysign(1, event.angleDelta().y())
-        self._camera.offset_zoom(
-            delta * self._zoom_wheel_speed
-        )
+        self._camera.offset_zoom(delta * self._zoom_wheel_speed)
         self._camera.update()
         self.update()
         event.accept()
@@ -180,13 +171,11 @@ class OpenGLCore(QOpenGLWidget):
 
     def offset_model_shader(self, parm_name, value):
         self._shader_parms[parm_name] += value
-        self._objects['main'].set_shader_parm(
+        self._objects["main"].set_shader_parm(
             parm_name, self._shader_parms[parm_name]
         )
         self.update()
-        self._interface.update_parm(
-            parm_name, self._shader_parms[parm_name]
-        )
+        self._interface.update_parm(parm_name, self._shader_parms[parm_name])
 
     def initializeGL(self):
         glEnable(GL_DEPTH_TEST)
@@ -196,28 +185,24 @@ class OpenGLCore(QOpenGLWidget):
 
         # Shaders
         vtx = compileShader(
-            self.load_shader('standard.vert'), GL_VERTEX_SHADER
+            self.load_shader("standard.vert"), GL_VERTEX_SHADER
         )
-        main = compileShader(
-            self.load_shader('main.frag'), GL_FRAGMENT_SHADER
-        )
+        main = compileShader(self.load_shader("main.frag"), GL_FRAGMENT_SHADER)
         floor = compileShader(
-            self.load_shader('floor.frag'), GL_FRAGMENT_SHADER
+            self.load_shader("floor.frag"), GL_FRAGMENT_SHADER
         )
         camera = compileShader(
-            self.load_shader('camera.frag'), GL_FRAGMENT_SHADER
+            self.load_shader("camera.frag"), GL_FRAGMENT_SHADER
         )
 
         # Objects
-        self._objects['main'] = OpenGLObject(vtx, main, has_texture=True)
-        self._objects['floor'] = FloorObject(vtx, floor)
-        self._objects['camera'] = CameraObject(vtx, camera)
+        self._objects["main"] = OpenGLObject(vtx, main, has_texture=True)
+        self._objects["floor"] = FloorObject(vtx, floor)
+        self._objects["camera"] = CameraObject(vtx, camera)
 
         # Set shader default
         for key, value in self._shader_parms.items():
-            self._objects['main'].set_shader_parm(
-                key, value
-            )
+            self._objects["main"].set_shader_parm(key, value)
 
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

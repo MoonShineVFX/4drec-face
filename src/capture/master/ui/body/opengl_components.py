@@ -10,14 +10,16 @@ from utility.setting import setting
 
 
 class OpenGLCamera:
-    _default_zoom = -0.6
-    _default_pos = [0.0, 0.1]
+    _default_zoom = -1
+    _default_pos = [-0.1, 0.1]
 
     def __init__(self, aspect):
         self._matrix = None
 
         self._rot_x = 0
         self._rot_y = 0
+        self._rot_y_base = 0
+
         self._zoom = self._default_zoom
         self._pos = self._default_pos.copy()
         self._aspect = aspect
@@ -39,12 +41,27 @@ class OpenGLCamera:
         f = 1.0 / math.tan(fov / 2.0)
         z_near = 0.01
         z_far = 1000.0
-        self._matrix = np.array([
-            f, 0.0, 0.0, 0.0,
-            0.0, f, 0.0, 0.0,
-            0.0, 0.0, (z_far + z_near) / (z_near - z_far), -1.0,
-            0.0, 0.0, 2.0 * z_far * z_near / (z_near - z_far), 0.0
-        ], np.float32)
+        self._matrix = np.array(
+            [
+                f,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                f,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                (z_far + z_near) / (z_near - z_far),
+                -1.0,
+                0.0,
+                0.0,
+                2.0 * z_far * z_near / (z_near - z_far),
+                0.0,
+            ],
+            np.float32,
+        )
 
     def update(self):
         project_matrix = np.copy(self._matrix)
@@ -52,13 +69,17 @@ class OpenGLCamera:
 
         move_matrix = glm.mat4(1.0)
 
-        move_matrix = glm.translate(move_matrix, glm.vec3(*self._pos, self._zoom))
+        move_matrix = glm.translate(
+            move_matrix, glm.vec3(*self._pos, self._zoom)
+        )
 
         move_matrix = glm.rotate(
             move_matrix, math.radians(self._rot_x), (1.0, 0.0, 0.0)
         )
         move_matrix = glm.rotate(
-            move_matrix, math.radians(self._rot_y), (0.0, 1.0, 0.0)
+            move_matrix,
+            math.radians(self._rot_y + self._rot_y_base),
+            (0.0, 1.0, 0.0),
         )
 
         for func in self._callbacks:
@@ -77,6 +98,9 @@ class OpenGLCamera:
         self._pos[0] += x
         self._pos[1] += y
 
+    def set_base_rot(self, y: int):
+        self._rot_y_base = y
+
     def offset_zoom(self, z):
         self._zoom += z
 
@@ -90,7 +114,7 @@ class OpenGLCamera:
         self._pos = self._default_pos.copy()
 
 
-class OpenGLProgram():
+class OpenGLProgram:
     def __init__(self, vertex_shader, fragment_shader):
         self._program = compileProgram(vertex_shader, fragment_shader)
 
@@ -102,29 +126,25 @@ class OpenGLProgram():
 
     def set_wireframe(self, toggle):
         self.use()
-        uni_wireframe = glGetUniformLocation(
-            self._program, 'isWireframe'
-        )
+        uni_wireframe = glGetUniformLocation(self._program, "isWireframe")
         glUniform1i(uni_wireframe, toggle)
 
     def set_backfacing(self, toggle):
         self.use()
         uni_backfacing = glGetUniformLocation(
-            self._program, 'isShowBackFacing'
+            self._program, "isShowBackFacing"
         )
         glUniform1i(uni_backfacing, toggle)
 
     def set_parm(self, parm_name, value):
         self.use()
-        gl_parm = glGetUniformLocation(
-            self._program, parm_name
-        )
+        gl_parm = glGetUniformLocation(self._program, parm_name)
         glUniform1f(gl_parm, value)
 
     def update_camera(self, project_matrix, move_matrix):
         self.use()
-        uni_move_matrix = glGetUniformLocation(self._program, 'moveMatrix')
-        uni_proj_matrix = glGetUniformLocation(self._program, 'projectMatrix')
+        uni_move_matrix = glGetUniformLocation(self._program, "moveMatrix")
+        uni_proj_matrix = glGetUniformLocation(self._program, "projectMatrix")
         glUniformMatrix4fv(
             uni_move_matrix, 1, GL_FALSE, glm.value_ptr(move_matrix)
         )
@@ -132,14 +152,18 @@ class OpenGLProgram():
 
     def update_transform(self, matrix):
         self.use()
-        uni_model_matrix = glGetUniformLocation(self._program, 'modelMatrix')
+        uni_model_matrix = glGetUniformLocation(self._program, "modelMatrix")
         glUniformMatrix4fv(uni_model_matrix, 1, GL_FALSE, matrix)
 
 
-class OpenGLObject():
+class OpenGLObject:
     def __init__(
-        self, vertex_shader, fragment_shader,
-        has_texture=False, has_wireframe=True, has_uv=True
+        self,
+        vertex_shader,
+        fragment_shader,
+        has_texture=False,
+        has_wireframe=True,
+        has_uv=True,
     ):
         self._program = OpenGLProgram(vertex_shader, fragment_shader)
         self.update_camera = self._program.update_camera
@@ -169,45 +193,51 @@ class OpenGLObject():
 
         self._buffer_vertex = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self._buffer_vertex)
-        glEnableVertexAttribArray(self._program.attr('vert'))
+        glEnableVertexAttribArray(self._program.attr("vert"))
         glVertexAttribPointer(
-            self._program.attr('vert'), 3, GL_FLOAT, GL_FALSE, 0, None
+            self._program.attr("vert"), 3, GL_FLOAT, GL_FALSE, 0, None
         )
 
         if self._has_uv:
             self._buffer_uv = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, self._buffer_uv)
-            glEnableVertexAttribArray(self._program.attr('uV'))
+            glEnableVertexAttribArray(self._program.attr("uV"))
             glVertexAttribPointer(
-                self._program.attr('uV'), 2, GL_FLOAT, GL_FALSE, 0, None
+                self._program.attr("uV"), 2, GL_FLOAT, GL_FALSE, 0, None
             )
 
         # texture
         if self._has_texture:
             self._program.use()
-            glUniform1i(self._program.attr('inTexture'), 0)
+            glUniform1i(self._program.attr("inTexture"), 0)
             self._texture_id = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D, self._texture_id)
 
             # GL_NEAREST or GL_LINEAR
-            glTexParameterf(
-                GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR
-            )
-            glTexParameterf(
-                GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR
-            )
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexImage2D(
-                GL_TEXTURE_2D, 0, 3,
-                self._texture_resolution, self._texture_resolution,
-                0, GL_RGB, GL_UNSIGNED_BYTE,
+                GL_TEXTURE_2D,
+                0,
+                3,
+                self._texture_resolution,
+                self._texture_resolution,
+                0,
+                GL_RGB,
+                GL_UNSIGNED_BYTE,
                 np.zeros(
                     [self._texture_resolution, self._texture_resolution, 3],
-                    dtype=np.uint8
-                )
+                    dtype=np.uint8,
+                ),
             )
 
     def update(
-        self, vertex_count=0, pos_list=None, uv_list=None, texture=None, resolution=4096
+        self,
+        vertex_count=0,
+        pos_list=None,
+        uv_list=None,
+        texture=None,
+        resolution=4096,
     ):
         # geo
         self._vertex_count = vertex_count
@@ -217,15 +247,13 @@ class OpenGLObject():
 
         glBindBuffer(GL_ARRAY_BUFFER, self._buffer_vertex)
         glBufferData(
-            GL_ARRAY_BUFFER, 4 * 3 * len(pos_list), pos_list,
-            GL_STATIC_DRAW
+            GL_ARRAY_BUFFER, 4 * 3 * len(pos_list), pos_list, GL_STATIC_DRAW
         )
 
         if self._has_uv:
             glBindBuffer(GL_ARRAY_BUFFER, self._buffer_uv)
             glBufferData(
-                GL_ARRAY_BUFFER, 4 * 2 * len(uv_list), uv_list,
-                GL_STATIC_DRAW
+                GL_ARRAY_BUFFER, 4 * 2 * len(uv_list), uv_list, GL_STATIC_DRAW
             )
 
         # texture
@@ -239,8 +267,10 @@ class OpenGLObject():
                     3,
                     self._texture_resolution,
                     self._texture_resolution,
-                    0, GL_RGB, GL_UNSIGNED_BYTE,
-                    texture
+                    0,
+                    GL_RGB,
+                    GL_UNSIGNED_BYTE,
+                    texture,
                 )
             else:
                 glTexSubImage2D(
@@ -252,7 +282,7 @@ class OpenGLObject():
                     self._texture_resolution,
                     GL_RGB,
                     GL_UNSIGNED_BYTE,
-                    texture
+                    texture,
                 )
 
     def render(self):
@@ -300,28 +330,51 @@ class OpenGLObject():
 
 class FloorObject(OpenGLObject):
     def __init__(self, vertex_shader, fragment_shader):
-        super().__init__(
-            vertex_shader, fragment_shader,
-            has_uv=False
-        )
+        super().__init__(vertex_shader, fragment_shader, has_uv=False)
         self._build_geo()
         self._visible = False
 
     def _build_geo(self):
         rx, ry, rz = setting.submit.region_size
         rx, ry, rz = [rx / 2, ry / 2, rz / 2]
-        ref_points = np.array([
-                [rx, ry, rz], [-rx, ry, rz],
-                [-rx, -ry, rz], [rx, -ry, rz],
-                [rx, ry, -rz], [-rx, ry, -rz],
-                [-rx, -ry, -rz], [rx, -ry, -rz]
+        ref_points = np.array(
+            [
+                [rx, ry, rz],
+                [-rx, ry, rz],
+                [-rx, -ry, rz],
+                [rx, -ry, rz],
+                [rx, ry, -rz],
+                [-rx, ry, -rz],
+                [-rx, -ry, -rz],
+                [rx, -ry, -rz],
             ],
-            np.float32
+            np.float32,
         )
         connect_orders = [
-            0, 1, 1, 2, 2, 3, 3, 0,
-            0, 4, 3, 7, 1, 5, 2, 6,
-            4, 5, 5, 6, 6, 7, 7, 4
+            0,
+            1,
+            1,
+            2,
+            2,
+            3,
+            3,
+            0,
+            0,
+            4,
+            3,
+            7,
+            1,
+            5,
+            2,
+            6,
+            4,
+            5,
+            5,
+            6,
+            6,
+            7,
+            7,
+            4,
         ]
         pos_list = ref_points[connect_orders]
 
@@ -343,7 +396,6 @@ class FloorObject(OpenGLObject):
 class CameraObject(OpenGLObject):
     def __init__(self, vertex_shader, fragment_shader):
         super().__init__(
-            vertex_shader, fragment_shader,
-            has_wireframe=False, has_uv=False
+            vertex_shader, fragment_shader, has_wireframe=False, has_uv=False
         )
         self._visible = False

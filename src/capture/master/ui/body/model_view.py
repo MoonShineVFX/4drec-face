@@ -1,4 +1,5 @@
 from PyQt5.Qt import QLabel, QWidget, Qt, QRect, QComboBox
+from datetime import datetime
 
 from utility.fps_counter import FPScounter
 from utility.setting import setting
@@ -26,52 +27,57 @@ class ModelView(QWidget):
         self._turntable_speed = 0.0
         self._fps_counter = FPScounter(self._interface.update_fps)
 
-        state.on_changed('opengl_data', self._update_geo)
-        state.on_changed('Rig', self._update_rig)
-        state.on_changed('Wireframe', self._update_shader)
-        state.on_changed('key', self._on_key_pressed)
+        state.on_changed("opengl_data", self._update_geo)
+        state.on_changed("Rig", self._update_rig)
+        state.on_changed("Wireframe", self._update_shader)
+        state.on_changed("key", self._on_key_pressed)
+        state.on_changed("current_project", self._update_project_rotation)
 
     def resizeEvent(self, event):
         self._core.setFixedSize(event.size())
 
     def _update_shader(self):
-        self._core.toggle_wireframe(state.get('Wireframe'))
+        self._core.toggle_wireframe(state.get("Wireframe"))
 
     def _update_rig(self):
-        self._core.toggle_rig(state.get('Rig'))
+        self._core.toggle_rig(state.get("Rig"))
 
     def _update_geo(self):
-        if state.get('caching'):
+        if state.get("caching"):
             return
-        turntable = self._turntable_speed if state.get('playing') else 0
-        self._core.set_geo(state.get('opengl_data'), turntable)
+        turntable = self._turntable_speed if state.get("playing") else 0
+        self._core.set_geo(state.get("opengl_data"), turntable)
         self._fps_counter.tick()
 
         # screenshot
-        screenshot_path = state.get('screenshot_export_path')
+        screenshot_path = state.get("screenshot_export_path")
         if screenshot_path is not None:
             self._take_screenshot(screenshot_path)
 
-        state.set('tick_update_geo', None)
+        state.set("tick_update_geo", None)
 
     def _on_key_pressed(self):
         if not self.isVisible():
             return
-        key = state.get('key')
+        key = state.get("key")
         if key == Qt.Key_Z:
             self._core.reset_camera_transform()
         elif key == Qt.Key_Q:
-            self._core.offset_model_shader('gamma', -self._offset_parm_value)
+            self._core.offset_model_shader("gamma", -self._offset_parm_value)
         elif key == Qt.Key_E:
-            self._core.offset_model_shader('gamma', self._offset_parm_value)
+            self._core.offset_model_shader("gamma", self._offset_parm_value)
         elif key == Qt.Key_A:
-            self._core.offset_model_shader('saturate', -self._offset_parm_value)
+            self._core.offset_model_shader(
+                "saturate", -self._offset_parm_value
+            )
         elif key == Qt.Key_D:
-            self._core.offset_model_shader('saturate', self._offset_parm_value)
+            self._core.offset_model_shader("saturate", self._offset_parm_value)
         elif key == Qt.Key_S:
-            self._core.offset_model_shader('exposure', self._offset_parm_value)
+            self._core.offset_model_shader("exposure", self._offset_parm_value)
         elif key == Qt.Key_X:
-            self._core.offset_model_shader('exposure', -self._offset_parm_value)
+            self._core.offset_model_shader(
+                "exposure", -self._offset_parm_value
+            )
         elif key == Qt.Key_F:
             self._update_turntable(-self._offset_parm_value)
         elif key == Qt.Key_G:
@@ -82,19 +88,31 @@ class ModelView(QWidget):
         self._interface.update_turntable(self._turntable_speed)
 
     def _take_screenshot(self, export_path):
-        frame = state.get('current_slider_value')
+        frame = state.get("current_slider_value")
         rect = QRect(0, 0, self._core.width(), self._core.height())
         pixmap = self._core.grab(rect)
-        pixmap.save(f'{export_path}/{frame:06d}.png')
+        pixmap.save(f"{export_path}/{frame:06d}.png")
+
+    def _update_project_rotation(self):
+        """Project after 2023/04/12 should rotate 180 degrees"""
+        project = state.get("current_project")
+        if project is None:
+            return
+
+        project_datetime = project._doc_id.generation_time.replace(tzinfo=None)
+        threshold_datetime = datetime(2023, 4, 12)
+        is_180_rotation = project_datetime >= datetime(2023, 4, 12)
+
+        self._core.toggle_base_rotation(is_180_rotation)
 
 
 class ModelInterface(QLabel):
-    _default = '''
+    _default = """
         font-size: 13;
         color: palette(window-text);
         min-width: 200px;
         min-height: 400px;
-    '''
+    """
 
     def __init__(self):
         super().__init__()
@@ -105,7 +123,7 @@ class ModelInterface(QLabel):
         self._fps = 0
 
         self._setup_ui()
-        state.on_changed('current_slider_value', self._update_real_frame)
+        state.on_changed("current_slider_value", self._update_real_frame)
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
@@ -133,30 +151,32 @@ class ModelInterface(QLabel):
         self._update()
 
     def _update_real_frame(self):
-        slider_value = state.get('current_slider_value')
+        slider_value = state.get("current_slider_value")
         self._real_frame = get_real_frame(slider_value)
         self._update()
 
     def _update(self):
         text = (
-            f'Resolution: \n\n' +
-            f'Vertices:  {self._vertex_count}\n' +
-            f'Real Frame:  {self._real_frame}\n' +
-            '\n'.join([f'{k}: {v:.2f}' for k, v in self._shader_parms.items()]) +
-            '\n\n' +
-            '[Q/E]  Gamma Offset\n' +
-            '[A/D]  Saturate Offset\n' +
-            '[S/X]  Exposure Offset\n' +
-            '[F/G]  Turntable\n' +
-            '[W]  Toggle Wireframe\n' +
-            '[C]  Cache All Frames\n' +
-            '[Z]  Reset Camera'
+            f"Resolution: \n\n"
+            + f"Vertices:  {self._vertex_count}\n"
+            + f"Real Frame:  {self._real_frame}\n"
+            + "\n".join(
+                [f"{k}: {v:.2f}" for k, v in self._shader_parms.items()]
+            )
+            + "\n\n"
+            + "[Q/E]  Gamma Offset\n"
+            + "[A/D]  Saturate Offset\n"
+            + "[S/X]  Exposure Offset\n"
+            + "[F/G]  Turntable\n"
+            + "[W]  Toggle Wireframe\n"
+            + "[C]  Cache All Frames\n"
+            + "[Z]  Reset Camera"
         )
 
-        if state.get('playing'):
+        if state.get("playing"):
             text += (
-                f'\n\nfps: {self._fps}\n'
-                f'turntable speed: {self._turntable_speed:.1f}'
+                f"\n\nfps: {self._fps}\n"
+                f"turntable speed: {self._turntable_speed:.1f}"
             )
 
         self.setText(text)
@@ -173,9 +193,7 @@ class TextureResolutionComboBox(QComboBox):
 
         self._setup_ui()
         self.setCurrentIndex(
-            self._res_list.index(
-                setting.default_texture_display_resolution
-            )
+            self._res_list.index(setting.default_texture_display_resolution)
         )
 
         self.currentIndexChanged.connect(self._on_changed)
@@ -185,4 +203,4 @@ class TextureResolutionComboBox(QComboBox):
 
     def _on_changed(self, index: int):
         resolution = self.currentData()
-        state.set('texture_resolution', resolution)
+        state.set("texture_resolution", resolution)
