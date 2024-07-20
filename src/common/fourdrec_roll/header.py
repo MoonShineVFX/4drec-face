@@ -2,6 +2,7 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Type
 import json
 import struct
+from datetime import datetime
 
 try:
     from typing import Literal
@@ -63,7 +64,9 @@ class Header:
     )  # HD use 4096
     # Positions
     positions: HeaderPositions = field(default_factory=HeaderPositions)
+    # Misc
     version: str = "1"
+    created_date: str = field(default_factory=lambda: datetime.isoformat())
 
     def set_positions(
         self,

@@ -11,6 +11,7 @@ from pathlib import Path
 import math
 import subprocess
 import json
+from datetime import datetime, timezone
 
 from settings import SETTINGS
 from define import ResolveStage
@@ -636,6 +637,9 @@ class ResolveProject:
             if not audio_path.is_file():
                 audio_path = None
 
+        # Get datetime from export_path created date
+        created_date = datetime.fromtimestamp(export_path.stat().st_ctime)
+
         return FourdrecRoll.pack(
             name=f"{project_name} - {shot_name}",
             drc_folder_path=drc_folder_path,
@@ -646,4 +650,5 @@ class ResolveProject:
             hd_jpeg_folder_path=hd_jpeg_folder_path,
             roll_id=f"{project_name}:{shot_name}:{job_name}:{'hd' if with_hd else 'sd'}",
             on_progress_update=on_progress_update,
+            created_date=created_date,
         )

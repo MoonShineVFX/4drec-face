@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Callable, BinaryIO, List, Union
+from datetime import datetime
 
 from .header import Header
 
@@ -21,6 +22,7 @@ class FourdrecRoll:
         hd_jpeg_folder_path: InputPath = None,
         roll_id: str = None,
         on_progress_update: OnProgressUpdateCallback = None,
+        created_date: datetime = None,
     ) -> str:
         """Pack data from given paths to a roll.
 
@@ -113,6 +115,9 @@ class FourdrecRoll:
             id=roll_id if roll_id is not None else name,
             frame_count=len(drc_file_paths),
             audio_format="WAV" if audio_path is not None else "NULL",
+            created_date=created_date.isoformat()
+            if created_date
+            else datetime.now().isoformat(),
         )
 
         progress_per_step = 1 / (
