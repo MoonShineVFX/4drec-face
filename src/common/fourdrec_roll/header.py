@@ -1,5 +1,6 @@
+from __future__ import annotations
 from dataclasses import dataclass, field, asdict
-from typing import List, Type
+from typing import List, Type, BinaryIO
 import json
 import struct
 from datetime import datetime
@@ -28,10 +29,8 @@ class HeaderPositions:
     the last position is the end of the last frame.
     """
 
-    geometry_buffer_positions: List[int] = field(default_factory=list)
-    texture_buffer_positions: List[int] = field(default_factory=list)
-    hd_geometry_buffer_positions: List[int] = field(default_factory=list)
-    hd_texture_buffer_positions: List[int] = field(default_factory=list)
+    frame_buffer_positions: List[int] = field(default_factory=list)
+    hd_frame_buffer_positions: List[int] = field(default_factory=list)
     audio_buffer_positions: List[int] = field(default_factory=list)
 
 
@@ -66,13 +65,13 @@ class Header:
     positions: HeaderPositions = field(default_factory=HeaderPositions)
     # Misc
     version: str = "1"
-    created_date: str = field(default_factory=lambda: datetime.isoformat())
+    created_date: str = field(
+        default_factory=lambda: datetime.now().isoformat()
+    )
 
     def set_positions(
         self,
-        position_type: Literal[
-            "GEOMETRY", "TEXTURE", "AUDIO", "HD_GEOMETRY", "HD_TEXTURE"
-        ],
+        position_type: Literal["FRAME", "HD_FRAME", "AUDIO"],
         positions: List[int],
     ):
         """Set the positions of the buffers in the header.
@@ -80,16 +79,12 @@ class Header:
         For validation and frame count auto-detection.
         """
 
-        if position_type == "GEOMETRY":
-            self.positions.geometry_buffer_positions = positions
-        elif position_type == "TEXTURE":
-            self.positions.texture_buffer_positions = positions
+        if position_type == "FRAME":
+            self.positions.frame_buffer_positions = positions
+        elif position_type == "HD_FRAME":
+            self.positions.hd_frame_buffer_positions = positions
         elif position_type == "AUDIO":
             self.positions.audio_buffer_positions = positions
-        elif position_type == "HD_GEOMETRY":
-            self.positions.hd_geometry_buffer_positions = positions
-        elif position_type == "HD_TEXTURE":
-            self.positions.hd_texture_buffer_positions = positions
         else:
             raise ValueError(f"Unknown position type: {position_type}")
 
@@ -102,15 +97,26 @@ class Header:
             else:
                 assert self.frame_count == frame_count, "Frame count mismatch"
 
-    def to_bytes(self, header_position) -> bytes:
+    def to_bytes(self) -> bytes:
         json_data = json.dumps(asdict(self)).encode("utf-8")
 
         # Pack footer
         header_hint = {
             "format": FORMAT.encode("ascii"),
-            "header_position": header_position,
             "header_size": len(json_data),
         }
-        header_hint_bytes = struct.pack("4sII", *header_hint.values())
+        header_hint_bytes = struct.pack("4sI", *header_hint.values())
 
-        return json_data + header_hint_bytes
+        return header_hint_bytes + json_data
+
+    @classmethod
+    def from_file(cls, file: BinaryIO) -> Header:
+        file.seek(0)
+        header_hint = struct.unpack("4sI", file.read())
+
+        assert header_hint[0] == FORMAT.encode("ascii"), "Invalid format"
+
+        json_data = file.read(header_hint[1])
+        header_dict = json.loads(json_data.decode("utf-8"))
+        print("DEBUG: header_dict", header_dict)
+        return cls(**header_dict)

@@ -46,7 +46,9 @@ def build_mesh_sample(vertex_arr, uv_arr):
         uvs, alembic.AbcGeom.GeometryScope.kFacevaryingScope
     )
 
-    mesh_samp = alembic.AbcGeom.OPolyMeshSchemaSample(verts, indices, counts, uvs_samp)
+    mesh_samp = alembic.AbcGeom.OPolyMeshSchemaSample(
+        verts, indices, counts, uvs_samp
+    )
     return mesh_samp
 
 
@@ -55,29 +57,31 @@ def export_geometry(load_path, frame, export_path, filetype):
 
     fourd_frame = FourdFrameManager.load(load_path)
 
-    if filetype == '.obj':
-        with open(f'{export_path}/obj/{frame:04d}.obj', 'w') as f:
+    if filetype == ".obj":
+        with open(f"{export_path}/obj/{frame:04d}.obj", "w") as f:
             f.write(fourd_frame.get_obj_data())
 
-    if filetype == '.4dh':
-        with open(f'{export_path}/geo/{frame:04d}.4dh', 'wb') as f:
+    if filetype == ".4dh":
+        with open(f"{export_path}/geo/{frame:04d}.4dh", "wb") as f:
             f.write(fourd_frame.get_houdini_data())
 
-    with open(f'{export_path}/texture/{frame:04d}.jpg', 'wb') as f:
+    with open(f"{export_path}/texture/{frame:04d}.jpg", "wb") as f:
         f.write(fourd_frame.get_texture_data(raw=True))
 
 
 def export_texture(frame_num: int, load_path: str, export_path: str):
     from common.fourd_frame import FourdFrameManager
+
     frame = FourdFrameManager.load(load_path)
     data = frame.get_texture_data(raw=True)
-    with open(export_path, 'wb') as f:
+    with open(export_path, "wb") as f:
         f.write(data)
     return frame_num, None
 
 
 def decode_fourd_frame(frame_num: int, load_path: str):
     from common.fourd_frame import FourdFrameManager
+
     # load 4D
     frame = FourdFrameManager.load(load_path)
 
@@ -118,7 +122,14 @@ class MultiExecutor(threading.Thread):
         import re
         from pathlib import Path
 
-        job_id, job_folder_path, frame_range, shot_folder_path, shot_frame_range, export_path = tasks
+        (
+            job_id,
+            job_folder_path,
+            frame_range,
+            shot_folder_path,
+            shot_frame_range,
+            export_path,
+        ) = tasks
 
         # filter export_path
         export_path = Path(export_path)
@@ -126,54 +137,62 @@ class MultiExecutor(threading.Thread):
         filename = export_path.stem
         export_path = export_path.parent
 
-        folder_name = re.sub(r'[^\w\d-]', '_', filename)
-        export_path = Path(f'{export_path}/{folder_name}/')
+        folder_name = re.sub(r"[^\w\d-]", "_", filename)
+        export_path = Path(f"{export_path}/{folder_name}/")
         export_path.mkdir(parents=True, exist_ok=True)
 
         # define
-        load_path = (
-            f'{job_folder_path}/'
-            f'{setting.submit.output_folder_name}/'
-        )
+        load_path = Path(job_folder_path) / setting.submit.output_folder_name
+        if not load_path.exists():
+            # old version
+            load_path = Path(job_folder_path) / "output"
         offset_frame = frame_range[0]
 
         # Export audio
-        log.info('Export Audio')
-        audio_source_path = Path(shot_folder_path) / 'audio.wav'
+        log.info("Export Audio")
+        audio_source_path = Path(shot_folder_path) / "audio.wav"
         if audio_source_path.exists():
-            audio_target_path = export_path / 'audio.wav'
-            audio_start_time = (frame_range[0] - shot_frame_range[0]) / setting.frame_rate
-            audio_duration = (frame_range[1] - frame_range[0]) / setting.frame_rate
-            cmd = f'ffmpeg -i {audio_source_path} ' \
-                  f'-ss {audio_start_time} ' \
-                  f'-t {audio_duration} ' \
-                  f'{audio_target_path}'
+            audio_target_path = export_path / "audio.wav"
+            audio_start_time = (
+                frame_range[0] - shot_frame_range[0]
+            ) / setting.frame_rate
+            audio_duration = (
+                frame_range[1] - frame_range[0]
+            ) / setting.frame_rate
+            cmd = (
+                f"ffmpeg -i {audio_source_path} "
+                f"-ss {audio_start_time} "
+                f"-t {audio_duration} "
+                f"{audio_target_path}"
+            )
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                universal_newlines=True
+                universal_newlines=True,
             )
             for line in process.stdout:
-                log.info(f'[ffmpeg] {line}')
+                log.info(f"[ffmpeg] {line}")
         else:
-            log.warning(f'Audio {audio_source_path} not exists, skip audio conversion.')
+            log.warning(
+                f"Audio {audio_source_path} not exists, skip audio conversion."
+            )
 
-        log.info(f'Export Model: {filetype}')
+        log.info(f"Export Model: {filetype}")
         # Export model
-        if filetype != '.abc':
+        if filetype != ".abc":
             # Export obj or 4dh
-            if filetype == '.obj':
-                (export_path / 'obj').mkdir(parents=True, exist_ok=True)
-            elif filetype == '.4dh':
-                (export_path / 'geo').mkdir(parents=True, exist_ok=True)
-            (export_path / 'texture').mkdir(parents=True, exist_ok=True)
+            if filetype == ".obj":
+                (export_path / "obj").mkdir(parents=True, exist_ok=True)
+            elif filetype == ".4dh":
+                (export_path / "geo").mkdir(parents=True, exist_ok=True)
+            (export_path / "texture").mkdir(parents=True, exist_ok=True)
 
             with ProcessPoolExecutor() as executor:
                 future_list = []
                 for f in range(frame_range[0], frame_range[1] + 1):
                     offset_f = f - offset_frame
-                    file_path = f'{load_path}{f:06d}.4df'
+                    file_path = f"{load_path}/{f:06d}.4df"
 
                     if not os.path.isfile(file_path):
                         self._manager.ui_tick_export()
@@ -184,7 +203,7 @@ class MultiExecutor(threading.Thread):
                         file_path,
                         offset_f,
                         str(export_path),
-                        filetype
+                        filetype,
                     )
                     future_list.append(future)
 
@@ -194,11 +213,11 @@ class MultiExecutor(threading.Thread):
             fps = 1 / setting.frame_rate
 
             # Export alembic
-            (export_path / 'texture').mkdir(parents=True, exist_ok=True)
+            (export_path / "texture").mkdir(parents=True, exist_ok=True)
 
             # Build alembic file
             archive = alembic.Abc.OArchive(
-                str(export_path / f'{filename}.abc'), asOgawa=False
+                str(export_path / f"{filename}.abc"), asOgawa=False
             )
             archive.setCompressionHint(1)
 
@@ -215,16 +234,14 @@ class MultiExecutor(threading.Thread):
 
                 for f in range(frame_range[0], frame_range[1] + 1):
                     offset_f = f - offset_frame
-                    file_path = f'{load_path}{f:06d}.4df'
+                    file_path = f"{load_path}/{f:06d}.4df"
 
                     if not os.path.isfile(file_path):
                         self._manager.ui_tick_export()
                         continue
 
                     future_geo = executor.submit(
-                        decode_fourd_frame,
-                        offset_f,
-                        file_path
+                        decode_fourd_frame, offset_f, file_path
                     )
                     future_list.append(future_geo)
 
@@ -232,7 +249,7 @@ class MultiExecutor(threading.Thread):
                         export_texture,
                         offset_f,
                         file_path,
-                        rf'{export_path}\texture\{offset_f:06d}.jpg'
+                        rf"{export_path}\texture\{offset_f:06d}.jpg",
                     )
                     future_list.append(future_tex)
 
@@ -274,9 +291,9 @@ class MultiExecutor(threading.Thread):
         while True:
             task_type, tasks = self._queue.get()
 
-            if task_type == 'cache_all':
+            if task_type == "cache_all":
                 self.cache_all(tasks)
-            elif task_type == 'export_all':
+            elif task_type == "export_all":
                 self.export_all(tasks)
 
     def add_task(self, task_type, tasks):

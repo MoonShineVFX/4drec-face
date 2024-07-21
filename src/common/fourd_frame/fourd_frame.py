@@ -60,7 +60,7 @@ class FourdFrame:
         if raw:
             texture_file = self.get_file_data("texture")
             texture_data = jpeg_coder.decode(texture_file, TJPF_RGB)
-            return jpeg_coder.pack(texture_data)
+            return jpeg_coder.encode(texture_data)
         if self._texture_data is None:
             texture_file = self.get_file_data("texture")
             self._texture_data = jpeg_coder.decode(texture_file)
