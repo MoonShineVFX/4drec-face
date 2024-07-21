@@ -1,6 +1,6 @@
 import struct
 from pathlib import Path
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Tuple
 from datetime import datetime
 import json
 from dataclasses import asdict
@@ -19,10 +19,38 @@ class FourdrecRoll:
         self._path = Path(path)
 
         with open(self._path, "rb") as f:
-            self.header: Header = Header.from_file(file=f)
+            (self.header, self.header_size) = Header.from_file(file=f)
 
     def __str__(self):
         return f"FourdrecRoll\n{json.dumps(asdict(self.header), indent=4)}"
+
+    def get_frame(
+        self, frame_number: int, is_hd: bool = False
+    ) -> Tuple[bytes, bytes]:
+        frame_positions = (
+            self.header.positions.frame_buffer_positions
+            if not is_hd
+            else self.header.positions.hd_frame_buffer_positions
+        )
+        assert frame_number < len(frame_positions) - 1, "Frame not found"
+
+        with open(self._path, "rb") as f:
+            f.seek(self.header_size + frame_positions[frame_number])
+            geo_size: int = struct.unpack("I", f.read(struct.calcsize("I")))[0]
+            print(
+                "seek start: ",
+                self.header_size + frame_positions[frame_number],
+            )
+            print("geo_size: ", geo_size)
+            geo_buffer = f.read(geo_size)
+            jpg_buffer = f.read(
+                frame_positions[frame_number + 1]
+                - frame_positions[frame_number]
+                - geo_size
+                - struct.calcsize("I")
+            )
+
+        return geo_buffer, jpg_buffer
 
     @staticmethod
     def pack(

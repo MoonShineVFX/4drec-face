@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
-from typing import List, Type, BinaryIO
+from typing import List, Type, BinaryIO, Tuple
 import json
 import struct
 from datetime import datetime
@@ -110,13 +110,13 @@ class Header:
         return header_hint_bytes + json_data
 
     @classmethod
-    def from_file(cls, file: BinaryIO) -> Header:
+    def from_file(cls, file: BinaryIO) -> Tuple[Header, int]:
         file.seek(0)
-        header_hint = struct.unpack("4sI", file.read())
+        header_hint = struct.unpack("4sI", file.read(struct.calcsize("4sI")))
 
         assert header_hint[0] == FORMAT.encode("ascii"), "Invalid format"
 
         json_data = file.read(header_hint[1])
         header_dict = json.loads(json_data.decode("utf-8"))
-        print("DEBUG: header_dict", header_dict)
-        return cls(**header_dict)
+        header_dict["positions"] = HeaderPositions(**header_dict["positions"])
+        return cls(**header_dict), struct.calcsize("4sI") + header_hint[1]

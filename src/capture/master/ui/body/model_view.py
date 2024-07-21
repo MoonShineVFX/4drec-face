@@ -100,7 +100,6 @@ class ModelView(QWidget):
             return
 
         project_datetime = project._doc_id.generation_time.replace(tzinfo=None)
-        threshold_datetime = datetime(2023, 4, 12)
         is_180_rotation = project_datetime >= datetime(2023, 4, 12)
 
         self._core.toggle_base_rotation(is_180_rotation)
