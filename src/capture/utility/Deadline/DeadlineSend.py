@@ -41,7 +41,7 @@ def send(
         url = address + message
 
         if body is not None:
-            request = Request(url, data=body.pack("utf-8"))
+            request = Request(url, data=body.encode("utf-8"))
             request.add_header(
                 "Content-Type", "application/json; charset=utf-8"
             )

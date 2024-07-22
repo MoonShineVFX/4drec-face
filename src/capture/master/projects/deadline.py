@@ -69,10 +69,27 @@ def submit_deadline(shot, job):
     # version 2:
     job_info.update(
         {
+            "Name": f"{shot.name} - {job.name} (conversion)",
+            "Frames": f"{job.frame_range[0]}-{job.frame_range[1]}",
+            "ExtraInfoKeyValue0": "resolve_stage=conversion",
+            "JobDependencies": resolve_id,
+            "IsFrameDependent": "true",
+        }
+    )
+
+    result = deadline.Jobs.SubmitJob(job_info, {})
+    if not (isinstance(result, dict) and "_id" in result):
+        log.error(result)
+        return None
+
+    conversion_id = result["_id"]
+
+    job_info.update(
+        {
             "Name": f"{shot.name} - {job.name} (postprocess)",
             "Frames": "0",
             "ExtraInfoKeyValue0": "resolve_stage=postprocess",
-            "JobDependencies": resolve_id,
+            "JobDependencies": conversion_id,
             "IsFrameDependent": "false",
         }
     )
@@ -84,7 +101,7 @@ def submit_deadline(shot, job):
 
     postprocess_id = result["_id"]
 
-    return init_id, resolve_id, postprocess_id
+    return init_id, resolve_id, conversion_id, postprocess_id
 
 
 def get_task_list(deadline_id):

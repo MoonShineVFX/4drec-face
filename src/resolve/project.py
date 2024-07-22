@@ -231,6 +231,7 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.RESOLVE:
             logging.info("Project run: RESOLVE")
             self.resolve()
+        elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
             logging.info("Project run: CONVERSION")
             self.convert_by_houdini()
         elif SETTINGS.resolve_stage is ResolveStage.POSTPROCESS:
@@ -238,10 +239,6 @@ class ResolveProject:
             self.convert_texture_video()
             self.export_for_web()
             ResolveProject.export_fourdrec_roll(with_hd=True)
-        # Deprecated conversion stage, combine to resolve_stage
-        elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
-            logging.info("Project run: CONVERSION")
-            self.convert_by_houdini()
         else:
             error_message = (
                 f"ResolveStage {SETTINGS.resolve_stage} not implemented"
@@ -500,14 +497,15 @@ class ResolveProject:
         fourd_frame = FourdFrameManager.load(fourdf_path.__str__())
         root_path = SETTINGS.export_4df_path.parent
 
-        fourdh_path = root_path / "geo" / f"{SETTINGS.current_frame:04d}.4dh"
+        # frame number needs to start from 0
+        current_frame = SETTINGS.current_frame - SETTINGS.start_frame
+
+        fourdh_path = root_path / "geo" / f"{current_frame:04d}.4dh"
         fourdh_path.parent.mkdir(parents=True, exist_ok=True)
         with open(fourdh_path, "wb") as f:
             f.write(fourd_frame.get_houdini_data())
 
-        fourdtexture_path = (
-            root_path / "texture" / f"{SETTINGS.current_frame:04d}.jpg"
-        )
+        fourdtexture_path = root_path / "texture" / f"{current_frame:04d}.jpg"
         fourdtexture_path.parent.mkdir(parents=True, exist_ok=True)
         with open(fourdtexture_path, "wb") as f:
             f.write(fourd_frame.get_texture_data(raw=True))
@@ -532,7 +530,7 @@ class ResolveProject:
                 "-i",
                 str(root_path / "geo"),
                 "-f",
-                str(SETTINGS.current_frame),
+                str(current_frame),
             ]
         )
 
