@@ -162,7 +162,7 @@ class FourdFrameManager:
         # texture
         print("Resize texture")
         tex_arr = np.copy(tex_arr)
-        texture_buffer = jpeg_coder.pack(
+        texture_buffer = jpeg_coder.encode(
             tex_arr, quality=header["texture_quality"]
         )
         header["texture_buffer_size"] = len(texture_buffer)
@@ -276,7 +276,7 @@ class FourdFrameManager:
         # texture
         print("Convert texture")
         image = Image.open(jpg_path)
-        texture_buffer = jpeg_coder.pack(
+        texture_buffer = jpeg_coder.encode(
             np.array(image), quality=header["texture_quality"]
         )
         header["texture_buffer_size"] = len(texture_buffer)

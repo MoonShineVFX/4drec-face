@@ -70,7 +70,7 @@ class CameraImage:
         if scale_length is not None:
             im = self._rescale(im, scale_length)
 
-        return jpeg_coder.pack(im, quality=quality)
+        return jpeg_coder.encode(im, quality=quality)
 
     def save_png(self, path):
         im = self._raw_to_cv2()

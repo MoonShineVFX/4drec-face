@@ -70,7 +70,7 @@ class StreamingServer(Thread):
                 image = self._get_buffer()
                 if image is None:
                     continue
-                data = jpeg_coder.pack(image, quality=70)
+                data = jpeg_coder.encode(image, quality=70)
                 yield (
                     b"--frame\r\n"
                     b"Content-Type: image/jpeg\r\n\r\n" + data + b"\r\n"
