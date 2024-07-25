@@ -5,6 +5,7 @@ from common.fourd_frame import FourdFrameManager
 import json
 import numpy as np
 import cv2
+from pathlib import Path
 
 from utility.logger import log
 
@@ -31,14 +32,14 @@ class ResolvePackage:
         self._tex_cache = None
         self._job_id = job_id
         self._job_folder_path = job_folder_path
-        self._frame = frame
+        self._real_frame = frame
         self._resolution = resolution
 
     def get_name(self):
-        return f"{self._job_id}_{self._frame:08d}"
+        return f"{self._job_id}_{self._real_frame:08d}"
 
     def get_meta(self):
-        return self._job_id, self._frame
+        return self._job_id, self._real_frame
 
     def _cache_buffer(self, geo_data, texture_data):
         self._geo_cache = (
@@ -55,16 +56,30 @@ class ResolvePackage:
         )
 
     def load(self):
-        # if size is not None, means already loaded.
+        # if geo cache is not None, means already loaded.
         if self._geo_cache is not None:
             return True
 
+        # Check version 3 first, geo folder and texture
+        job_folder_path = Path(self._job_folder_path)
+        geo_path = (
+            job_folder_path / "output" / "geo" / f"{self._real_frame:04d}.geo"
+        )
+
         # open file
-        file_path = f"{self._job_folder_path}/export/4df/{self._frame:06d}.4df"
+        file_path = (
+            f"{self._job_folder_path}/output/4df/{self._real_frame:06d}.4df"
+        )
+
+        if not os.path.isfile(file_path):
+            # version 2, backward compatibility
+            file_path = f"{self._job_folder_path}/export/4df/{self._real_frame:06d}.4df"
 
         if not os.path.isfile(file_path):
             # version 1, backward compatibility
-            file_path = f"{self._job_folder_path}/output/{self._frame:06d}.4df"
+            file_path = (
+                f"{self._job_folder_path}/output/{self._real_frame:06d}.4df"
+            )
 
         if not os.path.isfile(file_path):
             log.warning(f"4DF File not found: {file_path}")

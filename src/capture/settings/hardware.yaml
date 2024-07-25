@@ -28,8 +28,8 @@ record:
   folder_name: '4drec_data'
   drives: ['D', 'E', 'F']
 
-export:
-  path: 'G:\postprocess\export'
+output:
+  path: 'G:\output'
 
 audio:
   record_filename: 'audio.wav'

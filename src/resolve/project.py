@@ -10,8 +10,7 @@ from PIL import Image
 from pathlib import Path
 import math
 import subprocess
-import json
-from datetime import datetime, timezone
+from datetime import datetime
 
 from settings import SETTINGS
 from define import ResolveStage
@@ -234,10 +233,8 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
             logging.info("Project run: CONVERSION")
             self.convert_by_houdini()
-        elif SETTINGS.resolve_stage is ResolveStage.POSTPROCESS:
-            logging.info("Project run: POSTPROCESS")
-            self.convert_texture_video()
-            self.export_for_web()
+        elif SETTINGS.resolve_stage is ResolveStage.EXPORT:
+            logging.info("Project run: EXPORT")
             ResolveProject.export_fourdrec_roll(with_hd=True)
         else:
             error_message = (
@@ -533,63 +530,6 @@ class ResolveProject:
                 str(current_frame),
             ]
         )
-
-    def convert_texture_video(self):
-        root_path = SETTINGS.export_4df_path.parent
-        self.__run_process(
-            [
-                "g:\\app\\ffmpeg",
-                "-r",
-                "30",
-                "-start_number",
-                "0",
-                "-i",
-                str(root_path / "texture" / "%04d.jpg"),
-                "-i",
-                str(SETTINGS.shot_path.parent / "audio.wav"),
-                "-vf",
-                "scale=2048:-1",
-                "-pix_fmt",
-                "yuv420p",
-                "-movflags",
-                "+faststart",
-                "-y",
-                str(root_path / "texture.mp4"),
-            ]
-        )
-        self.__logging_progress(40, "Convert texture video")
-
-    def export_for_web(self):
-        web_path = (
-            SETTINGS.web_path / f"{SETTINGS.project_name}-{SETTINGS.shot_name}"
-        )
-        shutil.rmtree(web_path, ignore_errors=True)
-        web_path.mkdir(parents=True, exist_ok=True)
-
-        root_path = SETTINGS.export_4df_path.parent
-
-        shutil.copy(root_path / "texture.mp4", web_path / "texture.mp4")
-        self.__logging_progress(10, "Copy texture.mp4")
-
-        mesh_path = web_path / "mesh"
-        shutil.copytree(root_path / "gltf_mini_drc", mesh_path)
-        self.__logging_progress(15, "Copy mesh data")
-
-        hires_path = web_path / "hires"
-        shutil.copytree(root_path / "gltf", hires_path)
-        self.__logging_progress(30, "Copy hires data")
-
-        with open(web_path / "metadata.json", "w", encoding="utf8") as f:
-            json.dump(
-                {
-                    "hires": True,
-                    "endFrame": SETTINGS.end_frame - 1,
-                    "meshFrameOffset": -1,
-                    "modelPositionOffset": [0, 0.05, 0],
-                },
-                f,
-            )
-        self.__logging_progress(5, "Generate metadata.json")
 
     @staticmethod
     def export_fourdrec_roll(

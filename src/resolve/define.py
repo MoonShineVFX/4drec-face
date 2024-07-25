@@ -4,8 +4,8 @@ from enum import Enum
 class ResolveStage(Enum):
     INITIALIZE = "initialize"
     RESOLVE = "resolve"
-    POSTPROCESS = "postprocess"
-    CONVERSION = "conversion"  # Deprecated
+    CONVERSION = "conversion"
+    EXPORT = "export"
 
     def __str__(self):
         return self.value

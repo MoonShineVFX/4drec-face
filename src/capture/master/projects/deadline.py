@@ -86,9 +86,9 @@ def submit_deadline(shot, job):
 
     job_info.update(
         {
-            "Name": f"{shot.name} - {job.name} (postprocess)",
+            "Name": f"{shot.name} - {job.name} (export)",
             "Frames": "0",
-            "ExtraInfoKeyValue0": "resolve_stage=postprocess",
+            "ExtraInfoKeyValue0": "resolve_stage=export",
             "JobDependencies": conversion_id,
             "IsFrameDependent": "false",
         }
@@ -99,9 +99,9 @@ def submit_deadline(shot, job):
         log.error(result)
         return None
 
-    postprocess_id = result["_id"]
+    export_id = result["_id"]
 
-    return init_id, resolve_id, conversion_id, postprocess_id
+    return init_id, resolve_id, conversion_id, export_id
 
 
 def get_task_list(deadline_id):

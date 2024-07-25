@@ -66,7 +66,6 @@ class ResolveSettings:
         self.files_path = Path("")
         self.export_4df_path = Path("")
         self.archive_path = Path("")
-        self.web_path = Path("g:/postprocess/web")
         self.temp_path = Path("")
         self.temp_project_path = Path("")
         self.temp_masks_path = Path("")
