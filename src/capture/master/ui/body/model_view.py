@@ -160,15 +160,14 @@ class ModelInterface(QLabel):
             + f"Vertices:  {self._vertex_count}\n"
             + f"Real Frame:  {self._real_frame}\n"
             + "\n".join(
-                [f"{k}: {v:.2f}" for k, v in self._shader_parms.items()]
+                [f"{k.capitalize()}: {v:.2f}"
+                 for k, v in self._shader_parms.items()]
             )
             + "\n\n"
             + "[Q/E]  Gamma Offset\n"
             + "[A/D]  Saturate Offset\n"
             + "[S/X]  Exposure Offset\n"
             + "[F/G]  Turntable\n"
-            + "[W]  Toggle Wireframe\n"
-            + "[C]  Cache All Frames\n"
             + "[Z]  Reset Camera"
         )
 

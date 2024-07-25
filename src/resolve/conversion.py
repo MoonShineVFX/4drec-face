@@ -30,11 +30,11 @@ if __name__ == "__main__":
     hou.setFrame(int(options.frame))
 
     # conversion
-    # gltf
-    rop_gltf_mini = hou.node("/obj/geo1/rop_gltf_mini")
-    rop_gltf_hires = hou.node("/obj/geo1/rop_gltf_hires")
-    rop_gltf_mini.render()
-    rop_gltf_hires.render()
+    # glb
+    rop_glb = hou.node("/obj/geo1/rop_glb")
+    rop_glb_hd = hou.node("/obj/geo1/rop_glb_hd")
+    rop_glb.render()
+    rop_glb_hd.render()
 
     # 4dr
     hou.session.draco_convert_drc(source_glb_path=None, is_hd=False, log=None)

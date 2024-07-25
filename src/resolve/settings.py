@@ -3,6 +3,7 @@ import yaml
 import logging
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 
 from define import ResolveStage
 
@@ -60,6 +61,7 @@ class ResolveSettings:
         self.cali_path = Path("")
         self.shot_path = Path("")
         self.job_path = Path("")
+        self.created_at = None
 
         # More Paths
         self.project_path = Path("")
@@ -88,6 +90,11 @@ class ResolveSettings:
             logging.debug(f"Load yaml file: {yaml_path}")
             with open(yaml_path, "r") as f:
                 import_settings.update(yaml.load(f, Loader=yaml.FullLoader))
+
+            # Get created_at from yaml file
+            self.created_at = datetime.fromtimestamp(
+                Path(yaml_path).stat().st_ctime
+            )
 
         # Import extra settings
         if extra_settings is not None:

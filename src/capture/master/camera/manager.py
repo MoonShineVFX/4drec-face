@@ -416,7 +416,7 @@ class CameraManager:
             submit_order
         )
 
-        if not submit_order.bypass_conversion:
+        if not submit_order.bypass_jpeg_transfer:
             # 通知 Slaves 傳輸轉檔 Shot
             message_manager.send_message(
                 MessageType.SUBMIT_SHOT,

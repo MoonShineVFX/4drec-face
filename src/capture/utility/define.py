@@ -144,9 +144,10 @@ class AudioSource(Enum):
 class SubmitOrder:
     name: str
     frame_range: [int]
-    export_only: bool
+    transfer_only: bool
     offset_frame: int
-    bypass_conversion: bool
+    bypass_jpeg_transfer: bool
+    resolve_only: bool
     cali_path: str = ''
     parms: dict = field(default_factory=dict)
 

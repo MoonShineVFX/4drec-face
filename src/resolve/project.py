@@ -233,6 +233,7 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
             logging.info("Project run: CONVERSION")
             self.convert_by_houdini()
+            self.convert_audio()
         elif SETTINGS.resolve_stage is ResolveStage.EXPORT:
             logging.info("Project run: EXPORT")
             ResolveProject.export_fourdrec_roll(with_hd=True)
@@ -514,6 +515,33 @@ class ResolveProject:
             ]
         )
 
+    def convert_audio(self):
+        # Save audio
+        audio_path = SETTINGS.shot_path.parent / "audio.wav"
+        if audio_path.exists():
+            audio_target_path = SETTINGS.output_path / "audio.wav"
+            audio_start_time = SETTINGS.start_frame / 30
+            audio_duration = (
+                SETTINGS.end_frame - SETTINGS.start_frame
+            ) / 30
+
+            self.__run_process(
+                [
+                    "ffmpeg",
+                    "-i",
+                    str(audio_path),
+                    "-ss",
+                    str(audio_start_time),
+                    "-t",
+                    str(audio_duration),
+                    str(audio_target_path),
+                ]
+            )
+        else:
+            logging.warning(
+                f"Audio {audio_path} not exists, skip audio conversion."
+            )
+
     @staticmethod
     def export_fourdrec_roll(
         output_path: str = None,
@@ -533,7 +561,6 @@ class ResolveProject:
             shot_name = SETTINGS.shot_name
         if job_name is None:
             job_name = SETTINGS.job_name
-        file_name = f"{project_name}-{shot_name}"
 
         # Get paths
         output_path = Path(
@@ -550,22 +577,22 @@ class ResolveProject:
             hd_drc_folder_path = output_path / "drc_hd"
             hd_jpeg_folder_path = output_path / "texture_4k"
         export_path = output_path / f"export.4dr"
-        audio_path = SETTINGS.shot_path.parent / "audio.wav"
+        audio_path = output_path / "audio.wav"
 
         if not audio_path.is_file():
-            # find old structure folder if not found
-            audio_path = output_path / "audio.wav"
-            if not audio_path.is_file():
-                audio_path = None
+            audio_path = None
 
-        # Get datetime from export_path created date
-        created_date = datetime.fromtimestamp(output_path.stat().st_ctime)
+        # Try to get created_date from job.yaml
+        created_date = SETTINGS.created_at
+        # Get datetime from export_path created date if is not set
+        if created_date is None:
+            created_date = datetime.fromtimestamp(output_path.stat().st_ctime)
 
         return FourdrecRoll.pack(
             name=f"{project_name} - {shot_name}",
             drc_folder_path=drc_folder_path,
             jpeg_folder_path=jpeg_folder_path,
-            export_path=output_path,
+            export_path=export_path,
             audio_path=audio_path,
             hd_drc_folder_path=hd_drc_folder_path,
             hd_jpeg_folder_path=hd_jpeg_folder_path,

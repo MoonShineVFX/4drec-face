@@ -183,7 +183,7 @@ class CacheProgressDialog(ProgressDialog):
 class SubmitProgressDialog(ProgressDialog):
     def __init__(self, parent, submit_order: SubmitOrder):
         camera_count = len(setting.get_working_camera_ids())
-        message = 'Exporting' if submit_order.export_only else 'Submitting'
+        message = 'Exporting' if submit_order.transfer_only else 'Submitting'
         super().__init__(
             parent,
             message,

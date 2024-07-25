@@ -59,7 +59,7 @@ class ShotSubmitDialog(QDialog):
         self._text_frames = None
         self._parms = []
         self._comboBox = None
-        self._export_only = False
+        self._transfer_only = False
         self._submit_button = None
         self._bypass_button = None
         self._setup_ui()
@@ -145,17 +145,21 @@ class ShotSubmitDialog(QDialog):
         layout.addWidget(scroll)
 
         # Bypass Conversion
-        self._bypass_button = QCheckBox('Bypass Conversion')
+        self._bypass_button = QCheckBox('Bypass Slave JPEG transfer')
         layout.addWidget(self._bypass_button)
+
+        # Resolve only
+        self._resolve_only_button = QCheckBox('Resolve Only')
+        layout.addWidget(self._resolve_only_button)
 
         # 底部按鈕組
         self._buttons = QDialogButtonBox()
         self._submit_button = self._buttons.addButton('Submit', QDialogButtonBox.AcceptRole)
         self._submit_button.setEnabled(False)
-        export_button = self._buttons.addButton('Export', QDialogButtonBox.AcceptRole)
+        transfer_only_button = self._buttons.addButton('Transfer', QDialogButtonBox.AcceptRole)
         self._buttons.addButton('Cancel', QDialogButtonBox.RejectRole)
         self._submit_button.clicked.connect(lambda x: self._on_accept())
-        export_button.clicked.connect(lambda x: self._on_accept(True))
+        transfer_only_button.clicked.connect(lambda x: self._on_accept(True))
         self._buttons.rejected.connect(self.reject)
         layout.addWidget(self._buttons)
 
@@ -164,8 +168,8 @@ class ShotSubmitDialog(QDialog):
         self.setMinimumSize(500, 560)
         move_center(self)
 
-    def _on_accept(self, export_only=False):
-        self._export_only = export_only
+    def _on_accept(self, transfer_only=False):
+        self._transfer_only = transfer_only
         self.accept()
 
     def _check_server(self):
@@ -204,9 +208,10 @@ class ShotSubmitDialog(QDialog):
             name=self._text_name.text(),
             frame_range=[start_frame, end_frame],
             offset_frame=offset_frame,
-            bypass_conversion=self._bypass_button.isChecked(),
+            bypass_jpeg_transfer=self._bypass_button.isChecked(),
+            resolve_only=self._resolve_only_button.isChecked(),
             cali_path=self._comboBox.currentData(),
-            export_only=self._export_only,
+            transfer_only=self._transfer_only,
             parms=parms
         )
 

@@ -30,7 +30,7 @@ def check_deadline_server():
     return ""
 
 
-def submit_deadline(shot, job):
+def submit_deadline(shot, job, resolve_only):
     job_info = {
         "Plugin": "4DREC",
         "BatchName": f"[{shot.get_parent().name}] {shot.name} - {job.name}",
@@ -66,7 +66,10 @@ def submit_deadline(shot, job):
 
     resolve_id = result["_id"]
 
-    # version 2:
+    # If resolve only, return
+    if resolve_only:
+        return init_id, resolve_id,
+
     job_info.update(
         {
             "Name": f"{shot.name} - {job.name} (conversion)",

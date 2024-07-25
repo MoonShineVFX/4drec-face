@@ -224,10 +224,17 @@ class ProjectManager:
 
     def update_cali_list(self):
         calis = []
+        max_count = 10
+        is_enough = False
         for project in self._projects:
             for shot in project.shots:
                 if shot.is_cali():
                     calis.append(shot)
+                    if len(calis) >= max_count:
+                        is_enough = True
+                        break
+            if is_enough:
+                break
 
         result = []
         for cali in calis:

@@ -492,7 +492,7 @@ class ShotEntity(Entity):
 
         # Deadline integration
         log.info(f'Deadline submit shot: {self}')
-        deadline_ids = submit_deadline(self, job)
+        deadline_ids = submit_deadline(self, job, submit_order.resolve_only)
 
         if deadline_ids is None:
             log.error('Deadline submit server error!')

@@ -235,7 +235,7 @@ class SubmitReportContainer(ReportContainer):
             self._complete_check_list[camera_id] = False
 
         # 不傳檔直接發布
-        if self._submit_order.bypass_conversion:
+        if self._submit_order.bypass_jpeg_transfer:
             from master.ui import ui
             camera_count = len(setting.get_working_camera_ids())
             ui.dispatch_event(
@@ -269,7 +269,7 @@ class SubmitReportContainer(ReportContainer):
         """總結"""
         from master.ui import ui
         # Export only
-        if self._submit_order.export_only:
+        if self._submit_order.transfer_only:
             offset_frame_range = self._submit_order.get_offset_frame_range()
             ui.dispatch_event(
                 UIEventType.NOTIFICATION,
