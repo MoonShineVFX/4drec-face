@@ -14,7 +14,7 @@ for shot_name in shot_names:
     print("Convert", shot_name)
 
     ResolveProject.export_fourdrec_roll(
-        export_path=str(export_root_path / shot_name),
+        output_path=str(export_root_path / shot_name),
         project_name="Legacy",
         shot_name=shot_name,
         job_name="resolve1",

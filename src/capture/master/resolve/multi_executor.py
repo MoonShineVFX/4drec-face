@@ -11,8 +11,8 @@ from utility.logger import log
 from .package import ResolvePackage
 
 
-def load_geometry(job_id, job_folder_path, res, frame):
-    package = ResolvePackage(job_id, job_folder_path, res, frame)
+def load_geometry(job_id, job_folder_path, res, frame, offset_frame):
+    package = ResolvePackage(job_id, job_folder_path, res, frame, offset_frame)
     result = package.load()
 
     # no files
@@ -52,20 +52,20 @@ def build_mesh_sample(vertex_arr, uv_arr):
     return mesh_samp
 
 
-def export_geometry(load_path, frame, export_path, filetype):
+def export_geometry(load_path, frame, output_path, filetype):
     from common.fourd_frame import FourdFrameManager
 
     fourd_frame = FourdFrameManager.load(load_path)
 
     if filetype == ".obj":
-        with open(f"{export_path}/obj/{frame:04d}.obj", "w") as f:
+        with open(f"{output_path}/obj/{frame:04d}.obj", "w") as f:
             f.write(fourd_frame.get_obj_data())
 
     if filetype == ".4dh":
-        with open(f"{export_path}/geo/{frame:04d}.4dh", "wb") as f:
+        with open(f"{output_path}/geo/{frame:04d}.4dh", "wb") as f:
             f.write(fourd_frame.get_houdini_data())
 
-    with open(f"{export_path}/texture/{frame:04d}.jpg", "wb") as f:
+    with open(f"{output_path}/texture/{frame:04d}.jpg", "wb") as f:
         f.write(fourd_frame.get_texture_data(raw=True))
 
 
@@ -105,9 +105,14 @@ class MultiExecutor(threading.Thread):
     def cache_all(self, tasks):
         future_list = []
         with ProcessPoolExecutor() as executor:
-            for job_id, job_folder_path, res, f in tasks:
+            for job_id, job_folder_path, res, f, offset_frame in tasks:
                 future = executor.submit(
-                    load_geometry, job_id, job_folder_path, res, f
+                    load_geometry,
+                    job_id,
+                    job_folder_path,
+                    res,
+                    f,
+                    offset_frame,
                 )
                 future_list.append(future)
             for future in as_completed(future_list):
@@ -145,7 +150,7 @@ class MultiExecutor(threading.Thread):
         load_path = Path(job_folder_path) / setting.submit.output_folder_name
         if not load_path.exists():
             # old version
-            load_path = Path(job_folder_path) / "output"
+            load_path = Path(job_folder_path) / "export"
         offset_frame = frame_range[0]
 
         # Export audio

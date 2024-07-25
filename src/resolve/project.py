@@ -208,9 +208,9 @@ class ResolveProject:
         self.__mark_timer("Build Texture")
         self.__logging_progress(15, "Build Texture")
 
-        # Export 4d data
-        self.export_4df(frame)
-        self.__mark_timer("Export 4D Data")
+        # Output result
+        self.output(frame)
+        self.__mark_timer("Output result")
 
         # Clean data
         Metashape.Document()
@@ -395,10 +395,12 @@ class ResolveProject:
         return position / len(camera_list)
 
     @staticmethod
-    def export_4df(chunk: Metashape.Chunk):
-        from common.fourd_frame import FourdFrameManager
+    def output(chunk: Metashape.Chunk):
+        from common.fourdrec_geo import FourdrecGeo
+        from common.jpeg_coder import jpeg_coder
 
-        logging.info("Export 4DF")
+        logging.info("Output resolved result")
+
         # Get transform
         transform = chunk.transform.matrix
         rot_mat = np.array(list(transform.rotation().inv()), np.float32)
@@ -423,16 +425,14 @@ class ResolveProject:
         uv_arr = np.array(
             [list(uv.coord) for uv in model.tex_vertices], np.float32
         )
-
         vtx_arr = vtx_arr[vtx_idxs]
+
         # Apply transform
         vtx_arr = np.dot(vtx_arr, rot_mat) * scale + offset - nct_offset
 
         uv_arr = uv_arr[uv_idxs]
         uv_arr *= [1, -1]
         uv_arr += [0, 1.0]
-
-        geo_arr = np.hstack((vtx_arr, uv_arr))
 
         # Texture
         image = model.textures[0].image()
@@ -441,17 +441,21 @@ class ResolveProject:
         tex_arr = tex_arr[:, :, :3]
 
         # Make dir
-        SETTINGS.export_4df_path.mkdir(parents=True, exist_ok=True)
-        export_4df_path = (
-            SETTINGS.export_4df_path / f"{SETTINGS.current_frame_real:06d}.4df"
+        SETTINGS.output_path.mkdir(parents=True, exist_ok=True)
+
+        # Save 4dh
+        FourdrecGeo.save(
+            f"{SETTINGS.output_path}/geo/{SETTINGS.current_frame:04d}.4dh",
+            vtx_arr,
+            uv_arr,
         )
 
-        FourdFrameManager.save_from_metashape(
-            geo_arr,
-            tex_arr,
-            export_4df_path.__str__(),
-            SETTINGS.current_frame_real,
-        )
+        # Save jpg
+        with open(
+            f"{SETTINGS.output_path}/texture/{SETTINGS.current_frame:04d}.jpg",
+            "wb",
+        ) as f:
+            f.write(jpeg_coder.encode(tex_arr, quality=85))
 
     @staticmethod
     def __get_houdini_path():
@@ -483,29 +487,8 @@ class ResolveProject:
             raise subprocess.CalledProcessError(return_code, process.args)
 
     def convert_by_houdini(self):
-        from common.fourd_frame import FourdFrameManager
-
-        # version 2
-        # export 4dh
-        logging.info("Export 4DH")
-        fourdf_path = (
-            SETTINGS.export_4df_path / f"{SETTINGS.current_frame_real:06d}.4df"
-        )
-        fourd_frame = FourdFrameManager.load(fourdf_path.__str__())
-        root_path = SETTINGS.export_4df_path.parent
-
-        # frame number needs to start from 0
-        current_frame = SETTINGS.current_frame - SETTINGS.start_frame
-
-        fourdh_path = root_path / "geo" / f"{current_frame:04d}.4dh"
-        fourdh_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(fourdh_path, "wb") as f:
-            f.write(fourd_frame.get_houdini_data())
-
-        fourdtexture_path = root_path / "texture" / f"{current_frame:04d}.jpg"
-        fourdtexture_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(fourdtexture_path, "wb") as f:
-            f.write(fourd_frame.get_texture_data(raw=True))
+        output_path = SETTINGS.output_path
+        current_frame = SETTINGS.current_frame
 
         # Run hython
         logging.info("Run Houdini")
@@ -525,7 +508,7 @@ class ResolveProject:
                 str(hython_path),
                 str(Path(__file__).parent / "conversion.py"),
                 "-i",
-                str(root_path / "geo"),
+                str(output_path),
                 "-f",
                 str(current_frame),
             ]
@@ -533,7 +516,7 @@ class ResolveProject:
 
     @staticmethod
     def export_fourdrec_roll(
-        export_path: str = None,
+        output_path: str = None,
         with_hd: bool = False,
         # Names
         project_name: str = None,
@@ -553,36 +536,36 @@ class ResolveProject:
         file_name = f"{project_name}-{shot_name}"
 
         # Get paths
-        export_path = Path(
-            export_path
-            if export_path is not None
+        output_path = Path(
+            output_path
+            if output_path is not None
             else SETTINGS.export_4df_path.parent
         )
 
-        drc_folder_path = export_path / "drc"
-        jpeg_folder_path = export_path / "texture_2k"
+        drc_folder_path = output_path / "drc"
+        jpeg_folder_path = output_path / "texture_2k"
         hd_drc_folder_path = None
         hd_jpeg_folder_path = None
         if with_hd:
-            hd_drc_folder_path = export_path / "drc_hd"
-            hd_jpeg_folder_path = export_path / "texture_4k"
-        output_path = export_path / f"{file_name}.4dr"
+            hd_drc_folder_path = output_path / "drc_hd"
+            hd_jpeg_folder_path = output_path / "texture_4k"
+        export_path = output_path / f"export.4dr"
         audio_path = SETTINGS.shot_path.parent / "audio.wav"
 
         if not audio_path.is_file():
             # find old structure folder if not found
-            audio_path = export_path / "audio.wav"
+            audio_path = output_path / "audio.wav"
             if not audio_path.is_file():
                 audio_path = None
 
         # Get datetime from export_path created date
-        created_date = datetime.fromtimestamp(export_path.stat().st_ctime)
+        created_date = datetime.fromtimestamp(output_path.stat().st_ctime)
 
         return FourdrecRoll.pack(
             name=f"{project_name} - {shot_name}",
             drc_folder_path=drc_folder_path,
             jpeg_folder_path=jpeg_folder_path,
-            output_path=output_path,
+            export_path=output_path,
             audio_path=audio_path,
             hd_drc_folder_path=hd_drc_folder_path,
             hd_jpeg_folder_path=hd_jpeg_folder_path,

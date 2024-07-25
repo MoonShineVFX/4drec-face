@@ -1,12 +1,13 @@
 import os
 import lz4framed
-from utility.setting import setting
-from common.fourd_frame import FourdFrameManager
 import json
 import numpy as np
 import cv2
 from pathlib import Path
 
+from utility.setting import setting
+from common.fourdrec_geo import FourdrecGeo
+from common.jpeg_coder import jpeg_coder
 from utility.logger import log
 
 
@@ -27,12 +28,17 @@ class CompressedCache:
 
 
 class ResolvePackage:
-    def __init__(self, job_id, job_folder_path, resolution, frame):
+    def __init__(
+        self, job_id, job_folder_path, resolution, frame, offset_frame
+    ):
         self._geo_cache = None
         self._tex_cache = None
         self._job_id = job_id
         self._job_folder_path = job_folder_path
         self._real_frame = frame
+        self._file_frame = (
+            frame - offset_frame
+        )  # offset_frame is job frame_range[0]
         self._resolution = resolution
 
     def get_name(self):
@@ -56,15 +62,38 @@ class ResolvePackage:
         )
 
     def load(self):
-        # if geo cache is not None, means already loaded.
+        # If geo cache is not None, means already loaded.
         if self._geo_cache is not None:
             return True
 
-        # Check version 3 first, geo folder and texture
         job_folder_path = Path(self._job_folder_path)
-        geo_path = (
-            job_folder_path / "output" / "geo" / f"{self._real_frame:04d}.geo"
+        output_folder = job_folder_path / setting.submit.output_folder_name
+
+        # Check is current version structure
+        if not output_folder.exists():
+            output_folder = job_folder_path / "export"
+            if not output_folder.exists():
+                return self.load_on_old_versions()
+
+        geo_path = output_folder / "geo" / f"{self._file_frame:04d}.4dh"
+        texture_path = (
+            output_folder / "texture" / f"{self._file_frame:04d}.jpg"
         )
+
+        # Old version, backward compatibility
+        if not geo_path.exists() or not texture_path.exists():
+            return self.load_on_old_versions()
+
+        # Finally, load current version
+        geo_data = FourdrecGeo.open(str(geo_path))
+        with open(texture_path, "rb") as f:
+            texture_data = jpeg_coder.decode(f.read())
+
+        self._cache_buffer(geo_data, texture_data)
+        return True
+
+    def load_on_old_versions(self):
+        from common.fourd_frame import FourdFrameManager
 
         # open file
         file_path = (

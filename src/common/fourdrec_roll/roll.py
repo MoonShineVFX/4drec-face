@@ -57,7 +57,7 @@ class FourdrecRoll:
         name: str,
         drc_folder_path: InputPath,
         jpeg_folder_path: InputPath,
-        output_path: InputPath,
+        export_path: InputPath,
         audio_path: InputPath = None,
         hd_drc_folder_path: InputPath = None,
         hd_jpeg_folder_path: InputPath = None,
@@ -84,7 +84,7 @@ class FourdrecRoll:
             else None
         )
         audio_path = Path(audio_path) if audio_path is not None else None
-        output_path = Path(str(output_path).lower())
+        export_path = Path(str(export_path).lower())
 
         # Get file paths
         drc_file_paths = list(Path(drc_folder_path).rglob("*.drc"))
@@ -122,9 +122,9 @@ class FourdrecRoll:
             assert audio_path.suffix.lower() == ".wav", "Audio should be WAV"
 
         assert (
-            output_path.suffix.lower() == ".4dr"
-        ), "Output should ends with .4dr"
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+            export_path.suffix.lower() == ".4dr"
+        ), "Export path should ends with .4dr"
+        export_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Prepare header
         header = Header(
@@ -194,15 +194,15 @@ class FourdrecRoll:
                 )
 
             # Pack header
-            with open(output_path, "wb") as file_handler:
+            with open(export_path, "wb") as file_handler:
                 file_handler.write(header.to_bytes())
                 file_handler.write(buffer_handler.getvalue())
         except Exception as e:
             # Delete the file if failed
             buffer_handler.close()
-            output_path.unlink()
+            export_path.unlink()
             raise e
         finally:
             buffer_handler.close()
 
-        return str(output_path)
+        return str(export_path)

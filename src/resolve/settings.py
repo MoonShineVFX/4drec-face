@@ -64,7 +64,7 @@ class ResolveSettings:
         # More Paths
         self.project_path = Path("")
         self.files_path = Path("")
-        self.export_4df_path = Path("")
+        self.output_path = Path("")
         self.archive_path = Path("")
         self.temp_path = Path("")
         self.temp_project_path = Path("")
@@ -116,17 +116,13 @@ class ResolveSettings:
         self.files_path = (
             self.job_path / f"{self.metashape_project_name}.files"
         )
-        self.export_4df_path = self.job_path / f"{self.output_folder_name}"
+        self.output_path = self.job_path / f"{self.output_folder_name}"
         self.archive_path = self.job_path / f"{self.archive_name}.zip"
         self.temp_path = Path.home() / self.temp_name
         self.temp_project_path = (
             self.temp_path / f"{self.metashape_project_name}.psx"
         )
         self.temp_masks_path = self.temp_path / self.masks_name
-
-        # version 2
-        if self.version == 2:
-            self.export_4df_path = self.job_path / "export" / "4df"
 
         # get names
         names = self.job_path.__str__().split("\\")

@@ -9,7 +9,7 @@ deadline_connect:
 
 submit:
   # Version
-  version: 2
+  version: 3
   # Job
   offset_frame: 0
   start_frame: 0

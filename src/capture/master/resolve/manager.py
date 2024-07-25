@@ -24,12 +24,7 @@ class ResolveManager(threading.Thread):
         self._prefer_resolution = setting.default_texture_display_resolution
 
         # 綁定 UI
-        ui.dispatch_event(
-            UIEventType.UI_CONNECT,
-            {
-                'resolve': self
-            }
-        )
+        ui.dispatch_event(UIEventType.UI_CONNECT, {"resolve": self})
 
         self.start()
 
@@ -48,15 +43,10 @@ class ResolveManager(threading.Thread):
         self.send_ui(package)
 
     def _send_payload(self, payload):
-        ui.dispatch_event(
-            UIEventType.RESOLVE_GEOMETRY,
-            payload
-        )
+        ui.dispatch_event(UIEventType.RESOLVE_GEOMETRY, payload)
 
     def ui_tick_export(self):
-        ui.dispatch_event(
-            UIEventType.TICK_EXPORT
-        )
+        ui.dispatch_event(UIEventType.TICK_EXPORT)
 
     def send_ui(self, package):
         if package is not None:
@@ -86,28 +76,32 @@ class ResolveManager(threading.Thread):
         job_id = job.get_id()
         job_folder_path = job.get_folder_path()
         real_frame_range = job.get_real_frame_range()
-        
+
         tasks = []
         for f in range(real_frame_range[0], real_frame_range[1] + 1):
             if self.has_cache(job_id, f):
                 self.send_ui(None)
                 continue
             tasks.append(
-                (job_id, job_folder_path, self._prefer_resolution, f)
+                (
+                    job_id,
+                    job_folder_path,
+                    self._prefer_resolution,
+                    f,
+                    job.frame_range[0],
+                )
             )
-        
-        self._multi_executor.add_task('cache_all', tasks)
+
+        self._multi_executor.add_task("cache_all", tasks)
 
     def has_cache(self, job_id, frame):
         return job_id in self._cache and frame in self._cache[job_id]
 
-    def request_geometry(
-        self, job, frame, resolution, is_delay=True
-    ):
+    def request_geometry(self, job, frame, resolution, is_delay=True):
         if resolution != self._prefer_resolution:
             log.info(
-                'Change resolution '
-                f'{self._prefer_resolution} -> {resolution}'
+                "Change resolution "
+                f"{self._prefer_resolution} -> {resolution}"
             )
             self._prefer_resolution = resolution
             self._cache = {}
@@ -122,14 +116,14 @@ class ResolveManager(threading.Thread):
         elif frame is not None:
             job_folder_path = job.get_folder_path()
             package = ResolvePackage(
-                job_id, job_folder_path,
+                job_id,
+                job_folder_path,
                 self._prefer_resolution,
-                frame
+                frame,
+                job.frame_range[0],
             )
             if is_delay:
-                self._delay.execute(
-                    lambda: self._add_task(package)
-                )
+                self._delay.execute(lambda: self._add_task(package))
             else:
                 self._add_task(package)
 
@@ -142,9 +136,13 @@ class ResolveManager(threading.Thread):
         shot_frame_range = shot.frame_range
 
         self._multi_executor.add_task(
-            'export_all',
-            (job_id,
-             job_folder_path, frame_range,
-             shot_folder_path, shot_frame_range,
-             export_path)
+            "export_all",
+            (
+                job_id,
+                job_folder_path,
+                frame_range,
+                shot_folder_path,
+                shot_frame_range,
+                export_path,
+            ),
         )
