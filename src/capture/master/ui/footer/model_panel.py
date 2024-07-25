@@ -1,4 +1,5 @@
 from PyQt5.Qt import Qt, QFileDialog
+import subprocess
 
 from master.ui.custom_widgets import LayoutWidget, PushButton
 from master.ui.dialog import ExportProgressDialog
@@ -17,10 +18,10 @@ class ModelPanel(LayoutWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        button = PushButton(
-            '  EXPORT', 'export', size=(180, 60)
-        )
-        button.clicked.connect(self._export_model)
+        button = PushButton("  OPEN", "export", size=(180, 60))
+        button.clicked.connect(self._open_folder)
+        button.setContextMenuPolicy(Qt.CustomContextMenu)
+        button.customContextMenuRequested.connect(self._export)
         self.addWidget(button)
 
     def showEvent(self, event):
@@ -31,12 +32,21 @@ class ModelPanel(LayoutWidget):
         self.layout().removeItem(self._playback_control)
         self.layout().removeWidget(self._body_switcher)
 
-    def _export_model(self):
-        shot = state.get('current_shot')
+    def _open_folder(self):
+        job = state.get("current_job")
+        job_path = job.get_folder_path().replace("/", "\\")
+        # Open using explorer
+        subprocess.Popen(f'explorer "{job_path}"')
+
+    def _export(self):
+        shot = state.get("current_shot")
+
         result = QFileDialog.getSaveFileName(
-            self, 'Export Model', f'{setting.export.path}\\{shot.get_parent().name}-{shot.name}',
-            'Houdini (*.4dh);;Alembic (*.abc);;Wavefront (*.obj)'
+            self,
+            "Export Model",
+            f"{setting.export.path}\\{shot.get_parent().name}-{shot.name}",
+            "Houdini (*.4dh);;Alembic (*.abc);;Wavefront (*.obj)",
         )
         file_path, ext = result
-        if file_path is not None and file_path != '':
+        if file_path is not None and file_path != "":
             popup(dialog=ExportProgressDialog, dialog_args=(file_path,))
