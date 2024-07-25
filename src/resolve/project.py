@@ -233,9 +233,9 @@ class ResolveProject:
         elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
             logging.info("Project run: CONVERSION")
             self.convert_by_houdini()
-            self.convert_audio()
         elif SETTINGS.resolve_stage is ResolveStage.EXPORT:
             logging.info("Project run: EXPORT")
+            self.convert_audio()
             ResolveProject.export_fourdrec_roll(with_hd=True)
         else:
             error_message = (
@@ -443,20 +443,26 @@ class ResolveProject:
 
         # Make dir
         SETTINGS.output_path.mkdir(parents=True, exist_ok=True)
+        geo_path = SETTINGS.output_path / "geo"
+        texture_path = SETTINGS.output_path / "texture"
+        geo_path.mkdir(parents=True, exist_ok=True)
+        texture_path.mkdir(parents=True, exist_ok=True)
+
+        frame_number = SETTINGS.current_frame - SETTINGS.start_frame
 
         # Save 4dh
         FourdrecGeo.save(
-            f"{SETTINGS.output_path}/geo/{SETTINGS.current_frame:04d}.4dh",
+            f"{SETTINGS.output_path}/geo/{frame_number:04d}.4dh",
             vtx_arr,
             uv_arr,
         )
 
         # Save jpg
-        with open(
-            f"{SETTINGS.output_path}/texture/{SETTINGS.current_frame:04d}.jpg",
-            "wb",
-        ) as f:
-            f.write(jpeg_coder.encode(tex_arr, quality=85))
+        image = Image.fromarray(tex_arr, mode="RGB")
+        image.save(
+            f"{SETTINGS.output_path}/texture/{frame_number:04d}.jpg",
+            "JPEG", quality=85
+        )
 
     @staticmethod
     def __get_houdini_path():
@@ -489,7 +495,7 @@ class ResolveProject:
 
     def convert_by_houdini(self):
         output_path = SETTINGS.output_path
-        current_frame = SETTINGS.current_frame
+        frame_number = SETTINGS.current_frame - SETTINGS.start_frame
 
         # Run hython
         logging.info("Run Houdini")
@@ -511,7 +517,7 @@ class ResolveProject:
                 "-i",
                 str(output_path),
                 "-f",
-                str(current_frame),
+                str(frame_number),
             ]
         )
 
@@ -529,12 +535,12 @@ class ResolveProject:
                 [
                     "ffmpeg",
                     "-i",
-                    str(audio_path),
+                    str(audio_path).replace("/", "\\"),
                     "-ss",
                     str(audio_start_time),
                     "-t",
                     str(audio_duration),
-                    str(audio_target_path),
+                    str(audio_target_path).replace("/", "\\"),
                 ]
             )
         else:

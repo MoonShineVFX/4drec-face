@@ -88,7 +88,7 @@ class ResolveManager(threading.Thread):
                     job_folder_path,
                     self._prefer_resolution,
                     f,
-                    job.get_frame_offset(),
+                    job.get_frame_offset() + job.frame_range[0],
                 )
             )
 
@@ -120,7 +120,7 @@ class ResolveManager(threading.Thread):
                 job_folder_path,
                 self._prefer_resolution,
                 frame,
-                job.get_frame_offset(),
+                job.get_frame_offset() + job.frame_range[0],
             )
             if is_delay:
                 self._delay.execute(lambda: self._add_task(package))

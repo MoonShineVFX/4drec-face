@@ -38,7 +38,7 @@ class ResolvePackage:
         self._real_frame = frame
         self._file_frame = (
             frame - offset_frame
-        )  # offset_frame is job.get_frame_offset()
+        )  # offset_frame is job.get_frame_offset() + job.frame_range[0]
         self._resolution = resolution
 
     def get_name(self):
