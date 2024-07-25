@@ -88,7 +88,7 @@ class ResolveManager(threading.Thread):
                     job_folder_path,
                     self._prefer_resolution,
                     f,
-                    job.frame_range[0],
+                    job.get_frame_offset(),
                 )
             )
 
@@ -112,7 +112,7 @@ class ResolveManager(threading.Thread):
         if self.has_cache(job_id, frame):
             package = self._cache[job_id][frame]
             self.send_ui(package)
-        # load frame 4df
+        # load frame 4dh
         elif frame is not None:
             job_folder_path = job.get_folder_path()
             package = ResolvePackage(
@@ -120,7 +120,7 @@ class ResolveManager(threading.Thread):
                 job_folder_path,
                 self._prefer_resolution,
                 frame,
-                job.frame_range[0],
+                job.get_frame_offset(),
             )
             if is_delay:
                 self._delay.execute(lambda: self._add_task(package))

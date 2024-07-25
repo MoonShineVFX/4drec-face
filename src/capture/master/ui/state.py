@@ -97,6 +97,7 @@ class UIState():
 
         # audio
         self._state['audio_decibel'] = -100
+        self._state['is_mic_open'] = False
 
     def get(self, state_name):
         return self._state[state_name]

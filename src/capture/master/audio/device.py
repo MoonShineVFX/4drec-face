@@ -4,6 +4,7 @@ from queue import Queue
 import math
 import numpy as np
 from time import perf_counter
+from typing import Union
 
 from utility.setting import setting
 from utility.logger import log
@@ -16,10 +17,18 @@ AUDIO_FORMAT = pyaudio.paInt16
 AUDIO_CORE = pyaudio.PyAudio()
 
 
-def send_ui_decibel(audio_data: bytes, source: AudioSource):
+def send_ui_decibel(audio_data: Union[bytes, None], source: AudioSource):
     if send_ui_decibel.time is not None:
-        if perf_counter() - send_ui_decibel.time < 0.033:
+        if perf_counter() - send_ui_decibel.time < 0.016:
             return
+
+    if audio_data is None:
+        ui.dispatch_event(
+            UIEventType.AUDIO_DECIBEL,
+            (source, -100)
+        )
+        send_ui_decibel.time = perf_counter()
+        return
 
     samples = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
     samples /= 32767
@@ -30,9 +39,7 @@ def send_ui_decibel(audio_data: bytes, source: AudioSource):
 
     ui.dispatch_event(
         UIEventType.AUDIO_DECIBEL,
-        {
-            source, db
-        }
+        (source, db)
     )
 
     send_ui_decibel.time = perf_counter()
@@ -49,13 +56,22 @@ class MicDevice(threading.Thread):
         self.start()
 
     def run(self) -> None:
-        input_stream = AUDIO_CORE.open(
-            format=AUDIO_FORMAT,
-            channels=1,
-            input=True,
-            rate=setting.audio.sample_rate,
-            frames_per_buffer=setting.audio.chunk_size
+        try:
+            input_stream = AUDIO_CORE.open(
+                format=AUDIO_FORMAT,
+                channels=1,
+                input=True,
+                rate=setting.audio.sample_rate,
+                frames_per_buffer=setting.audio.chunk_size
+            )
+        except Exception as e:
+            log.error(f'Mic device error: {e}')
+            return
+
+        ui.dispatch_event(
+            UIEventType.MIC_OPEN,
         )
+
         while self.__is_running:
             audio_data = input_stream.read(setting.audio.chunk_size)
             self.__listen_queue.put(audio_data)
@@ -82,6 +98,12 @@ class SpeakerDevice(threading.Thread):
         log.debug('Speaker device initialized.')
 
         while self.__is_running:
-            audio_data = self.__play_queue.get()
-            output_stream.write(audio_data)
-            send_ui_decibel(audio_data, AudioSource.File)
+            try:
+                audio_data = self.__play_queue.get(timeout=0.016)
+                output_stream.write(audio_data)
+                send_ui_decibel(audio_data, AudioSource.File)
+            except:
+                send_ui_decibel(
+                    None,
+                    AudioSource.File
+                )

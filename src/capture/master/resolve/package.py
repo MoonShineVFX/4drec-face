@@ -7,7 +7,7 @@ from pathlib import Path
 
 from utility.setting import setting
 from common.fourdrec_geo import FourdrecGeo
-from common.jpeg_coder import jpeg_coder
+from common.jpeg_coder import jpeg_coder, TJPF_RGB
 from utility.logger import log
 
 
@@ -38,7 +38,7 @@ class ResolvePackage:
         self._real_frame = frame
         self._file_frame = (
             frame - offset_frame
-        )  # offset_frame is job frame_range[0]
+        )  # offset_frame is job.get_frame_offset()
         self._resolution = resolution
 
     def get_name(self):
@@ -71,6 +71,7 @@ class ResolvePackage:
 
         # Check is current version structure
         if not output_folder.exists():
+            log.warning(f"Version 3 Output folder not found: {output_folder}")
             output_folder = job_folder_path / "export"
             if not output_folder.exists():
                 return self.load_on_old_versions()
@@ -82,12 +83,14 @@ class ResolvePackage:
 
         # Old version, backward compatibility
         if not geo_path.exists() or not texture_path.exists():
+            log.warning(f"4DH or JPEG File not found: {geo_path}, {texture_path}")
             return self.load_on_old_versions()
 
         # Finally, load current version
         geo_data = FourdrecGeo.open(str(geo_path))
         with open(texture_path, "rb") as f:
-            texture_data = jpeg_coder.decode(f.read())
+            texture_data = jpeg_coder.decode(f.read(), TJPF_RGB)
+        texture_data = self.optimize_texture(texture_data)
 
         self._cache_buffer(geo_data, texture_data)
         return True
@@ -118,20 +121,21 @@ class ResolvePackage:
         fourd_frame = FourdFrameManager.load(file_path)
         geo_data = fourd_frame.get_geo_data()
         tex_data = fourd_frame.get_texture_data()
-        tex_res = fourd_frame.get_texture_resolution()
-
-        # resize for better playback performance
-        if tex_res > self._resolution:
-            tex_data = cv2.resize(
-                tex_data,
-                dsize=(self._resolution, self._resolution),
-                interpolation=cv2.INTER_CUBIC,
-            )
-        elif tex_res < self._resolution:
-            self._resolution = tex_res
+        tex_data = self.optimize_texture(tex_data)
 
         self._cache_buffer(geo_data, tex_data)
         return True
+
+    def optimize_texture(self, texture_data: np.ndarray):
+        tex_res = texture_data.shape[0]
+        # resize for better playback performance
+        if tex_res > self._resolution:
+            return cv2.resize(
+                texture_data,
+                dsize=(self._resolution, self._resolution),
+                interpolation=cv2.INTER_CUBIC,
+            )
+        return texture_data
 
     def to_payload(self):
         geo_data = (self._geo_cache[0].load(), self._geo_cache[1].load())

@@ -14,11 +14,13 @@ class FourdrecGeo:
         # pos
         pos_data = zlib.decompress(pos_buf)
         pos_arr = np.frombuffer(pos_data, dtype=np.float32)
+        pos_arr.shape = (point_count, 3)
 
         # uv
         uv_data = zlib.decompress(uv_buf)
-        uv_arr = np.frombuffer(uv_data, dtype=np.float32)
-        return pos_arr, uv_arr
+        uv_arr = np.copy(np.frombuffer(uv_data, dtype=np.float32))
+        uv_arr.shape = (point_count, 2)
+        return [pos_arr, uv_arr]
 
     @staticmethod
     def save(file_path: str, pos_arr: np.ndarray, uv_arr: np.ndarray):

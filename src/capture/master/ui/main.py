@@ -1,7 +1,8 @@
 from PyQt5.Qt import QMainWindow, QApplication, Qt, QWidget
 
 from utility.message import message_manager
-from utility.define import UIEventType, BodyMode, CameraState, MessageType, AudioSource
+from utility.define import (UIEventType, BodyMode, CameraState,
+                            MessageType, AudioSource)
 from utility.logger import log
 
 
@@ -214,6 +215,9 @@ class MainWindow(QMainWindow):
                 state.set('audio_decibel', db)
             elif source is AudioSource.File and body_mode is not BodyMode.LIVEVIEW:
                 state.set('audio_decibel', db)
+
+        elif event.type is UIEventType.MIC_OPEN:
+            state.set('is_mic_open', True)
 
     def _on_project_list_open(self):
         if self._state.get('project_list_dialog'):

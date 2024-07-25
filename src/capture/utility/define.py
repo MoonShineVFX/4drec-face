@@ -43,6 +43,7 @@ class UIEventType(Enum):
     TICK_EXPORT = auto()
     TICK_SUBMIT = auto()
     AUDIO_DECIBEL = auto()
+    MIC_OPEN = auto()
 
 
 class BodyMode(Enum):
