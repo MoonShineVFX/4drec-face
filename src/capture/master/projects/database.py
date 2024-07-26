@@ -481,6 +481,13 @@ class ShotEntity(Entity):
         yaml_data['shot_path'] = self.get_folder_path() + '/images/'
         yaml_data['job_path'] = job.get_folder_path() + '/'
         yaml_data['cali_path'] = submit_order.cali_path + '/'
+        # Assign database
+        yaml_data['project_name'] = self.get_parent().name
+        yaml_data['project_id'] = str(self.get_parent()._doc_id)
+        yaml_data['shot_name'] = self.name
+        yaml_data['shot_id'] = str(self._doc_id)
+        yaml_data['job_name'] = job.name
+        yaml_data['job_id'] = str(job._doc_id)
         if submit_order.parms is not None:
             yaml_data.update(submit_order.parms)
         yaml_path = f'{job.get_folder_path()}/job.yml'
