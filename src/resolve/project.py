@@ -522,6 +522,7 @@ class ResolveProject:
         )
 
     def convert_audio(self):
+        logging.info("Convert audio")
         # Save audio
         audio_path = SETTINGS.shot_path.parent / "audio.wav"
         if audio_path.exists():
@@ -533,7 +534,7 @@ class ResolveProject:
 
             self.__run_process(
                 [
-                    "ffmpeg",
+                    "g:\\app\\ffmpeg",
                     "-i",
                     str(audio_path).replace("/", "\\"),
                     "-ss",
@@ -541,6 +542,7 @@ class ResolveProject:
                     "-t",
                     str(audio_duration),
                     str(audio_target_path).replace("/", "\\"),
+                    "-y"
                 ]
             )
         else:
@@ -558,6 +560,7 @@ class ResolveProject:
         job_name: str = None,
         on_progress_update: Callable[[float], None] = None,
     ):
+        logging.info("Export 4DR file")
         from common.fourdrec_roll import FourdrecRoll
 
         # Get metadata
@@ -572,7 +575,7 @@ class ResolveProject:
         output_path = Path(
             output_path
             if output_path is not None
-            else SETTINGS.export_4df_path.parent
+            else SETTINGS.output_path
         )
 
         drc_folder_path = output_path / "drc"
