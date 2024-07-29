@@ -30,7 +30,6 @@ class HeaderPositions:
     """
 
     frame_buffer_positions: List[int] = field(default_factory=list)
-    hd_frame_buffer_positions: List[int] = field(default_factory=list)
     audio_buffer_positions: List[int] = field(default_factory=list)
 
 
@@ -58,9 +57,7 @@ class Header:
     geometry_format: GeometryFormat = "DRC"
     texture_format: TextureFormat = "JPEG"
     audio_format: AudioFormat = "WAV"
-    texture_resolutions: List[int] = field(
-        default_factory=lambda: [2048, 4096]
-    )  # HD use 4096
+    texture_resolution: int = 2048
     # Positions
     positions: HeaderPositions = field(default_factory=HeaderPositions)
     # Misc
@@ -71,7 +68,7 @@ class Header:
 
     def set_positions(
         self,
-        position_type: Literal["FRAME", "HD_FRAME", "AUDIO"],
+        position_type: Literal["FRAME", "AUDIO"],
         positions: List[int],
     ):
         """Set the positions of the buffers in the header.
@@ -81,8 +78,6 @@ class Header:
 
         if position_type == "FRAME":
             self.positions.frame_buffer_positions = positions
-        elif position_type == "HD_FRAME":
-            self.positions.hd_frame_buffer_positions = positions
         elif position_type == "AUDIO":
             self.positions.audio_buffer_positions = positions
         else:

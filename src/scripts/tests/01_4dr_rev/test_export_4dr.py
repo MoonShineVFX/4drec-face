@@ -1,4 +1,4 @@
-from resolve.project import ResolveProject
+from resolve.resolver import Resolver
 from pathlib import Path
 
 
@@ -13,7 +13,7 @@ def print_progress(label: str, progress: float):
 for shot_name in shot_names:
     print("Convert", shot_name)
 
-    ResolveProject.export_fourdrec_roll(
+    Resolver.export_fourdrec_roll(
         output_path=str(export_root_path / shot_name),
         project_name="Legacy",
         shot_name=shot_name,

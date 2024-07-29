@@ -4,7 +4,8 @@
     <option name="cmdArguments" value="--line-length 79" />
     <option name="enabledOnReformat" value="true" />
     <option name="enabledOnSave" value="true" />
-    <option name="sdkName" value="Python 3.7 (4drec-face)" />
+    <option name="pathToExecutable" value="C:\Users\eli.hung\AppData\Local\Programs\Python\Python310\Scripts\black.exe" />
+    <option name="sdkUUID" value="2b9feb02-889d-4ce9-b6cb-c5ac5e85634d" />
   </component>
   <component name="JavaScriptSettings">
     <option name="languageLevel" value="ES6" />

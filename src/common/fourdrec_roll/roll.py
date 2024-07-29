@@ -24,14 +24,8 @@ class FourdrecRoll:
     def __str__(self):
         return f"FourdrecRoll\n{json.dumps(asdict(self.header), indent=4)}"
 
-    def get_frame(
-        self, frame_number: int, is_hd: bool = False
-    ) -> Tuple[bytes, bytes]:
-        frame_positions = (
-            self.header.positions.frame_buffer_positions
-            if not is_hd
-            else self.header.positions.hd_frame_buffer_positions
-        )
+    def get_frame(self, frame_number: int) -> Tuple[bytes, bytes]:
+        frame_positions = self.header.positions.frame_buffer_positions
         assert frame_number < len(frame_positions) - 1, "Frame not found"
 
         with open(self._path, "rb") as f:
@@ -59,8 +53,6 @@ class FourdrecRoll:
         jpeg_folder_path: InputPath,
         export_path: InputPath,
         audio_path: InputPath = None,
-        hd_drc_folder_path: InputPath = None,
-        hd_jpeg_folder_path: InputPath = None,
         roll_id: str = None,
         on_progress_update: OnProgressUpdateCallback = None,
         created_date: datetime = None,
@@ -73,32 +65,12 @@ class FourdrecRoll:
         # Get paths
         drc_folder_path = Path(drc_folder_path)
         jpeg_folder_path = Path(jpeg_folder_path)
-        hd_drc_folder_path = (
-            Path(hd_drc_folder_path)
-            if hd_drc_folder_path is not None
-            else None
-        )
-        hd_jpeg_folder_path = (
-            Path(hd_jpeg_folder_path)
-            if hd_jpeg_folder_path is not None
-            else None
-        )
         audio_path = Path(audio_path) if audio_path is not None else None
         export_path = Path(str(export_path).lower())
 
         # Get file paths
         drc_file_paths = list(Path(drc_folder_path).rglob("*.drc"))
         jpg_file_paths = list(Path(jpeg_folder_path).rglob("*.jpg"))
-
-        hd_drc_file_paths = []
-        hd_jpg_file_paths = []
-        if hd_drc_folder_path:
-            hd_drc_file_paths = list(Path(hd_drc_folder_path).rglob("*.drc"))
-            assert hd_jpeg_folder_path is not None, "HD jpg path is required"
-        if hd_jpeg_folder_path:
-            hd_jpg_file_paths = list(Path(hd_jpeg_folder_path).rglob("*.jpg"))
-            assert hd_drc_folder_path is not None, "HD drc path is required"
-        has_hd = hd_drc_folder_path is not None
 
         # Validate file paths
         assert name != "", "Name should not be empty"
@@ -109,14 +81,6 @@ class FourdrecRoll:
         assert len(drc_file_paths) == len(
             jpg_file_paths
         ), f"Jpg and drc files are not matched"
-
-        if has_hd:
-            assert len(hd_drc_file_paths) == len(
-                hd_jpg_file_paths
-            ), f"HD jpg and drc files are not matched"
-
-            assert len(hd_drc_file_paths) > 0, "No HD DRC files found"
-            assert len(hd_jpg_file_paths) > 0, "No HD JPG files found"
 
         if audio_path is not None:
             assert audio_path.suffix.lower() == ".wav", "Audio should be WAV"
@@ -137,13 +101,7 @@ class FourdrecRoll:
             else datetime.now().isoformat(),
         )
 
-        progress_per_step = 1 / (
-            len(drc_file_paths)
-            + len(jpg_file_paths)
-            + len(hd_drc_file_paths)
-            + len(hd_jpg_file_paths)
-            + 1
-        )
+        progress_per_step = 1 / (len(drc_file_paths) + len(jpg_file_paths) + 1)
         total_progress = 0
 
         def log_progress():
@@ -184,14 +142,6 @@ class FourdrecRoll:
                     buffer_handler.write(f.read())
                 audio_positions.append(buffer_handler.tell())
                 header.set_positions("AUDIO", audio_positions)
-
-            if has_hd:
-                header.set_positions(
-                    "HD_FRAME",
-                    dump_frame(
-                        buffer_handler, hd_drc_file_paths, hd_jpg_file_paths
-                    ),
-                )
 
             # Pack header
             with open(export_path, "wb") as file_handler:

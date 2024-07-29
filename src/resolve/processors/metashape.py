@@ -3,14 +3,14 @@ import os
 import Metashape
 import numpy as np
 import logging
-from time import perf_counter
 import shutil
-from typing import Optional, Callable
 from PIL import Image
 from pathlib import Path
 import math
-import subprocess
-from datetime import datetime
+from typing import Callable
+
+from common.profiler import Profiler
+from common.fourdrec_frame import FourdrecFrame
 
 from settings import SETTINGS
 from define import ResolveStage
@@ -20,23 +20,14 @@ MAX_CALIBRATE_FRAMES = 5
 MIN_VALID_MARKERS = 3
 
 
-class ResolveProject:
-    def __init__(self):
-        self.__step_timer: Optional[float] = None
-        self.__progress = 0.0
+LoggingProgress = Callable[[float, str], None]
 
-        # Check settings
-        if not SETTINGS.is_initialized:
-            error_message = "Settings didn't initialized"
-            logging.critical(error_message)
-            raise ValueError(error_message)
 
+class MetashapeResolver:
+    def __init__(self, logging_progress: LoggingProgress):
         # Check metashape documents
-        if (
-            SETTINGS.resolve_stage is ResolveStage.INITIALIZE
-            or SETTINGS.resolve_stage is ResolveStage.RESOLVE
-        ):
-            self.__doc = Metashape.Document()
+        self.__doc = Metashape.Document()
+        self.__logging_progress = logging_progress
 
         # Initial load project file
         if SETTINGS.resolve_stage is ResolveStage.INITIALIZE:
@@ -70,6 +61,8 @@ class ResolveProject:
                 ignore_lock=True,
                 read_only=False,
             )
+        else:
+            raise ValueError("Resolve stage not implemented")
 
     def initialize(self):
         logging.info("Initialize")
@@ -158,9 +151,9 @@ class ResolveProject:
         self.__logging_progress(1, "Resolve Process")
 
         # Align chunk again if setting changed
-        self.__mark_timer("Start")
+        profiler = Profiler("Start")
         self.__align_region()
-        self.__mark_timer("Align Region")
+        profiler.mark("Align Region")
 
         # Build points
         is_cali_frame = frame.point_cloud is not None
@@ -169,51 +162,50 @@ class ResolveProject:
             frame.matchPhotos(
                 tiepoint_limit=8000, filter_stationary_points=False
             )
-            self.__mark_timer("Match Photos")
+            profiler.mark("Match Photos")
 
             frame.triangulatePoints()
-            self.__mark_timer("Triangulate Points")
+            profiler.mark("Triangulate Points")
         self.__logging_progress(8, "Match Photos")
 
         # Apply mask
         if SETTINGS.skip_masks:
-            self.__mark_timer("Skip Background Removal")
+            profiler.mark("Skip Background Removal")
             self.__logging_progress(11, "Skip Background Removal")
         else:
             self.__load_image_masks()
-            self.__mark_timer("Background Removal")
+            profiler.mark("Background Removal")
             self.__logging_progress(11, "Background Removal")
 
         # Build dense
         frame.buildDepthMaps()
-        self.__mark_timer("Depth Map")
+        profiler.mark("Depth Map")
         frame.buildDenseCloud(point_colors=False, keep_depth=False)
-        self.__mark_timer("Dense Cloud")
+        profiler.mark("Dense Cloud")
         self.__logging_progress(10, "Dense Cloud")
 
         # Build mesh
         frame.buildModel()
-        self.__mark_timer("Build Model")
+        profiler.mark("Build Model")
         frame.model.removeComponents(SETTINGS.mesh_clean_faces_threshold)
-        self.__mark_timer("Remove Small Parts")
+        profiler.mark("Remove Small Parts")
         frame.smoothModel(SETTINGS.smooth_model)
-        self.__mark_timer("Smooth Model")
+        profiler.mark("Smooth Model")
         self.__logging_progress(15, "Model Process")
 
         # Build texture
         frame.buildUV()
-        self.__mark_timer("Build UV")
+        profiler.mark("Build UV")
         self.__logging_progress(30, "Build UV")
         frame.buildTexture(texture_size=SETTINGS.texture_size)
-        self.__mark_timer("Build Texture")
+        profiler.mark("Build Texture")
         self.__logging_progress(15, "Build Texture")
 
         # Output result
         self.output(frame)
-        self.__mark_timer("Output result")
+        profiler.mark("Output result")
 
         # Clean data
-        Metashape.Document()
         shutil.rmtree(str(SETTINGS.temp_path), ignore_errors=True)
 
     def save(self, chunk: Metashape.Chunk):
@@ -221,42 +213,11 @@ class ResolveProject:
             str(SETTINGS.project_path), [chunk], absolute_paths=True
         )
 
-    def run(self):
-        # Main
-        if SETTINGS.resolve_stage is ResolveStage.INITIALIZE:
-            logging.info("Project run: INITIAL")
-            self.initialize()
-            self.calibrate()
-        elif SETTINGS.resolve_stage is ResolveStage.RESOLVE:
-            logging.info("Project run: RESOLVE")
-            self.resolve()
-        elif SETTINGS.resolve_stage is ResolveStage.CONVERSION:
-            logging.info("Project run: CONVERSION")
-            self.convert_by_houdini()
-        elif SETTINGS.resolve_stage is ResolveStage.EXPORT:
-            logging.info("Project run: EXPORT")
-            self.convert_audio()
-            ResolveProject.export_fourdrec_roll(with_hd=True)
-        else:
-            error_message = (
-                f"ResolveStage {SETTINGS.resolve_stage} not implemented"
-            )
-            logging.critical(error_message)
-            raise ValueError(error_message)
-
-        logging.info("Finish", extra={"resolve_state": "COMPLETE"})
-
     def get_current_chunk(self):
         return self.__doc.chunk.frames[SETTINGS.current_frame_at_chunk]
 
-    def __logging_progress(self, progress_step: float, message: str):
-        self.__progress += progress_step
-        logging.info(
-            message,
-            extra={"resolve_state": "PROGRESS", "progress": self.__progress},
-        )
-
-    def __archive_project(self):
+    @staticmethod
+    def __archive_project():
         zf = zipfile.ZipFile(
             str(SETTINGS.archive_path), "w", zipfile.ZIP_STORED
         )
@@ -347,16 +308,6 @@ class ResolveProject:
 
         self.__align_region()
 
-    def __mark_timer(self, text: str):
-        if self.__step_timer is None:
-            self.__step_timer = perf_counter()
-            logging.info(f"[Timer] {text}")
-            return
-        now = perf_counter()
-        duration = now - self.__step_timer
-        self.__step_timer = now
-        logging.info(f"[Timer] {text}: {duration:.2f}s")
-
     def __load_image_masks(self):
         from common.bg_remover import detect
 
@@ -397,10 +348,7 @@ class ResolveProject:
 
     @staticmethod
     def output(chunk: Metashape.Chunk):
-        from common.fourdrec_geo import FourdrecGeo
-        from common.jpeg_coder import jpeg_coder
-
-        logging.info("Output resolved result")
+        logging.info("Output resolved result to 4dframe")
 
         # Get transform
         transform = chunk.transform.matrix
@@ -409,6 +357,16 @@ class ResolveProject:
         scale = transform.scale()
         offset = np.array(list(transform.translation()), np.float32)
         nct_offset = np.array(SETTINGS.nct_center_offset, np.float32)
+
+        # Rotate 180 along y-axis for maker v2
+        rot_180_mat = np.array(
+            [
+                [-1, 0, 0],
+                [0, 1, 0],
+                [0, 0, -1],
+            ],
+            np.float32,
+        )
 
         # Get model
         model: Metashape.Model = chunk.model
@@ -429,11 +387,11 @@ class ResolveProject:
         vtx_arr = vtx_arr[vtx_idxs]
 
         # Apply transform
-        vtx_arr = np.dot(vtx_arr, rot_mat) * scale + offset - nct_offset
+        vtx_arr = (
+            np.dot(vtx_arr, rot_mat, rot_180_mat) * scale + offset - nct_offset
+        )
 
         uv_arr = uv_arr[uv_idxs]
-        uv_arr *= [1, -1]
-        uv_arr += [0, 1.0]
 
         # Texture
         image = model.textures[0].image()
@@ -443,170 +401,15 @@ class ResolveProject:
 
         # Make dir
         SETTINGS.output_path.mkdir(parents=True, exist_ok=True)
-        geo_path = SETTINGS.output_path / "geo"
-        texture_path = SETTINGS.output_path / "texture"
-        geo_path.mkdir(parents=True, exist_ok=True)
-        texture_path.mkdir(parents=True, exist_ok=True)
+        frame_path = SETTINGS.output_path / "frame"
+        frame_path.mkdir(parents=True, exist_ok=True)
 
-        frame_number = SETTINGS.current_frame - SETTINGS.start_frame
+        frame_number = SETTINGS.output_frame_number
 
-        # Save 4dh
-        FourdrecGeo.save(
-            f"{SETTINGS.output_path}/geo/{frame_number:04d}.4dh",
+        # Save 4dframe
+        FourdrecFrame.save(
+            f"{SETTINGS.frame_path}/{frame_number:04d}.4dframe",
             vtx_arr,
             uv_arr,
-        )
-
-        # Save jpg
-        image = Image.fromarray(tex_arr, mode="RGB")
-        image.save(
-            f"{SETTINGS.output_path}/texture/{frame_number:04d}.jpg",
-            "JPEG", quality=85
-        )
-
-    @staticmethod
-    def __get_houdini_path():
-        se_folder = Path("C:\\Program Files\\Side Effects Software")
-        if not se_folder.exists() or not se_folder.is_dir():
-            return None
-        for folder in Path("C:\\Program Files\\Side Effects Software").glob(
-            "Houdini 19*"
-        ):
-            if folder.is_dir():
-                return folder
-        return None
-
-    @staticmethod
-    def __run_process(commands: [str]):
-        process = subprocess.Popen(
-            commands,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-        )
-
-        for line in process.stdout:
-            logging.info(line.strip())
-        process.stdout.close()
-
-        return_code = process.wait()
-        if return_code:
-            raise subprocess.CalledProcessError(return_code, process.args)
-
-    def convert_by_houdini(self):
-        output_path = SETTINGS.output_path
-        frame_number = SETTINGS.current_frame - SETTINGS.start_frame
-
-        # Run hython
-        logging.info("Run Houdini")
-
-        houdini_path = self.__get_houdini_path()
-        if houdini_path is None:
-            logging.critical("Houdini not found")
-            raise ValueError("Houdini not found")
-
-        hython_path = houdini_path / "bin" / "hython3.9.exe"
-        if not hython_path.exists():
-            logging.critical("Hython not found")
-            raise ValueError("Hython not found")
-
-        self.__run_process(
-            [
-                str(hython_path),
-                str(Path(__file__).parent / "conversion.py"),
-                "-i",
-                str(output_path),
-                "-f",
-                str(frame_number),
-            ]
-        )
-
-    def convert_audio(self):
-        logging.info("Convert audio")
-        # Save audio
-        audio_path = SETTINGS.shot_path.parent / "audio.wav"
-        if audio_path.exists():
-            audio_target_path = SETTINGS.output_path / "audio.wav"
-            audio_start_time = SETTINGS.start_frame / 30
-            audio_duration = (
-                SETTINGS.end_frame - SETTINGS.start_frame
-            ) / 30
-
-            self.__run_process(
-                [
-                    "g:\\app\\ffmpeg",
-                    "-i",
-                    str(audio_path).replace("/", "\\"),
-                    "-ss",
-                    str(audio_start_time),
-                    "-t",
-                    str(audio_duration),
-                    str(audio_target_path).replace("/", "\\"),
-                    "-y"
-                ]
-            )
-        else:
-            logging.warning(
-                f"Audio {audio_path} not exists, skip audio conversion."
-            )
-
-    @staticmethod
-    def export_fourdrec_roll(
-        output_path: str = None,
-        with_hd: bool = False,
-        # Names
-        project_name: str = None,
-        shot_name: str = None,
-        job_name: str = None,
-        on_progress_update: Callable[[float], None] = None,
-    ):
-        logging.info("Export 4DR file")
-        from common.fourdrec_roll import FourdrecRoll
-
-        # Get metadata
-        if project_name is None:
-            project_name = SETTINGS.project_name
-        if shot_name is None:
-            shot_name = SETTINGS.shot_name
-        if job_name is None:
-            job_name = SETTINGS.job_name
-
-        # Get paths
-        output_path = Path(
-            output_path
-            if output_path is not None
-            else SETTINGS.output_path
-        )
-
-        drc_folder_path = output_path / "drc"
-        jpeg_folder_path = output_path / "texture_2k"
-        hd_drc_folder_path = None
-        hd_jpeg_folder_path = None
-        if with_hd:
-            hd_drc_folder_path = output_path / "drc_hd"
-            hd_jpeg_folder_path = output_path / "texture_4k"
-        export_path = output_path / f"export.4dr"
-        audio_path = output_path / "audio.wav"
-
-        if not audio_path.is_file():
-            audio_path = None
-
-        # Try to get created_date from job.yaml
-        created_date = SETTINGS.created_at
-        # Get datetime from export_path created date if is not set
-        if created_date is None:
-            created_date = datetime.fromtimestamp(output_path.stat().st_ctime)
-
-        return FourdrecRoll.pack(
-            name=f"{project_name} - {shot_name}",
-            drc_folder_path=drc_folder_path,
-            jpeg_folder_path=jpeg_folder_path,
-            export_path=export_path,
-            audio_path=audio_path,
-            hd_drc_folder_path=hd_drc_folder_path,
-            hd_jpeg_folder_path=hd_jpeg_folder_path,
-            roll_id=f"{project_name}:{shot_name}:"
-            f"{job_name}:{'hd' if with_hd else 'sd'}".lower(),
-            on_progress_update=on_progress_update,
-            created_date=created_date,
+            tex_arr,
         )

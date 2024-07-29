@@ -6,8 +6,7 @@ import cv2
 from pathlib import Path
 
 from utility.setting import setting
-from common.fourdrec_geo import FourdrecGeo
-from common.jpeg_coder import jpeg_coder, TJPF_RGB
+from common.fourdrec_frame import FourdrecFrame
 from utility.logger import log
 
 
@@ -76,23 +75,20 @@ class ResolvePackage:
             if not output_folder.exists():
                 return self.load_on_old_versions()
 
-        geo_path = output_folder / "geo" / f"{self._file_frame:04d}.4dh"
-        texture_path = (
-            output_folder / "texture" / f"{self._file_frame:04d}.jpg"
+        frame_path = (
+            output_folder / "frame" / f"{self._file_frame:04d}.4dframe"
         )
 
         # Old version, backward compatibility
-        if not geo_path.exists() or not texture_path.exists():
-            log.warning(f"4DH or JPEG File not found: {geo_path}, {texture_path}")
+        if not frame_path.exists():
+            log.warning(f"4DFrame not found: {frame_path}")
             return self.load_on_old_versions()
 
         # Finally, load current version
-        geo_data = FourdrecGeo.open(str(geo_path))
-        with open(texture_path, "rb") as f:
-            texture_data = jpeg_coder.decode(f.read(), TJPF_RGB)
-        texture_data = self.optimize_texture(texture_data)
-
-        self._cache_buffer(geo_data, texture_data)
+        frame = FourdrecFrame(str(frame_path))
+        self._cache_buffer(
+            frame.get_geometry_array(), frame.get_texture_array()
+        )
         return True
 
     def load_on_old_versions(self):

@@ -32,9 +32,12 @@ class ResolveSettings:
         self.archive_name = "cali_archive"
         self.temp_name = "fourd_temp"
         self.masks_name = "masks"
-        self.project_name = None
-        self.shot_name = None
-        self.job_name = None
+        self.project_name = ""
+        self.shot_name = ""
+        self.job_name = ""
+        self.project_id = ""
+        self.shot_id = ""
+        self.job_id = ""
 
         # Camera
         self.sensor_pixel_width = 0.00345
@@ -58,6 +61,7 @@ class ResolveSettings:
         self.end_frame = 0
         self.current_frame_real = -1
         self.current_frame_at_chunk = -1
+        self.output_frame_number = 0
         self.cali_path = Path("")
         self.shot_path = Path("")
         self.job_path = Path("")
@@ -112,6 +116,7 @@ class ResolveSettings:
         # Format properties
         self.current_frame_real = self.current_frame + self.offset_frame
         self.current_frame_at_chunk = self.current_frame - self.start_frame + 1
+        self.output_frame_number = self.current_frame - self.start_frame
         self.shot_path = Path(self.shot_path)
         self.job_path = Path(self.job_path)
         self.cali_path = Path(self.cali_path)

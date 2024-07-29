@@ -1,3 +1,5 @@
+# This is deprecated. Use fourdrec_frame instead.
+
 import lz4framed
 from PIL import Image
 import numpy as np
