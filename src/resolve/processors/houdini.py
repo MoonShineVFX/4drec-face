@@ -17,7 +17,7 @@ if __name__ == "__main__":
     hou.hipFile.load("G:/app/4drec-face/tools/load_4df.hip")
 
     # set input path
-    hou.node("/obj/geo1/load_4dh_header").parm("file_path").set(input_path)
+    hou.node("/obj/geo1/load_4df_header").parm("file_path").set(input_path)
 
     # set output path
     rop_glb = hou.node("/obj/geo1/rop_glb")
