@@ -385,13 +385,11 @@ class MetashapeResolver:
             [list(uv.coord) for uv in model.tex_vertices], np.float32
         )
         vtx_arr = vtx_arr[vtx_idxs]
+        uv_arr = uv_arr[uv_idxs]
 
         # Apply transform
-        vtx_arr = (
-            np.dot(vtx_arr, rot_mat, rot_180_mat) * scale + offset - nct_offset
-        )
-
-        uv_arr = uv_arr[uv_idxs]
+        vtx_arr = np.dot(vtx_arr, rot_mat) * scale + offset - nct_offset
+        vtx_arr = np.dot(vtx_arr, rot_180_mat)
 
         # Texture
         image = model.textures[0].image()
@@ -408,7 +406,7 @@ class MetashapeResolver:
 
         # Save 4dframe
         FourdrecFrame.save(
-            f"{SETTINGS.frame_path}/{frame_number:04d}.4dframe",
+            f"{frame_path}/{frame_number:04d}.4dframe",
             vtx_arr,
             uv_arr,
             tex_arr,

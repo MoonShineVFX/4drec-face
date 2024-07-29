@@ -31,7 +31,7 @@ class ModelView(QWidget):
         state.on_changed("Rig", self._update_rig)
         state.on_changed("Wireframe", self._update_shader)
         state.on_changed("key", self._on_key_pressed)
-        state.on_changed("current_project", self._update_project_rotation)
+        state.on_changed("current_job", self._update_job_rotation)
 
     def resizeEvent(self, event):
         self._core.setFixedSize(event.size())
@@ -93,14 +93,16 @@ class ModelView(QWidget):
         pixmap = self._core.grab(rect)
         pixmap.save(f"{export_path}/{frame:06d}.png")
 
-    def _update_project_rotation(self):
-        """Project after 2023/04/12 should rotate 180 degrees"""
-        project = state.get("current_project")
-        if project is None:
+    def _update_job_rotation(self):
+        """Project after 2023/04/12 and before 2024/07/28 should rotate 180 degrees"""
+        job = state.get("current_job")
+        if job is None:
             return
 
-        project_datetime = project._doc_id.generation_time.replace(tzinfo=None)
-        is_180_rotation = project_datetime >= datetime(2023, 4, 12)
+        job_datetime = job._doc_id.generation_time.replace(tzinfo=None)
+        is_180_rotation = (
+            datetime(2023, 4, 12) <= job_datetime < datetime(2024, 7, 28)
+        )
 
         self._core.toggle_base_rotation(is_180_rotation)
 
@@ -160,8 +162,10 @@ class ModelInterface(QLabel):
             + f"Vertices:  {self._vertex_count}\n"
             + f"Real Frame:  {self._real_frame}\n"
             + "\n".join(
-                [f"{k.capitalize()}: {v:.2f}"
-                 for k, v in self._shader_parms.items()]
+                [
+                    f"{k.capitalize()}: {v:.2f}"
+                    for k, v in self._shader_parms.items()
+                ]
             )
             + "\n\n"
             + "[Q/E]  Gamma Offset\n"

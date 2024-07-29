@@ -48,6 +48,13 @@ class FourdrecFrame:
         tex_arr = np.array(tex)
         return tex_arr
 
+    def export_texture(self, file_path: str):
+        with open(self.file_path, "rb") as f:
+            f.seek(HEADER_SIZE + self.pos_size + self.uv_size)
+            tex_buf = f.read(self.texture_size)
+        with open(file_path, "wb") as f:
+            f.write(tex_buf)
+
     @staticmethod
     def save(
         file_path: str,

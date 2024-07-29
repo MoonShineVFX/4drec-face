@@ -86,8 +86,14 @@ class ResolvePackage:
 
         # Finally, load current version
         frame = FourdrecFrame(str(frame_path))
+        pos_arr, uv_arr = frame.get_geometry_array()
+
+        # Offset uv
+        uv_arr[:, 1] = 1 - uv_arr[:, 1]
+
         self._cache_buffer(
-            frame.get_geometry_array(), frame.get_texture_array()
+            (pos_arr, uv_arr),
+            self.optimize_texture(frame.get_texture_array()),
         )
         return True
 
