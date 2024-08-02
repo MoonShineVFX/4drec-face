@@ -67,7 +67,6 @@ class MetashapeResolver:
     def initialize(self):
         logging.info("Initialize")
         if self.__doc.chunk is not None:
-            logging.critical("Project chunk is not empty")
             raise ValueError("Project chunk is not empty")
 
         # Add Chunk
@@ -202,11 +201,13 @@ class MetashapeResolver:
         self.__logging_progress(15, "Build Texture")
 
         # Output result
-        self.output(frame)
+        output_path = self.output(frame)
         profiler.mark("Output result")
 
         # Clean data
         shutil.rmtree(str(SETTINGS.temp_path), ignore_errors=True)
+
+        return output_path
 
     def save(self, chunk: Metashape.Chunk):
         self.__doc.save(
@@ -301,7 +302,6 @@ class MetashapeResolver:
 
         if markers_real_count < MIN_VALID_MARKERS:
             error_message = f"Markers valid count not enough: {markers_real_count} ({MIN_VALID_MARKERS})"
-            logging.critical(error_message)
             raise ValueError(error_message)
 
         chunk.updateTransform()
@@ -405,9 +405,12 @@ class MetashapeResolver:
         frame_number = SETTINGS.output_frame_number
 
         # Save 4dframe
+        output_file_path = f"{frame_path}/{frame_number:04d}.4dframe"
         FourdrecFrame.save(
-            f"{frame_path}/{frame_number:04d}.4dframe",
+            output_file_path,
             vtx_arr,
             uv_arr,
             tex_arr,
         )
+
+        return output_file_path

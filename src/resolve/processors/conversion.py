@@ -37,6 +37,9 @@ class Conversion:
 
         return_code = process.wait()
         if return_code:
+            logging.critical(
+                f"Process failed with return code {return_code} {commands}"
+            )
             raise subprocess.CalledProcessError(return_code, process.args)
 
     @staticmethod
@@ -49,12 +52,10 @@ class Conversion:
 
         houdini_path = Conversion.get_houdini_path()
         if houdini_path is None:
-            logging.critical("Houdini not found")
             raise ValueError("Houdini not found")
 
         hython_path = houdini_path / "bin" / "hython3.9.exe"
         if not hython_path.exists():
-            logging.critical("Hython not found")
             raise ValueError("Hython not found")
 
         Conversion.run_process(

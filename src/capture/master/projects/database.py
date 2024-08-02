@@ -1,3 +1,5 @@
+import logging
+
 from pymongo import MongoClient
 from datetime import datetime
 import pytz
@@ -6,9 +8,15 @@ from pathlib import Path
 import yaml
 import shutil
 
+from common.cloud_bridge import CloudBridge
 from utility.logger import log
-from utility.define import EntityEvent, CameraCacheType, TaskState,\
-    UIEventType, SubmitOrder
+from utility.define import (
+    EntityEvent,
+    CameraCacheType,
+    TaskState,
+    UIEventType,
+    SubmitOrder,
+)
 from utility.setting import setting
 from utility.repeater import Repeater
 
@@ -22,19 +30,20 @@ client = None
 
 if setting.is_testing():
     from ._mock import get_mock_client
+
     client = get_mock_client()
 else:
     client = MongoClient(host=[setting.mongodb_address])
-    client['4drec'].with_options(
+    client["4drec"].with_options(
         codec_options=CodecOptions(
-            tz_aware=True, tzinfo=pytz.timezone('Asia/Taipei')
+            tz_aware=True, tzinfo=pytz.timezone("Asia/Taipei")
         )
     )
 
-DB_ROOT = client['4drec']
-DB_SHOTS = DB_ROOT['shots']
-DB_PROJECTS = DB_ROOT['projects']
-DB_JOBS = DB_ROOT['jobs']
+DB_ROOT = client["4drec"]
+DB_SHOTS = DB_ROOT["shots"]
+DB_PROJECTS = DB_ROOT["projects"]
+DB_JOBS = DB_ROOT["jobs"]
 
 
 def get_projects(include_archived=False, callback=None):
@@ -49,9 +58,9 @@ def get_projects(include_archived=False, callback=None):
     if include_archived:
         query = {}
     else:
-        query = {'is_archived': False}
+        query = {"is_archived": False}
 
-    projects = list(DB_PROJECTS.find(query).sort([('_id', -1)]))
+    projects = list(DB_PROJECTS.find(query).sort([("_id", -1)]))
 
     return [ProjectEntity(d, callback) for d in projects]
 
@@ -74,7 +83,7 @@ class Entity:
         self._db = db  # 所屬 mongodb 資料庫
 
         # 如果該 doc 不是資料庫文件，創建一份
-        if '_id' not in doc:
+        if "_id" not in doc:
             doc = self._create_document(doc)
 
         self._doc = doc
@@ -85,7 +94,7 @@ class Entity:
         """創建文件"""
 
         # 增加時間戳
-        doc['last_modified'] = datetime.now()
+        doc["last_modified"] = datetime.now()
 
         # 複製預設範本並將資料更新上去
         template = self._template.copy()
@@ -93,20 +102,22 @@ class Entity:
 
         # 生成文件ID並創建文件
         _doc_id = self._db.insert_one(template).inserted_id
-        new_doc = self._db.find_one({'_id': _doc_id})
+        new_doc = self._db.find_one({"_id": _doc_id})
         return new_doc
 
     def __getattr__(self, prop):
         # 如果是 _doc_id 返回文件ID
-        if prop == '_doc_id':
-            return self._doc['_id']
-        elif prop == 'create_at_str':
-            return f'{self._doc_id.generation_time:%Y-%m-%d %H:%M:%S}'
+        if prop == "_doc_id":
+            return self._doc["_id"]
+        elif prop == "create_at_str":
+            return f"{self._doc_id.generation_time:%Y-%m-%d %H:%M:%S}"
         else:
             if prop not in self._doc:
-                raise KeyError('[{}] not found in <{}>'.format(
-                    prop, self.__class__.__name__
-                ))
+                raise KeyError(
+                    "[{}] not found in <{}>".format(
+                        prop, self.__class__.__name__
+                    )
+                )
             return self._doc[prop]
 
     def has_prop(self, prop):
@@ -124,8 +135,8 @@ class Entity:
         """
         if doc is not None:
             self._doc.update(doc)
-            self._doc['last_modified'] = datetime.now()
-            self._db.update_one({'_id': self._doc_id}, {'$set': self._doc})
+            self._doc["last_modified"] = datetime.now()
+            self._db.update_one({"_id": self._doc_id}, {"$set": self._doc})
         self.emit(EntityEvent.MODIFY, self)
 
     def register_callback(self, func):
@@ -168,22 +179,20 @@ class Entity:
 
     def remove(self):
         """刪除實體"""
-        self._db.delete_one({'_id': self._doc_id})
-        self._db.delete_one({'_id': self._doc_id})
+        self._db.delete_one({"_id": self._doc_id})
+        self._db.delete_one({"_id": self._doc_id})
         self.emit(EntityEvent.REMOVE, self)
 
     def get_detail(self):
         """實體的詳細內容，回傳 str"""
-        msg = f'[{self.print_name}]\n'
-        msg += '\n'.join(
-            f'{key}: {getattr(self, key)}' for key in self._doc
-        )
+        msg = f"[{self.print_name}]\n"
+        msg += "\n".join(f"{key}: {getattr(self, key)}" for key in self._doc)
         for key, value in self._doc:
             if isinstance(value, list) and len(value) > 0:
-                msg += f'{key}: [{value[0]}...{value[-1]}] ({len(value)})\n'
+                msg += f"{key}: [{value[0]}...{value[-1]}] ({len(value)})\n"
             else:
-                msg += f'{key}: {value}\n'
-        msg += f'\ncreate_at: {self.create_at_str}'
+                msg += f"{key}: {value}\n"
+        msg += f"\ncreate_at: {self.create_at_str}"
         return msg
 
     def get_id(self):
@@ -191,10 +200,7 @@ class Entity:
         return str(self._doc_id)
 
     def __str__(self):
-        return (
-            f'{self.name} '
-            f'[{self.create_at_str}]'
-        )
+        return f"{self.name} " f"[{self.create_at_str}]"
 
 
 class ProjectEntity(Entity):
@@ -204,14 +210,10 @@ class ProjectEntity(Entity):
 
     """
 
-    print_name = 'Project'
+    print_name = "Project"
 
     # 專案資料範本
-    _template = {
-        'name': None,
-        'shot_count': 1,
-        'is_archived': False
-    }
+    _template = {"name": None, "shot_count": 1, "is_archived": False}
 
     def __init__(self, doc, callback=None):
         super().__init__(DB_PROJECTS, doc)
@@ -229,9 +231,7 @@ class ProjectEntity(Entity):
         return self._shots
 
     def _initial_shots(self):
-        query = DB_SHOTS.find(
-            {'project_id': self._doc_id}
-        ).sort([('_id', -1)])
+        query = DB_SHOTS.find({"project_id": self._doc_id}).sort([("_id", -1)])
 
         shots = list(query)
 
@@ -245,8 +245,8 @@ class ProjectEntity(Entity):
 
         """
         # 名稱
-        if name is None or name == '':
-            name = 'shot_{}'.format(self.shot_count)
+        if name is None or name == "":
+            name = "shot_{}".format(self.shot_count)
 
         # 重複的話加後綴
         is_name_duplicated = True
@@ -257,21 +257,17 @@ class ProjectEntity(Entity):
                     is_name_duplicated = True
                     break
             if is_name_duplicated:
-                name += 'd'
+                name += "d"
 
         # 創建
         shot = ShotEntity(
             self,
-            {
-                'project_id': self._doc_id,
-                'name': name,
-                'cali': is_cali
-            },
+            {"project_id": self._doc_id, "name": name, "cali": is_cali},
         )
 
         # 更新資料庫和加到 self._shots
         self._shots.insert(0, shot)
-        self.update({'shot_count': self.shot_count + 1})
+        self.update({"shot_count": self.shot_count + 1})
 
         # 觸發創建事件
         self.emit(EntityEvent.CREATE, shot)
@@ -284,33 +280,29 @@ class ProjectEntity(Entity):
         length = 0
         size = 0
 
-        query = DB_SHOTS.find(
-            {'project_id': self._doc_id}
-        )
+        query = DB_SHOTS.find({"project_id": self._doc_id})
 
         for shot in query:
             shots += 1
-            if shot['state'] > 1:
+            if shot["state"] > 1:
                 resolve += 1
-            frame_range = shot['frame_range']
+            frame_range = shot["frame_range"]
             if frame_range is not None:
-                length += (
-                    (frame_range[1] - frame_range[0] - 1) / 20
-                )
-            if shot['size'] is not None:
-                size += shot['size']
+                length += (frame_range[1] - frame_range[0] - 1) / 20
+            if shot["size"] is not None:
+                size += shot["size"]
 
-        length = f'{int(length / 60)}:{int(length % 60):02d}'
+        length = f"{int(length / 60)}:{int(length % 60):02d}"
         size = size / 1024 / 1024 / 1024
-        size = f'{size:.2f}'.rstrip('0.')
+        size = f"{size:.2f}".rstrip("0.")
         if not size:
-            size = '0GB'
+            size = "0GB"
 
         return {
-            'shots': shots,
-            'resolve': resolve,
-            'length': length,
-            'size': size if size else '0'
+            "shots": shots,
+            "resolve": resolve,
+            "length": length,
+            "size": size if size else "0",
         }
 
     def emit(self, event, entity):
@@ -353,18 +345,18 @@ class ShotEntity(Entity):
 
     """
 
-    print_name = 'Shot'
+    print_name = "Shot"
 
     # 專案資料範本
     _template = {
-        'project_id': None,
-        'name': None,
-        'frame_range': None,
-        'size': None,
-        'missing_frames': None,
-        'camera_parameters': None,
-        'state': 0,  # created, recorded, submitted
-        'cali': False
+        "project_id": None,
+        "name": None,
+        "frame_range": None,
+        "size": None,
+        "missing_frames": None,
+        "camera_parameters": None,
+        "state": 0,  # created, recorded, submitted
+        "cali": False,
     }
 
     def __init__(self, parent, doc):
@@ -378,7 +370,7 @@ class ShotEntity(Entity):
         # caches
         self._cache_progress = {
             CameraCacheType.THUMBNAIL: {},
-            CameraCacheType.ORIGINAL: {}
+            CameraCacheType.ORIGINAL: {},
         }
         self._memory = 0
 
@@ -389,16 +381,14 @@ class ShotEntity(Entity):
         return self._jobs
 
     def _initial_jobs(self):
-        query = DB_JOBS.find(
-            {'shot_id': self._doc_id}
-        ).sort([('_id', -1)])
+        query = DB_JOBS.find({"shot_id": self._doc_id}).sort([("_id", -1)])
         jobs = list(query)
         return [JobEntity(self, j) for j in jobs]
 
     def create_job(self, name, frame_range, parameters):
         # 名稱
-        if name is None or name == '':
-            name = f'submit_{len(self.jobs) + 1}'
+        if name is None or name == "":
+            name = f"submit_{len(self.jobs) + 1}"
 
         # 重複的話加後綴
         is_name_duplicated = True
@@ -409,17 +399,17 @@ class ShotEntity(Entity):
                     is_name_duplicated = True
                     break
             if is_name_duplicated:
-                name += 'd'
+                name += "d"
 
         # 創建
         job = JobEntity(
             self,
             {
-                'shot_id': self._doc_id,
-                'name': name,
-                'frame_range': frame_range,
-                'parameters': parameters
-            }
+                "shot_id": self._doc_id,
+                "name": name,
+                "frame_range": frame_range,
+                "parameters": parameters,
+            },
         )
 
         self._jobs.insert(0, job)
@@ -439,9 +429,7 @@ class ShotEntity(Entity):
         self._memory += camera_pixmap.get_size()
 
         if camera_pixmap.get_cache_type() is CameraCacheType.THUMBNAIL:
-            thumb_origin = self._cache_progress[
-                CameraCacheType.THUMBNAIL
-            ]
+            thumb_origin = self._cache_progress[CameraCacheType.THUMBNAIL]
             unit = 1 / len(setting.get_working_camera_ids())
             if camera_pixmap.frame not in thumb_origin:
                 thumb_origin[camera_pixmap.frame] = unit
@@ -449,9 +437,7 @@ class ShotEntity(Entity):
                 thumb_origin[camera_pixmap.frame] += unit
         else:
             camera_id = camera_pixmap.camera_id
-            progress_origin = self._cache_progress[
-                CameraCacheType.ORIGINAL
-            ]
+            progress_origin = self._cache_progress[CameraCacheType.ORIGINAL]
             if camera_id not in progress_origin:
                 progress_origin[camera_id] = []
 
@@ -468,73 +454,92 @@ class ShotEntity(Entity):
     def submit(self, submit_order: SubmitOrder):
         offset_frame_range = submit_order.get_offset_frame_range()
         job = self.create_job(
-            submit_order.name,
-            offset_frame_range,
-            submit_order.parms
+            submit_order.name, offset_frame_range, submit_order.parms
         )
 
         # Build yaml file
         yaml_data = setting.submit.copy()
-        yaml_data['start_frame'] = offset_frame_range[0]
-        yaml_data['end_frame'] = offset_frame_range[1]
-        yaml_data['offset_frame'] = submit_order.offset_frame
-        yaml_data['shot_path'] = self.get_folder_path() + '/images/'
-        yaml_data['job_path'] = job.get_folder_path() + '/'
-        yaml_data['cali_path'] = submit_order.cali_path + '/'
+        yaml_data["start_frame"] = offset_frame_range[0]
+        yaml_data["end_frame"] = offset_frame_range[1]
+        yaml_data["offset_frame"] = submit_order.offset_frame
+        yaml_data["shot_path"] = self.get_folder_path() + "/images/"
+        yaml_data["job_path"] = job.get_folder_path() + "/"
+        yaml_data["cali_path"] = submit_order.cali_path + "/"
         # Assign database
-        yaml_data['project_name'] = self.get_parent().name
-        yaml_data['project_id'] = str(self.get_parent()._doc_id)
-        yaml_data['shot_name'] = self.name
-        yaml_data['shot_id'] = str(self._doc_id)
-        yaml_data['job_name'] = job.name
-        yaml_data['job_id'] = str(job._doc_id)
+        yaml_data["project_name"] = self.get_parent().name
+        yaml_data["project_id"] = self.get_parent().get_id()
+        yaml_data["shot_name"] = self.name
+        yaml_data["shot_id"] = self.get_id()
+        yaml_data["job_name"] = job.name
+        yaml_data["job_id"] = job.get_id()
         if submit_order.parms is not None:
             yaml_data.update(submit_order.parms)
-        yaml_path = f'{job.get_folder_path()}/job.yml'
+        yaml_path = f"{job.get_folder_path()}/job.yml"
 
         Path(job.get_folder_path()).mkdir(exist_ok=True, parents=True)
 
-        with open(yaml_path, 'w') as f:
+        with open(yaml_path, "w") as f:
             yaml.dump(yaml_data, f)
 
         # Deadline integration
-        log.info(f'Deadline submit shot: {self}')
+        log.info(f"Deadline submit shot: {self}")
+        project = self.get_parent()
+        cloud_bridge = CloudBridge(
+            project_id=project.get_id(),
+            project_name=project.name,
+            shot_id=self.get_id(),
+            shot_name=self.name,
+            job_id=job.get_id(),
+            job_name=job.name,
+            frame_count=offset_frame_range[1] - offset_frame_range[0] + 1,
+            frame_number=0,
+        )
+
+        try:
+            cloud_bridge.submit_job()
+        except Exception as e:
+            logging.error(f"CloudBridge submit error: {e}")
+            raise e
         deadline_ids = submit_deadline(self, job, submit_order.resolve_only)
 
         if deadline_ids is None:
-            log.error('Deadline submit server error!')
+            log.error("Deadline submit server error!")
             job.remove()
             shutil.rmtree(job.get_folder_path())
+            try:
+                cloud_bridge.update_job("FAILED")
+            except Exception as e:
+                logging.error(f"CloudBridge update error: {e}")
             return
 
-        log.info(f'Deadline submit done: {self}')
+        log.info(f"Deadline submit done: {self}")
 
         ui.dispatch_event(
             UIEventType.NOTIFICATION,
             {
-                'title': f'[{self.name}] Submit Success',
-                'description': (
-                    f'Shot [{self.name}] submitted frames '
-                    f'{offset_frame_range[0]}-{offset_frame_range[1]}.'
-                )
-            }
+                "title": f"[{self.name}] Submit Success",
+                "description": (
+                    f"Shot [{self.name}] submitted frames "
+                    f"{offset_frame_range[0]}-{offset_frame_range[1]}."
+                ),
+            },
         )
 
         if self.state != 2:
-            self.update({'state': 2})
+            self.update({"state": 2})
 
-        job.update({'deadline_ids': deadline_ids})
+        job.update({"deadline_ids": deadline_ids})
 
     def get_folder_path(self) -> str:
         if self.is_cali():
-            return f'{self._parent.get_folder_path()}/calis/{self.name}'
-        return f'{self._parent.get_folder_path()}/shots/{self.name}'
+            return f"{self._parent.get_folder_path()}/calis/{self.name}"
+        return f"{self._parent.get_folder_path()}/shots/{self.name}"
 
     def get_parent(self) -> ProjectEntity:
         return self._parent
 
     def is_cali(self):
-        if 'cali' in self._doc:
+        if "cali" in self._doc:
             return self.cali
         return False
 
@@ -549,18 +554,17 @@ class ShotEntity(Entity):
 
 
 class JobEntity(Entity):
-
-    print_name = 'Job'
+    print_name = "Job"
 
     # 專案資料範本
     _template = {
-        'shot_id': None,
-        'deadline_ids': [],
-        'name': None,
-        'frame_range': None,
-        'parameters': {},
-        'state': 0,  # created, resolved
-        'task_list': {}
+        "shot_id": None,
+        "deadline_ids": [],
+        "name": None,
+        "frame_range": None,
+        "parameters": {},
+        "state": 0,  # created, resolved
+        "task_list": {},
     }
 
     def __init__(self, parent, doc):
@@ -589,13 +593,15 @@ class JobEntity(Entity):
 
         task_list = get_task_list(self.deadline_ids[1])
         if task_list is None:  # Not Found
-            log.warning(f'Job [{self._parent.name} - {self.name}] not found on deadline.')
+            log.warning(
+                f"Job [{self._parent.name} - {self.name}] not found on deadline."
+            )
             self._repeater.stop()
             return
         if task_list == self.task_list:
             return
 
-        self.update({'task_list': task_list})
+        self.update({"task_list": task_list})
 
         self._deadline_tasks = self._get_deadline_tasks()
         self.emit(EntityEvent.PROGRESS, self)
@@ -604,7 +610,7 @@ class JobEntity(Entity):
             [s is TaskState.COMPLETED for s in self._deadline_tasks.values()]
         ):
             self._repeater.stop()
-            self.update({'state': 1})
+            self.update({"state": 1})
 
     def update_cache_progress(self, frame, size):
         self._memory += size
@@ -620,7 +626,8 @@ class JobEntity(Entity):
     def get_completed_count(self):
         return len(
             [
-                t for t in self._deadline_tasks.values()
+                t
+                for t in self._deadline_tasks.values()
                 if t is TaskState.COMPLETED
             ]
         )
@@ -629,11 +636,14 @@ class JobEntity(Entity):
         return self._parent
 
     def get_folder_path(self) -> str:
-        return f'{self._parent.get_folder_path()}/jobs/{self.name}'
+        return f"{self._parent.get_folder_path()}/jobs/{self.name}"
 
     def get_real_frame_range(self):
         frame_offset = self._parent.frame_range[0]
-        return self.frame_range[0] + frame_offset, self.frame_range[1] + frame_offset
+        return (
+            self.frame_range[0] + frame_offset,
+            self.frame_range[1] + frame_offset,
+        )
 
     def get_frame_offset(self):
         return self._parent.frame_range[0]
