@@ -102,6 +102,10 @@ class CloudBridge:
             file_path is not None
         ), "file_path is required for COMPLETED status"
 
+        # Check if status is updated
+        if response == "same-status":
+            return
+
         # Upload file to cloud storage
         presigned_url: str = response
         with open(file_path, "rb") as f:
@@ -133,6 +137,10 @@ class CloudBridge:
         assert (
             file_path is not None
         ), "file_path is required for RESOLVED status"
+
+        # Check if status is updated
+        if response == "same-status":
+            return
 
         # Upload file to cloud storage
         presigned_url: str = response

@@ -45,7 +45,7 @@ class ModelPanel(LayoutWidget):
             self,
             "Export Model",
             f"{setting.output.path}\\{shot.get_parent().name}-{shot.name}",
-            "Houdini (*.4dh);;Alembic (*.abc);;Wavefront (*.obj)",
+            "Alembic (*.abc);;Wavefront (*.obj)",
         )
         file_path, ext = result
         if file_path is not None and file_path != "":

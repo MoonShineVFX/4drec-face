@@ -329,6 +329,8 @@ class ProjectEntity(Entity):
             for shot in shots:
                 shot.remove()
 
+        if Path(self.get_folder_path()).exists():
+            shutil.rmtree(self.get_folder_path())
         super().remove()
 
     def get_folder_path(self) -> str:
@@ -551,6 +553,17 @@ class ShotEntity(Entity):
     def get_frame_offset(self):
         return self.frame_range[0]
 
+    def remove(self):
+        if self._jobs is not None:
+            jobs = self._jobs.copy()
+            for job in jobs:
+                job.remove()
+
+        if Path(self.get_folder_path()).exists():
+            shutil.rmtree(self.get_folder_path())
+
+        super().remove()
+
 
 class JobEntity(Entity):
     print_name = "Job"
@@ -578,6 +591,7 @@ class JobEntity(Entity):
         self._deadline_tasks = self._get_deadline_tasks()
         self._memory = 0
 
+        self._repeater = None
         if self.state == 0 and not setting.is_testing():
             self._repeater = Repeater(self._update_deadline_tasks, 60, True)
 
@@ -646,3 +660,12 @@ class JobEntity(Entity):
 
     def get_frame_offset(self):
         return self._parent.frame_range[0]
+
+    def remove(self):
+        if self._repeater is not None:
+            self._repeater.stop()
+
+        if Path(self.get_folder_path()).exists():
+            shutil.rmtree(self.get_folder_path())
+
+        super().remove()

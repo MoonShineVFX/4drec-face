@@ -53,43 +53,37 @@ def build_mesh_sample(vertex_arr, uv_arr):
 
 
 def export_geometry(load_path, frame, output_path, filetype):
-    from common.fourd_frame import FourdFrameManager
-
-    fourd_frame = FourdFrameManager.load(load_path)
-
-    if filetype == ".obj":
-        with open(f"{output_path}/obj/{frame:04d}.obj", "w") as f:
-            f.write(fourd_frame.get_obj_data())
-
-    if filetype == ".4dh":
-        with open(f"{output_path}/geo/{frame:04d}.4dh", "wb") as f:
-            f.write(fourd_frame.get_houdini_data())
-
-    with open(f"{output_path}/texture/{frame:04d}.jpg", "wb") as f:
-        f.write(fourd_frame.get_texture_data(raw=True))
+    # Deprecated
+    # fourd_frame = FourdFrameManager.load(load_path)
+    #
+    # if filetype == ".obj":
+    #     with open(f"{output_path}/obj/{frame:04d}.obj", "w") as f:
+    #         f.write(fourd_frame.get_obj_data())
+    #
+    # with open(f"{output_path}/texture/{frame:04d}.jpg", "wb") as f:
+    #     f.write(fourd_frame.get_texture_data(raw=True))
+    pass
 
 
 def export_texture(frame_num: int, load_path: str, export_path: str):
-    from common.fourd_frame import FourdFrameManager
-
-    frame = FourdFrameManager.load(load_path)
-    data = frame.get_texture_data(raw=True)
-    with open(export_path, "wb") as f:
-        f.write(data)
-    return frame_num, None
+    # Deprecated
+    # frame = FourdFrameManager.load(load_path)
+    # data = frame.get_texture_data(raw=True)
+    # with open(export_path, "wb") as f:
+    #     f.write(data)
+    # return frame_num, None
+    pass
 
 
 def decode_fourd_frame(frame_num: int, load_path: str):
-    from common.fourd_frame import FourdFrameManager
+    from common.fourdrec_frame import FourdrecFrame
 
     # load 4D
-    frame = FourdFrameManager.load(load_path)
+    frame = FourdrecFrame(load_path)
 
-    vertex_arr, uv_arr = frame.get_geo_data()
+    vertex_arr, uv_arr = frame.get_geometry_array()
 
     uv_arr = uv_arr.copy()
-    uv_arr -= [0, 1.0]
-    uv_arr *= [1, -1]
     uv_arr = np.array(uv_arr, np.float64)
 
     return frame_num, (vertex_arr, uv_arr)

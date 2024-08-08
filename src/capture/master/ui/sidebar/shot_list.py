@@ -1,6 +1,11 @@
 from PyQt5.Qt import (
-    Qt, QIcon, QAction, QApplication,
-    QLabel, QMenu, QPushButton
+    Qt,
+    QIcon,
+    QAction,
+    QApplication,
+    QLabel,
+    QMenu,
+    QPushButton,
 )
 
 from utility.define import BodyMode
@@ -8,7 +13,10 @@ from utility.setting import setting
 
 from master.ui.state import state, EntityBinder
 from master.ui.custom_widgets import (
-    LayoutWidget, make_layout, make_split_line, ElideLabel
+    LayoutWidget,
+    make_layout,
+    make_split_line,
+    ElideLabel,
 )
 from master.ui.resource import icons
 from master.ui.popup import popup
@@ -18,19 +26,25 @@ from .job_list import JobList
 
 
 class ShotList(LayoutWidget):
-    _default = '''ShotList {
+    _default = """ShotList {
       background-color: transparent;
     }
-    '''
+    """
 
     def __init__(self, parent):
-        super().__init__(horizon=False, spacing=16, alignment=Qt.AlignTop, parent=parent)
+        super().__init__(
+            horizon=False,
+            spacing=16,
+            alignment=Qt.AlignTop,
+            parent=parent,
+            margin=(0, 0, 0, 24),
+        )
         self._shot_widgets = {}
-        state.on_changed('shots', self._update)
+        state.on_changed("shots", self._update)
         self._setup_ui()
 
     def _update(self):
-        shots = state.get('shots')
+        shots = state.get("shots")
         new_shot_ids = []
 
         for order, shot in enumerate(shots):
@@ -43,7 +57,8 @@ class ShotList(LayoutWidget):
             new_shot_ids.append(shot_id)
 
         deleted_widgets = [
-            widget for widget in self._shot_widgets.values()
+            widget
+            for widget in self._shot_widgets.values()
             if widget.get_shot_id() not in new_shot_ids
         ]
 
@@ -58,13 +73,11 @@ class ShotList(LayoutWidget):
         self.setFixedWidth(290)
 
         layout = make_layout(
-            alignment=Qt.AlignHCenter,
-            margin=(0, 24, 0, 8),
-            spacing=16
+            alignment=Qt.AlignHCenter, margin=(0, 24, 0, 8), spacing=16
         )
-        shot_button = AddButton(' Shot')
+        shot_button = AddButton(" Shot")
         shot_button.clicked.connect(lambda: self._new_dialog())
-        cali_button = AddButton(' Cali')
+        cali_button = AddButton(" Cali")
         cali_button.clicked.connect(lambda: self._new_dialog(True))
         layout.addWidget(shot_button)
         layout.addWidget(cali_button)
@@ -73,29 +86,29 @@ class ShotList(LayoutWidget):
         self._update()
 
     def _new_dialog(self, is_cali=False):
-        state.set('is_cali', is_cali)
-        state.set('shot_new_dialog', True)
+        state.set("is_cali", is_cali)
+        state.set("shot_new_dialog", True)
 
 
 class AddButton(QPushButton):
-    _default = '''
+    _default = """
         background-color: palette(base);
         border-radius: 18px;
         font-size: 16px;
-    '''
-    _hover = '''
+    """
+    _hover = """
         color: palette(highlight);
-    '''
+    """
 
     def __init__(self, name):
         super().__init__(name)
         self._icon = None
         self._hover_icon = None
-        state.on_changed('current_project', self._update)
+        state.on_changed("current_project", self._update)
         self._setup_ui()
 
     def _update(self):
-        current_project = state.get('current_project')
+        current_project = state.get("current_project")
         self.setVisible(current_project is not None)
 
     def _setup_ui(self):
@@ -103,8 +116,8 @@ class AddButton(QPushButton):
         self.setStyleSheet(self._default)
         self.setFixedSize(102, 36)
 
-        self._icon = QIcon(icons.get('add'))
-        self._hover_icon = QIcon(icons.get('add_hl'))
+        self._icon = QIcon(icons.get("add"))
+        self._hover_icon = QIcon(icons.get("add_hl"))
         self.setIcon(self._icon)
 
     def enterEvent(self, event):
@@ -119,40 +132,32 @@ class AddButton(QPushButton):
 
 
 class ShotItem(LayoutWidget, EntityBinder):
-    _default = '''
+    _default = """
     ShotItem {
         border-radius: 5px;
         margin: 0px 8px;
     }
-    '''
-    _base = '''
+    """
+    _base = """
     ShotItem {
         background-color: palette(base);
     }
-    '''
-    _cali = '''
+    """
+    _cali = """
     ShotItem {
         background-color: #474538;
     }
-    '''
-    _hover = '''
+    """
+    _hover = """
     ShotItem {
         border: 2px solid palette(midlight);
     }
-    '''
-    _state_text = (
-        'Created',
-        'Recorded',
-        'Submitted'
-    )
-    _field_info_list = ('frame_range', 'size', 'state')
+    """
+    _state_text = ("Created", "Recorded", "Submitted")
+    _field_info_list = ("frame_range", "size", "state")
 
     def __init__(self, shot):
-        super().__init__(
-            horizon=False,
-            margin=(8, 12, 8, 12),
-            spacing=16
-        )
+        super().__init__(horizon=False, margin=(8, 12, 8, 12), spacing=16)
         self._shot = shot
         self._job_list = None
         self._menu = None
@@ -163,13 +168,13 @@ class ShotItem(LayoutWidget, EntityBinder):
         self._field_info_labels = []
 
         self.bind_entity(shot, self._apply_data)
-        state.on_changed('current_shot', self._update)
-        state.on_changed('current_shot', self._update_job_list)
-        state.on_changed('body_mode', self._update_job_list)
+        state.on_changed("current_shot", self._update)
+        state.on_changed("current_shot", self._update_job_list)
+        state.on_changed("body_mode", self._update_job_list)
         self._setup_ui()
 
     def _update(self):
-        current_shot = state.get('current_shot')
+        current_shot = state.get("current_shot")
         bg_style = self._cali if self._shot.is_cali() else self._base
         if current_shot == self._shot:
             if self._is_current is not True:
@@ -183,12 +188,12 @@ class ShotItem(LayoutWidget, EntityBinder):
         self._parameters_action.setEnabled(self._shot.state != 0)
 
     def _update_job_list(self):
-        current_shot = state.get('current_shot')
-        body_mode = state.get('body_mode')
+        current_shot = state.get("current_shot")
+        body_mode = state.get("body_mode")
         if (
-            body_mode is BodyMode.MODEL and
-            current_shot == self._shot and
-            len(self._shot.jobs) > 0
+            body_mode is BodyMode.MODEL
+            and current_shot == self._shot
+            and len(self._shot.jobs) > 0
         ):
             if self._job_list is None:
                 self._job_list = JobList(self._shot._jobs, self)
@@ -197,7 +202,7 @@ class ShotItem(LayoutWidget, EntityBinder):
             if self._job_list is not None:
                 self._job_list.deleteLater()
                 self._job_list = None
-                state.cast('project', 'select_job', None)
+                state.cast("project", "select_job", None)
 
     def _setup_ui(self):
         self.setStyleSheet(self._default)
@@ -205,13 +210,11 @@ class ShotItem(LayoutWidget, EntityBinder):
 
         # top
         top_layout = make_layout(
-            alignment=Qt.AlignVCenter,
-            margin=(12, 0, 12, 0),
-            spacing=8
+            alignment=Qt.AlignVCenter, margin=(12, 0, 12, 0), spacing=8
         )
         self._name_label = ElideLabel()
         self._name_label.setStyleSheet(
-            'font-size: 18px; color: palette(light)'
+            "font-size: 18px; color: palette(light)"
         )
         self._state_label = QLabel()
         top_layout.addWidget(self._name_label)
@@ -223,7 +226,7 @@ class ShotItem(LayoutWidget, EntityBinder):
         for i in range(len(self._field_info_list)):
             layout = make_layout(alignment=Qt.AlignVCenter)
             label = QLabel()
-            label.setStyleSheet('font-size: 12px')
+            label.setStyleSheet("font-size: 12px")
             label.setAlignment(Qt.AlignCenter)
             layout.addWidget(label)
             bottom_layout.addLayout(layout)
@@ -243,7 +246,7 @@ class ShotItem(LayoutWidget, EntityBinder):
 
         if self._shot.state > 0:
             self._state_label.setPixmap(
-                icons.get(f'state_{self._get_state_index()}')
+                icons.get(f"state_{self._get_state_index()}")
             )
             self._state_label.show()
         else:
@@ -257,22 +260,22 @@ class ShotItem(LayoutWidget, EntityBinder):
         self._update_job_list()
 
     def _get_shot_info(self, field):
-        if field == 'frame_range':
+        if field == "frame_range":
             if self._shot.is_cali():
-                return 'Calibrate'
+                return "Calibrate"
             frame_range = self._shot.frame_range
             if frame_range is None:
-                return '---'
+                return "---"
             frame_count = frame_range[1] - frame_range[0] + 1
             seconds = frame_count / setting.frame_rate
-            return f'{frame_count} ({seconds:.1f}s)'
+            return f"{frame_count} ({seconds:.1f}s)"
         elif getattr(self._shot, field) is None:
-            return '---'
-        elif field == 'size':
+            return "---"
+        elif field == "size":
             size = self._shot.size / 1024 / 1024 / 1024
-            size = f'{size:.2f}'.rstrip('0.')
-            return f'{size}GB'
-        elif field == 'state':
+            size = f"{size:.2f}".rstrip("0.")
+            return f"{size}GB"
+        elif field == "state":
             return self._state_text[self._shot.state]
 
     def _get_state_index(self):
@@ -288,7 +291,7 @@ class ShotItem(LayoutWidget, EntityBinder):
     def _build_menu(self):
         menu = QMenu()
 
-        parm_action = QAction('Parameters', self)
+        parm_action = QAction("Parameters", self)
         parm_action.triggered.connect(self._show_parameters)
         menu.addAction(parm_action)
         self._parameters_action = parm_action
@@ -297,7 +300,7 @@ class ShotItem(LayoutWidget, EntityBinder):
         # rename_action.triggered.connect(self._rename)
         # menu.addAction(rename_action)
 
-        delete_action = QAction('Delete', self)
+        delete_action = QAction("Delete", self)
         delete_action.triggered.connect(self._remove)
         menu.addAction(delete_action)
         return menu
@@ -308,19 +311,18 @@ class ShotItem(LayoutWidget, EntityBinder):
     def _rename(self):
         result = popup(
             None,
-            'Rename Shot',
+            "Rename Shot",
             "Please input new shot's name",
-            f'Shot Name:{self._shot.name}'
+            f"Shot Name:{self._shot.name}",
         )
         if result and result != self._shot.name:
             self._shot.rename(result)
 
     def _remove(self):
-        if (
-            popup(
-                None, 'Delete Shot Confirm',
-                f'Are you sure to delete [{self._shot.name}]?'
-            )
+        if popup(
+            None,
+            "Delete Shot Confirm",
+            f"Are you sure to delete [{self._shot.name}]?",
         ):
             self._shot.remove()
 
@@ -333,9 +335,9 @@ class ShotItem(LayoutWidget, EntityBinder):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            current_select = state.get('current_shot')
+            current_select = state.get("current_shot")
             if current_select != self._shot:
-                state.cast('project', 'select_shot', self._shot)
+                state.cast("project", "select_shot", self._shot)
         elif event.button() == Qt.RightButton:
             pos = self.mapToGlobal(event.pos())
             self._menu.exec_(pos)
