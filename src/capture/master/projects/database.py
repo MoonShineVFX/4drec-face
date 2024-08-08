@@ -20,8 +20,6 @@ from utility.define import (
 from utility.setting import setting
 from utility.repeater import Repeater
 
-from master.ui import ui
-
 from .deadline import get_task_list, submit_deadline
 
 
@@ -179,7 +177,6 @@ class Entity:
 
     def remove(self):
         """刪除實體"""
-        self._db.delete_one({"_id": self._doc_id})
         self._db.delete_one({"_id": self._doc_id})
         self.emit(EntityEvent.REMOVE, self)
 
@@ -452,6 +449,8 @@ class ShotEntity(Entity):
         return self._memory
 
     def submit(self, submit_order: SubmitOrder):
+        from master.ui import ui
+
         offset_frame_range = submit_order.get_offset_frame_range()
         job = self.create_job(
             submit_order.name, offset_frame_range, submit_order.parms

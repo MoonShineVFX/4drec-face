@@ -321,3 +321,35 @@ class FourdFrameManager:
     @classmethod
     def load(cls, file_path):
         return FourdFrame(file_path)
+
+    @classmethod
+    def convert_to_new_fourdrec_frame(
+        cls, old_frame_path, new_frame_path, rotate_180=False
+    ):
+        from common.fourdrec_frame import FourdrecFrame
+
+        # Load old frame
+        frame = cls.load(old_frame_path)
+        pos_arr, uv_arr = frame.get_geo_data()
+        pos_arr = pos_arr.copy()
+        uv_arr = uv_arr.copy()
+        tex_arr = frame.get_texture_data().copy()
+
+        # Rotate 180
+        pos_arr.shape = (-1, 3)
+        if rotate_180:
+            rot_180_mat = np.array(
+                [
+                    [-1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, -1],
+                ],
+                np.float32,
+            )
+            pos_arr = np.dot(pos_arr, rot_180_mat)
+
+        # Fix uv
+        uv_arr[:, 1] = 1 - uv_arr[:, 1]
+
+        FourdrecFrame.save(str(new_frame_path), pos_arr, uv_arr, tex_arr)
+        frame.close()

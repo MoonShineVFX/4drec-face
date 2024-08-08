@@ -68,13 +68,6 @@ class ResolvePackage:
         job_folder_path = Path(self._job_folder_path)
         output_folder = job_folder_path / setting.submit.output_folder_name
 
-        # Check is current version structure
-        if not output_folder.exists():
-            log.warning(f"Version 3 Output folder not found: {output_folder}")
-            output_folder = job_folder_path / "export"
-            if not output_folder.exists():
-                return self.load_on_old_versions()
-
         frame_path = (
             output_folder / "frame" / f"{self._file_frame:04d}.4dframe"
         )
@@ -82,7 +75,7 @@ class ResolvePackage:
         # Old version, backward compatibility
         if not frame_path.exists():
             log.warning(f"4DFrame not found: {frame_path}")
-            return self.load_on_old_versions()
+            return None
 
         # Finally, load current version
         frame = FourdrecFrame(str(frame_path))
@@ -95,37 +88,6 @@ class ResolvePackage:
             (pos_arr, uv_arr),
             self.optimize_texture(frame.get_texture_array()),
         )
-        return True
-
-    def load_on_old_versions(self):
-        from common.fourd_frame import FourdFrameManager
-
-        # open file
-        file_path = (
-            f"{self._job_folder_path}/output/4df/{self._real_frame:06d}.4df"
-        )
-
-        if not os.path.isfile(file_path):
-            # version 2, backward compatibility
-            file_path = f"{self._job_folder_path}/export/4df/{self._real_frame:06d}.4df"
-
-        if not os.path.isfile(file_path):
-            # version 1, backward compatibility
-            file_path = (
-                f"{self._job_folder_path}/output/{self._real_frame:06d}.4df"
-            )
-
-        if not os.path.isfile(file_path):
-            log.warning(f"4DF File not found: {file_path}")
-            return None
-
-        # Check file exists
-        fourd_frame = FourdFrameManager.load(file_path)
-        geo_data = fourd_frame.get_geo_data()
-        tex_data = fourd_frame.get_texture_data()
-        tex_data = self.optimize_texture(tex_data)
-
-        self._cache_buffer(geo_data, tex_data)
         return True
 
     def optimize_texture(self, texture_data: np.ndarray):

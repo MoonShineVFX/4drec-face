@@ -94,17 +94,21 @@ class ModelView(QWidget):
         pixmap.save(f"{export_path}/{frame:06d}.png")
 
     def _update_job_rotation(self):
-        """Project after 2023/04/12 and before 2024/07/28 should rotate 180 degrees"""
-        job = state.get("current_job")
-        if job is None:
-            return
-
-        job_datetime = job._doc_id.generation_time.replace(tzinfo=None)
-        is_180_rotation = (
-            datetime(2023, 4, 12) <= job_datetime < datetime(2024, 7, 28)
-        )
-
-        self._core.toggle_base_rotation(is_180_rotation)
+        pass
+        # Old version backward compatibility, not needed anymore
+        #
+        # Project after 2023/04/12 and before 2024/07/28 should rotate 180
+        #
+        # job = state.get("current_job")
+        # if job is None:
+        #     return
+        #
+        # job_datetime = job._doc_id.generation_time.replace(tzinfo=None)
+        # is_180_rotation = (
+        #     datetime(2023, 4, 12) <= job_datetime < datetime(2024, 7, 28)
+        # )
+        #
+        # self._core.toggle_base_rotation(is_180_rotation)
 
 
 class ModelInterface(QLabel):
