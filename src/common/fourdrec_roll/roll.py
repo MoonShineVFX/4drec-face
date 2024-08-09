@@ -133,9 +133,7 @@ class FourdrecRoll:
                 total_progress += progress_per_step
                 on_progress_update(total_progress)
 
-        def dump_frame(
-            handler: BytesIO, drc_paths: List[Path], jpg_paths: List[Path]
-        ) -> List[int]:
+        def dump_frame(handler: BytesIO) -> List[int]:
             positions = [handler.tell()]
 
             nonlocal start_frame
@@ -148,7 +146,7 @@ class FourdrecRoll:
 
                 # Consider the case where the frame number is not continuous
                 if frame_drc_path.exists():
-                    with open(drc_path, "rb") as fd:
+                    with open(frame_drc_path, "rb") as fd:
                         drc_buffer = fd.read()
                 else:
                     drc_buffer = b""
@@ -163,7 +161,7 @@ class FourdrecRoll:
                 )
 
                 if frame_jpg_path.exists():
-                    with open(jpg_path, "rb") as fj:
+                    with open(frame_jpg_path, "rb") as fj:
                         handler.write(fj.read())
                 log_progress()
 
@@ -175,7 +173,7 @@ class FourdrecRoll:
         try:
             header.set_positions(
                 "FRAME",
-                dump_frame(buffer_handler, drc_file_paths, jpg_file_paths),
+                dump_frame(buffer_handler),
             )
 
             if audio_path is not None:

@@ -1,12 +1,13 @@
 # Sync data and files to cloudflare r2 and d1
 import os
-import pytz
-from bson.codec_options import CodecOptions
-from pymongo import MongoClient
-from pathlib import Path
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+import pytz
 import yaml
+from bson.codec_options import CodecOptions
+from pymongo import MongoClient
 
 os.environ["HTTP_PROXY"] = ""
 os.environ["HTTPS_PROXY"] = ""
