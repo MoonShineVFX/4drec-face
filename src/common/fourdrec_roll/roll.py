@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 from dataclasses import asdict
 from io import BytesIO
+import logging
 
 from .header import Header
 
@@ -31,11 +32,11 @@ class FourdrecRoll:
         with open(self._path, "rb") as f:
             f.seek(self.header_size + frame_positions[frame_number])
             geo_size: int = struct.unpack("I", f.read(struct.calcsize("I")))[0]
-            print(
+            logging.debug(
                 "seek start: ",
                 self.header_size + frame_positions[frame_number],
             )
-            print("geo_size: ", geo_size)
+            logging.debug("geo_size: ", geo_size)
             geo_buffer = f.read(geo_size)
             jpg_buffer = f.read(
                 frame_positions[frame_number + 1]
@@ -78,9 +79,10 @@ class FourdrecRoll:
         assert len(drc_file_paths) > 0, "No DRC files found"
         assert len(jpg_file_paths) > 0, "No JPG files found"
 
-        assert len(drc_file_paths) == len(
-            jpg_file_paths
-        ), f"Jpg and drc files are not matched"
+        for drc_path in drc_file_paths:
+            frame_number = int(drc_path.stem)
+            jpg_path = jpeg_folder_path / f"{frame_number:04d}.jpg"
+            assert jpg_path.exists(), f"DRC -> JPG file not found: {jpg_path}"
 
         if audio_path is not None:
             assert audio_path.suffix.lower() == ".wav", "Audio should be WAV"
@@ -90,11 +92,31 @@ class FourdrecRoll:
         ), "Export path should ends with .4dr"
         export_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Get frame count
+        start_frame = 0
+        end_frame = None
+
+        for drc_path in drc_file_paths:
+            frame_number = int(drc_path.stem)
+            end_frame = (
+                max(end_frame, frame_number)
+                if end_frame is not None
+                else frame_number
+            )
+
+        frame_count = end_frame - start_frame + 1
+        assert frame_count > 0, "Frame count should be greater than 0"
+
+        if frame_count != len(drc_file_paths):
+            logging.warning(
+                f"Frame count mismatch: {frame_count} != {len(drc_file_paths)}"
+            )
+
         # Prepare header
         header = Header(
             name=name,
             id=roll_id if roll_id is not None else name,
-            frame_count=len(drc_file_paths),
+            frame_count=frame_count,
             audio_format="WAV" if audio_path is not None else "NULL",
             created_date=created_date.isoformat()
             if created_date
@@ -115,16 +137,36 @@ class FourdrecRoll:
             handler: BytesIO, drc_paths: List[Path], jpg_paths: List[Path]
         ) -> List[int]:
             positions = [handler.tell()]
-            for drc_path, jpg_path in zip(drc_paths, jpg_paths):
-                with open(drc_path, "rb") as fd:
-                    drc_buffer = fd.read()
-                    handler.write(struct.pack("I", len(drc_buffer)))
-                    handler.write(drc_buffer)
+
+            nonlocal start_frame
+            nonlocal end_frame
+            for this_frame_number in range(start_frame, end_frame + 1):
+                # DRC
+                frame_drc_path = (
+                    Path(drc_folder_path) / f"{this_frame_number:04d}.drc"
+                )
+
+                # Consider the case where the frame number is not continuous
+                if frame_drc_path.exists():
+                    with open(drc_path, "rb") as fd:
+                        drc_buffer = fd.read()
+                else:
+                    drc_buffer = b""
+
+                handler.write(struct.pack("I", len(drc_buffer)))
+                handler.write(drc_buffer)
                 log_progress()
 
-                with open(jpg_path, "rb") as fj:
-                    handler.write(fj.read())
+                # JPG
+                frame_jpg_path = (
+                    Path(jpeg_folder_path) / f"{this_frame_number:04d}.jpg"
+                )
+
+                if frame_jpg_path.exists():
+                    with open(jpg_path, "rb") as fj:
+                        handler.write(fj.read())
                 log_progress()
+
                 positions.append(handler.tell())
             return positions
 

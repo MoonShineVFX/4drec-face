@@ -3,7 +3,7 @@ import subprocess
 import logging
 from typing import Callable
 from PIL import Image
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from settings import SETTINGS
 from common.fourdrec_frame import FourdrecFrame
@@ -167,9 +167,11 @@ class Conversion:
 
         # Try to get created_date from job.yaml
         created_date = SETTINGS.created_at
-        # Get datetime from export_path created date if is not set
         if created_date is None:
-            created_date = datetime.fromtimestamp(output_path.stat().st_ctime)
+            # Get datetime from job_id which is mongo object id
+            created_date = timedelta(
+                seconds=int(SETTINGS.job_id[:8], base=16)
+            ) + datetime(1970, 1, 1)
 
         return FourdrecRoll.pack(
             name=f"{project_name} - {shot_name}",

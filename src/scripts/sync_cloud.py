@@ -6,12 +6,16 @@ from pymongo import MongoClient
 from pathlib import Path
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import yaml
 
+os.environ["HTTP_PROXY"] = ""
+os.environ["HTTPS_PROXY"] = ""
 os.environ["4DREC_TYPE"] = "MASTER"
 
 from utility.setting import setting
 from utility.logger import get_prefix_log
 from common.cloud_bridge import CloudBridge
+from utility.Deadline import DeadlineConnect
 
 # Define MongoDB client
 CLIENT = MongoClient(host=[setting.mongodb_address])
@@ -21,6 +25,9 @@ DB.with_options(
         tz_aware=True, tzinfo=pytz.timezone("Asia/Taipei")
     )
 )
+
+# Define Deadline client
+deadline = DeadlineConnect.DeadlineCon("192.168.29.10", 8081, insecure=True)
 
 # Define logger
 logger = get_prefix_log("JOB")
@@ -51,6 +58,7 @@ class CompleteJob:
             / self.job["name"]
         )
 
+    # Remove unused files from old structured renders
     def purge_unused_files(self):
         output_path = self.__get_job_path() / "output"
 
@@ -68,7 +76,11 @@ class CompleteJob:
                     logger.warning(f"Remove file: {file}")
                     file.unlink()
 
+    # Sync job to cloudflare including frame 4dframe files
     def sync(self):
+        if self.job.get("synced", False):
+            return
+
         logger.info(f"Sync job: {self}")
 
         # Submit job and shot/project database
@@ -90,6 +102,13 @@ class CompleteJob:
                 future.result()
                 logger.debug(f"Convert {count}/{len(future_list)}")
                 count += 1
+        logger.info(f"Complete syncing job: {self}")
+
+        # Mark job as synced
+        DB.jobs.update_one(
+            {"_id": self.job["_id"]},
+            {"$set": {"synced": True}},
+        )
 
     def sync_frame(self, frame_file: Path):
         frame_number = int(frame_file.stem)
@@ -108,12 +127,91 @@ class CompleteJob:
             frame_number,
         )
 
+    # Let deadline handle the conversion and 4dr export
+    def submit_conversion_to_deadline(self):
+        if self.job.get("is_manual_submitted", False):
+            return
+
+        # Patch job yaml
+        job_yaml_path = self.__get_job_path() / "job.yml"
+        with open(job_yaml_path, "r") as f:
+            job_config = yaml.load(f, Loader=yaml.FullLoader)
+        if job_config.get("version", 0) < 3 or job_config.get(
+            "job_path", ""
+        ) != str(self.__get_job_path()):
+            job_config.update(
+                {
+                    "version": 3,
+                    "job_path": str(self.__get_job_path()),
+                    "job_id": str(self.job["_id"]),
+                    "job_name": self.job["name"],
+                    "shot_id": str(self.shot["_id"]),
+                    "shot_name": self.shot["name"],
+                    "project_id": str(self.project["_id"]),
+                    "project_name": self.project["name"],
+                    "output_folder_name": "output",
+                    "skip_masks": False,
+                }
+            )
+            with open(job_yaml_path, "w") as f:
+                yaml.dump(job_config, f)
+
+        # Conversion payload
+        job_info = {
+            "Plugin": "4DREC",
+            "BatchName": f"<PATCH> [{self.project['name']}] {self.shot['name']}"
+            f" - {self.job['name']}",
+            "Name": f"{self.shot['name']} - {self.job['name']} (conversion)",
+            "UserName": "autobot",
+            "ChunkSize": "1",
+            "Frames": f"{self.job['frame_range'][0]}-{self.job['frame_range'][1]}",
+            "isFrameDependent": "true",
+            "OutputDirectory0": str(self.__get_job_path()),
+            "ExtraInfoKeyValue0": "resolve_stage=conversion",
+            "ExtraInfoKeyValue1": (
+                f"yaml_path={self.__get_job_path() / 'job.yml'}"
+            ),
+        }
+        result = deadline.Jobs.SubmitJob(job_info, {})
+        if not (isinstance(result, dict) and "_id" in result):
+            logger.error(result)
+            return
+
+        conversion_id = result["_id"]
+
+        # Export stage
+        job_info.update(
+            {
+                "Name": f"{self.shot['name']} - {self.job['name']} (export)",
+                "Frames": "0",
+                "ExtraInfoKeyValue0": "resolve_stage=export",
+                "JobDependencies": conversion_id,
+                "IsFrameDependent": "false",
+            }
+        )
+        result = deadline.Jobs.SubmitJob(job_info, {})
+        if not (isinstance(result, dict) and "_id" in result):
+            logger.error(result)
+            return
+
+        export_id = result["_id"]
+
+        # Update job with deadline ids and mark as manual submitted
+        DB.jobs.update_one(
+            {"_id": self.job["_id"]},
+            {
+                "$push": {"deadline_ids": [conversion_id, export_id]},
+                "$set": {"is_manual_submitted": True},
+            },
+        )
+
     def is_valid(self):
         frame_path = self.__get_job_path() / "output" / "frame"
         return frame_path.exists()
 
 
 def get_complete_jobs():
+    # Find jobs that not synced
     jobs = list(DB.jobs.find())
 
     # Get shots
@@ -167,4 +265,5 @@ if __name__ == "__main__":
     for job in complete_jobs:
         logger.info(f"======= Sync ({progress}/{job_count}) =======")
         job.sync()
+        job.submit_conversion_to_deadline()
         progress += 1
