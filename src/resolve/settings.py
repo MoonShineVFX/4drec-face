@@ -76,9 +76,6 @@ class ResolveSettings:
         self.temp_project_path = Path("")
         self.temp_masks_path = Path("")
 
-        # Cloud bridge
-        self.thumbnail_camera = "20087901"
-
     def initialize(
         self,
         current_frame: int,

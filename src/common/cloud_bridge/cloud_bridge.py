@@ -2,6 +2,9 @@ import requests
 import json
 from pathlib import Path
 import yaml
+import logging
+from PIL import Image
+from io import BytesIO
 
 try:
     from typing import Literal
@@ -10,6 +13,8 @@ except ImportError:
 
 
 SECRET_PATH = Path("G:/app/secrets.yml")
+SUBMIT_PATH = Path("G:/submit")
+THUMBNAIL_CAMERA_NAME = "20087901"
 
 JOB_STATUS = Literal["RUNNING", "COMPLETED", "FAILED"]
 FRAME_STATUS = Literal[
@@ -86,25 +91,47 @@ class CloudBridge:
             },
         )
 
-        # TODO: Upload thumbnail from shot image
-        # # Check if status is updated
-        # if response == "no-url":
-        #     return
-        #
-        # # Upload file to cloud storage
-        # presigned_url: str = response
-        # with open(file_path, "rb") as f:
-        #     requests.put(presigned_url, data=f)
-        #
-        # # Get file size
-        # file_size = Path(file_path).stat().st_size
-        # self.__api(
-        #     "job.attachFile",
-        #     {
-        #         "id": self.job_id,
-        #         "size": file_size,
-        #     },
-        # )
+        # Check if thumbnail is uploaded
+        if response == "no-url":
+            return
+
+        # Get thumbnail file path
+        logging.info(f"Uploading thumbnail")
+        camera_images_path = (
+            SUBMIT_PATH
+            / self.project_name
+            / "shots"
+            / self.shot_name
+            / "images"
+            / THUMBNAIL_CAMERA_NAME
+        )
+        thumbnail_paths = list(camera_images_path.glob("*.jpg"))
+        if len(thumbnail_paths) == 0:
+            logging.warning(f"No thumbnail found: {camera_images_path}")
+            return
+        thumbnail_path = str(thumbnail_paths[0])
+
+        # Resize thumbnail
+        image = Image.open(thumbnail_path)
+        image.thumbnail((1280, 1280))
+        buffer = BytesIO()
+        image.save(buffer, format="WEBP", quality=80)
+        image.close()
+
+        # Upload file to cloud storage
+        presigned_url: str = response
+        requests.put(presigned_url, data=buffer.getvalue())
+
+        # Get file size
+        file_size = buffer.tell()
+        self.__api(
+            "job.attachFile",
+            {
+                "id": self.job_id,
+                "size": file_size,
+                "type": "THUMBNAIL",
+            },
+        )
 
     def update_job(self, status: JOB_STATUS, file_path: str = None):
         response = self.__api(

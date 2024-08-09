@@ -77,7 +77,7 @@ class CompleteJob:
                     file.unlink()
 
     # Sync job to cloudflare including frame 4dframe files
-    def sync(self):
+    def sync(self, sync_frames=True):
         if self.job.get("synced", False):
             return
 
@@ -87,22 +87,23 @@ class CompleteJob:
         cloud_bridge = self.get_cloud_bridge(0)
         cloud_bridge.submit_job()
 
-        # Upload job files
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            future_list = []
+        # Upload job frames
+        if sync_frames:
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                future_list = []
 
-            for file in Path(self.__get_job_path() / "output" / "frame").glob(
-                "*.4dframe"
-            ):
-                future = executor.submit(self.sync_frame, file)
-                future_list.append(future)
+                for file in Path(
+                    self.__get_job_path() / "output" / "frame"
+                ).glob("*.4dframe"):
+                    future = executor.submit(self.sync_frame, file)
+                    future_list.append(future)
 
-            count = 1
-            for future in as_completed(future_list):
-                future.result()
-                logger.debug(f"Convert {count}/{len(future_list)}")
-                count += 1
-        logger.info(f"Complete syncing job: {self}")
+                count = 1
+                for future in as_completed(future_list):
+                    future.result()
+                    logger.debug(f"Convert {count}/{len(future_list)}")
+                    count += 1
+            logger.info(f"Complete syncing job: {self}")
 
         # Mark job as synced
         DB.jobs.update_one(
@@ -265,5 +266,5 @@ if __name__ == "__main__":
     for job in complete_jobs:
         logger.info(f"======= Sync ({progress}/{job_count}) =======")
         job.sync()
-        job.submit_conversion_to_deadline()
+        # job.submit_conversion_to_deadline()
         progress += 1
