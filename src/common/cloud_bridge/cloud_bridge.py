@@ -73,7 +73,7 @@ class CloudBridge:
         return data
 
     def submit_job(self):
-        self.__api(
+        response = self.__api(
             "job.submit",
             {
                 "projectId": self.project_id,
@@ -85,6 +85,26 @@ class CloudBridge:
                 "frameCount": self.frame_count,
             },
         )
+
+        # TODO: Upload thumbnail from shot image
+        # # Check if status is updated
+        # if response == "no-url":
+        #     return
+        #
+        # # Upload file to cloud storage
+        # presigned_url: str = response
+        # with open(file_path, "rb") as f:
+        #     requests.put(presigned_url, data=f)
+        #
+        # # Get file size
+        # file_size = Path(file_path).stat().st_size
+        # self.__api(
+        #     "job.attachFile",
+        #     {
+        #         "id": self.job_id,
+        #         "size": file_size,
+        #     },
+        # )
 
     def update_job(self, status: JOB_STATUS, file_path: str = None):
         response = self.__api(
@@ -103,7 +123,7 @@ class CloudBridge:
         ), "file_path is required for COMPLETED status"
 
         # Check if status is updated
-        if response == "same-status":
+        if response == "no-url":
             return
 
         # Upload file to cloud storage
@@ -115,10 +135,7 @@ class CloudBridge:
         file_size = Path(file_path).stat().st_size
         self.__api(
             "job.attachFile",
-            {
-                "id": self.job_id,
-                "size": file_size,
-            },
+            {"id": self.job_id, "size": file_size, "type": "4DR"},
         )
 
     def update_frame(self, status: FRAME_STATUS, file_path: str = None):
@@ -139,7 +156,7 @@ class CloudBridge:
         ), "file_path is required for RESOLVED status"
 
         # Check if status is updated
-        if response == "same-status":
+        if response == "no-url":
             return
 
         # Upload file to cloud storage
