@@ -77,7 +77,7 @@ class CloudBridge:
         data = json_response["result"]["data"]["json"]
         return data
 
-    def submit_job(self):
+    def submit_job(self, thumbnail_frame_number: int = None):
         response = self.__api(
             "job.submit",
             {
@@ -109,7 +109,18 @@ class CloudBridge:
         if len(thumbnail_paths) == 0:
             logging.warning(f"No thumbnail found: {camera_images_path}")
             return
+
         thumbnail_path = str(thumbnail_paths[0])
+
+        # Check if thumbnail_frame_number is provided
+        if thumbnail_frame_number is not None:
+            frame_number_thumbnail_path = (
+                camera_images_path
+                / f"{THUMBNAIL_CAMERA_NAME}_{thumbnail_frame_number:06d}.jpg"
+            )
+            if not frame_number_thumbnail_path.exists():
+                logging.warning(f"Thumbnail frame not found: {thumbnail_path}")
+            thumbnail_path = str(frame_number_thumbnail_path)
 
         # Resize thumbnail
         image = Image.open(thumbnail_path)

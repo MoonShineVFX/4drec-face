@@ -497,7 +497,10 @@ class ShotEntity(Entity):
         )
 
         try:
-            cloud_bridge.submit_job()
+            cloud_bridge.submit_job(
+                thumbnail_frame_number=submit_order.offset_frame
+                + offset_frame_range[0]
+            )
         except Exception as e:
             logging.error(f"CloudBridge submit error: {e}")
             raise e
