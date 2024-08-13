@@ -5,7 +5,7 @@ import io
 from .image import CameraImage
 
 
-class CameraShotFileCore():
+class CameraShotFileCore:
     """shot 檔案管理核心
 
     shot 檔案會有一個圖像檔案 4dr 跟一個資訊檔案 4dm
@@ -19,10 +19,10 @@ class CameraShotFileCore():
 
     """
 
-    binary_format = '>IIII'
+    binary_format = ">IIII"
     binary_size = struct.calcsize(binary_format)
-    image_ext = '.4dr'
-    meta_ext = '.4dm'
+    image_ext = ".4dr"
+    meta_ext = ".4dm"
 
     def __init__(self, shot_file_path, file_handle):
         self._shot_file_path = shot_file_path
@@ -52,7 +52,7 @@ class CameraShotFileCore():
 
 
 class CameraShotFileLoader(CameraShotFileCore):
-    """ shot 檔案讀取器
+    """shot 檔案讀取器
 
     根據影格資訊讀取圖像
     初始化時會先將資訊全部讀出來整理到 self._frames
@@ -64,9 +64,9 @@ class CameraShotFileLoader(CameraShotFileCore):
     """
 
     def __init__(self, shot_file_path, rotation, log):
-        super().__init__(shot_file_path, 'rb')
+        super().__init__(shot_file_path, "rb")
         self._log = log
-        self._log.info(f'File read: {self._shot_file_path}')
+        self._log.info(f"File read: {self._shot_file_path}")
         self._frames = {}  # {影格號碼: (圖像在檔案的位置, 圖像大小, 寬, 高)}
         self._rotation = rotation
 
@@ -87,18 +87,22 @@ class CameraShotFileLoader(CameraShotFileCore):
 
             # 取得資訊，file_cursor 就是檔案游標位置，不斷增加
             frame, image_size, w, h = struct.unpack(
-                self.binary_format,
-                raw_meta
+                self.binary_format, raw_meta
             )
             self._frames[frame] = (file_cursor, image_size, w, h)
             file_cursor += image_size
 
+        # If no frames are found, log an error
+        if len(self._frames) == 0:
+            self._log.error(f"No frames found in {self._shot_file_path}")
+            return
+
         frames = list(self._frames.keys())
-        self._log.info('{} frames loaded ({}/{})'.format(
-            len(self._frames),
-            frames[0],
-            frames[-1]
-        ))
+        self._log.info(
+            "{} frames loaded ({} -> {})".format(
+                len(self._frames), frames[0], frames[-1]
+            )
+        )
 
     def load(self, frame):
         """讀取圖像
@@ -111,6 +115,9 @@ class CameraShotFileLoader(CameraShotFileCore):
             frame: 想讀取的影格數
 
         """
+        if frame is None:
+            return
+
         if frame not in self._frames:
             self._log.error(
                 f"Can't find frame {frame} in {self._shot_file_path}"
@@ -132,7 +139,7 @@ class CameraShotFileLoader(CameraShotFileCore):
 
 
 class CameraShotFileDumper(CameraShotFileCore):
-    """ shot 檔案寫入器
+    """shot 檔案寫入器
 
     將檔案寫入到硬碟，並同時產生影格資訊檔
     另外會記錄寫入的編號，在結束寫入時產生報告，以查看有沒有遺失的影格
@@ -143,9 +150,9 @@ class CameraShotFileDumper(CameraShotFileCore):
     """
 
     def __init__(self, shot_file_path, log):
-        super().__init__(shot_file_path, 'wb')
+        super().__init__(shot_file_path, "wb")
         self._log = log
-        self._log.info(f'File write: {self._shot_file_path}')
+        self._log.info(f"File write: {self._shot_file_path}")
         self._frames = []  # 寫入的影格編號陣列
 
     def dump(self, frame, camera_image):
@@ -165,9 +172,7 @@ class CameraShotFileDumper(CameraShotFileCore):
         image_size = self._image_file.tell() - start_cursor
 
         # 包裝 binary
-        meta = struct.pack(
-            self.binary_format, frame, image_size, *size
-        )
+        meta = struct.pack(self.binary_format, frame, image_size, *size)
         self._meta_file.write(meta)
 
         # 加入影格
@@ -175,12 +180,14 @@ class CameraShotFileDumper(CameraShotFileCore):
 
     def _close(self):
         """關閉時的運行，做一個 log 回報"""
-        self._log.info('File saved with {} frames ({}/{}): {}'.format(
-            len(self._frames),
-            self._frames[0],
-            self._frames[-1],
-            self._shot_file_path
-        ))
+        self._log.info(
+            "File saved with {} frames ({}/{}): {}".format(
+                len(self._frames),
+                self._frames[0],
+                self._frames[-1],
+                self._shot_file_path,
+            )
+        )
 
     def get_frames(self):
         """取得寫入的影格編號陣列"""
@@ -193,9 +200,9 @@ class CameraShotFileDumper(CameraShotFileCore):
         missing_frames = list(i for i in all_frames if i not in self._frames)
 
         return {
-            'missing_frames': missing_frames,
-            'frame_range': (self._frames[0], self._frames[-1]),
-            'size': self._image_file.tell()
+            "missing_frames": missing_frames,
+            "frame_range": (self._frames[0], self._frames[-1]),
+            "size": self._image_file.tell(),
         }
 
 
