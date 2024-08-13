@@ -46,10 +46,11 @@ class Receiver(MixThread):
             elif message.type is MessageType.MASTER_DOWN:
                 break
 
-        self._log.warning('Master down, stop camera system')
+        self._log.warning("Master down, stop camera system")
 
         try:
-            self._camera_connector.kill()
+            if self._camera_connector is not None:
+                self._camera_connector.kill()
         except AttributeError as e:
             self._log.warning(e)
 
@@ -64,15 +65,17 @@ class Receiver(MixThread):
         """
         parms = message.unpack()
 
-        if parms['toggle']:
-            if parms['close_up'] and parms['close_up'] == self._camera_connector.get_id():
+        if parms["toggle"]:
+            if (
+                parms["close_up"]
+                and parms["close_up"] == self._camera_connector.get_id()
+            ):
                 length = None
             else:
-                length = parms['scale_length']
+                length = parms["scale_length"]
 
             self._camera_connector.start_live_view(
-                quality=parms['quality'],
-                scale_length=length
+                quality=parms["quality"], scale_length=length
             )
         else:
             self._camera_connector.stop_live_view()
@@ -102,7 +105,7 @@ class Receiver(MixThread):
 
         """
         parms = message.unpack()
-        camera_id = parms['camera_id']
+        camera_id = parms["camera_id"]
         if camera_id == self._camera_connector.get_id():
             self._camera_connector.load_shot_image(parms)
 
@@ -119,27 +122,27 @@ class Receiver(MixThread):
 
         # 檢查是否有設定白平衡，有的話需要做額外設定
         balance = None
-        if not name.startswith('BalanceRatio'):
+        if not name.startswith("BalanceRatio"):
             attr = name
         else:
-            balance = name.replace('BalanceRatio', '')
-            attr = 'BalanceRatio'
+            balance = name.replace("BalanceRatio", "")
+            attr = "BalanceRatio"
 
         # 設定白平衡的情況，需要先去選擇要調整的白平衡類型
         if balance is not None:
-            if balance == 'Red':
+            if balance == "Red":
                 selector = PySpin.BalanceRatioSelector_Red
             else:
                 selector = PySpin.BalanceRatioSelector_Blue
 
             self._camera_connector.change_parameter(
-                'BalanceRatioSelector', selector
+                "BalanceRatioSelector", selector
             )
 
         # 改變相機參數
         self._camera_connector.change_parameter(attr, value)
 
-        self._log.info(f'Parameter <{name}> changes to {value}')
+        self._log.info(f"Parameter <{name}> changes to {value}")
 
     def _remove_shot(self, message):
         """移除 Shot
@@ -159,13 +162,13 @@ class Receiver(MixThread):
 
         """
         parms = message.unpack()
-        project_id = parms['project_id']
-        shot_id = parms['shot_id']
-        job_name = parms['job_name']
-        frame_range = parms['frame_range']
-        offset_frame = parms['offset_frame']
-        is_cali = parms['is_cali']
-        shot_path = parms['shot_path']
+        project_id = parms["project_id"]
+        shot_id = parms["shot_id"]
+        job_name = parms["job_name"]
+        frame_range = parms["frame_range"]
+        offset_frame = parms["offset_frame"]
+        is_cali = parms["is_cali"]
+        shot_path = parms["shot_path"]
 
         # 蒐集檔案路徑
         camera_id = self._camera_connector.get_id()
@@ -173,21 +176,25 @@ class Receiver(MixThread):
             camera_id: setting.get_shot_file_path(shot_id, camera_id)
         }
 
-        self._camera_connector.add_submit_task((
-            project_id,
-            shot_id,
-            job_name,
-            frame_range,
-            offset_frame,
-            shot_file_paths,
-            is_cali,
-            shot_path
-        ))
+        self._camera_connector.add_submit_task(
+            (
+                project_id,
+                shot_id,
+                job_name,
+                frame_range,
+                offset_frame,
+                shot_file_paths,
+                is_cali,
+                shot_path,
+            )
+        )
 
     def _report_status(self):
         message_manager.send_message(
             MessageType.CAMERA_STATUS,
-            {self._camera_connector.get_id(): self._camera_connector.get_status()}
+            {
+                self._camera_connector.get_id(): self._camera_connector.get_status()
+            },
         )
 
     def _stop(self):
