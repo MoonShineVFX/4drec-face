@@ -122,11 +122,20 @@ class MetashapeResolver:
         for frame_number, frame in enumerate(chunk.frames):
             if frame_number % interval != 0:
                 continue
-            frame.matchPhotos(tiepoint_limit=8000)
+
             self.__logging_progress(
                 progress_point_step,
-                f"Match photos - {frame_number} / {len(chunk.frames)}",
+                f"Match photos - {frame_number + 1} / {len(chunk.frames)}",
             )
+
+            # Disable non exist camera
+            for camera in frame.cameras:
+                if camera.photo is None:
+                    camera.enabled = False
+            frame.matchPhotos(tiepoint_limit=8000)
+            # Enable all cameras
+            for camera in frame.cameras:
+                camera.enabled = True
 
         # Align photos
         chunk.alignCameras()
@@ -157,9 +166,19 @@ class MetashapeResolver:
         is_cali_frame = frame.point_cloud is not None
         if not is_cali_frame:
             logging.info("Point cloud not found, build one")
+            # Disable non exist camera
+            for camera in frame.cameras:
+                if camera.photo is None:
+                    camera.enabled = False
+
             frame.matchPhotos(
                 tiepoint_limit=8000, filter_stationary_points=False
             )
+
+            # Enable all cameras
+            for camera in frame.cameras:
+                camera.enabled = True
+
             profiler.mark("Match Photos")
 
             frame.triangulatePoints()
@@ -259,7 +278,6 @@ class MetashapeResolver:
         chunk = self.__doc.chunk
 
         # Define marker locations and update chunk transform
-        markers_ref_count = len(SETTINGS.nct_marker_locations.keys())
         markers_real_count = 0
         for marker in chunk.markers:
             marker_num = marker.label.split(" ")[-1]

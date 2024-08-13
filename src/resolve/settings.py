@@ -161,9 +161,11 @@ class ResolveSettings:
             camera_photos.append(str(cali_image))
             for f in range(self.start_frame, self.end_frame + 1):
                 real_frame = f + self.offset_frame
-                camera_photos.append(
-                    str(camera_folder / f"{camera_id}_{real_frame:06d}.jpg")
+                camera_image = (
+                    camera_folder / f"{camera_id}_{real_frame:06d}.jpg"
                 )
+
+                camera_photos.append(str(camera_image))
 
             import_data[camera_id] = camera_photos
 
