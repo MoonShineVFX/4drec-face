@@ -141,7 +141,6 @@ class MetashapeResolver:
 
         # Save and archive
         self.save(chunk)
-        Metashape.Document()
         self.__archive_project()
 
     def resolve(self):
@@ -196,7 +195,13 @@ class MetashapeResolver:
         frame.buildUV()
         profiler.mark("Build UV")
         self.__logging_progress(30, "Build UV")
-        frame.buildTexture(texture_size=SETTINGS.texture_size)
+        frame.buildTexture(
+            blending_mode=Metashape.MosaicBlending,
+            texture_size=SETTINGS.texture_size,
+            cameras=[
+                camera for camera in frame.cameras if camera.photo is not None
+            ],
+        )
         profiler.mark("Build Texture")
         self.__logging_progress(15, "Build Texture")
 
@@ -316,6 +321,9 @@ class MetashapeResolver:
         frame = self.get_current_chunk()
         image_path_list = []
         for camera in frame.cameras:
+            # Bypass non exist camera image
+            if camera.photo is None:
+                continue
             image_path_list.append(camera.photo.path)
 
         images = [
@@ -331,6 +339,10 @@ class MetashapeResolver:
 
         # Apply masks
         for camera in frame.cameras:
+            # Bypass non exist camera image
+            if camera.photo is None:
+                continue
+
             filename = Path(camera.photo.path).stem
             mask_image_path = str(SETTINGS.temp_masks_path / f"{filename}.png")
             mask = Metashape.Mask()
