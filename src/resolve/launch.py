@@ -63,7 +63,9 @@ def launch(
     # Add Event if assign
     if on_event is not None:
         event_handler = LoggingEventHandler(on_event)
-        logging.getLogger().addHandler(event_handler)
+        logger = logging.getLogger()
+        logger.propagate = False
+        logger.addHandler(event_handler)
 
     # launch
     from settings import SETTINGS
@@ -77,6 +79,9 @@ def launch(
     )
     resolver = Resolver()
     resolver.run()
+
+    # Clean up
+    del resolver
 
 
 if __name__ == "__main__":
