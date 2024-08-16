@@ -16,6 +16,9 @@ SECRET_PATH = Path("G:/app/secrets.yml")
 SUBMIT_PATH = Path("G:/submit")
 THUMBNAIL_CAMERA_NAME = "20087901"
 
+REQUEST_API_TIMEOUT = 10
+REQUEST_PUT_TIMEOUT = 60 * 20  # 20 minutes
+
 JOB_STATUS = Literal["RUNNING", "COMPLETED", "FAILED"]
 FRAME_STATUS = Literal[
     "RUNNING",
@@ -65,7 +68,9 @@ class CloudBridge:
             "Authorization": f"Bearer {self.roll_web_api_key}",
         }
         payload = json.dumps({"json": body})
-        response = requests.post(url, data=payload, headers=headers)
+        response = requests.post(
+            url, data=payload, headers=headers, timeout=REQUEST_API_TIMEOUT
+        )
 
         if response.status_code != 200:
             raise Exception(
@@ -131,7 +136,9 @@ class CloudBridge:
 
         # Upload file to cloud storage
         presigned_url: str = response
-        requests.put(presigned_url, data=buffer.getvalue())
+        requests.put(
+            presigned_url, data=buffer.getvalue(), timeout=REQUEST_PUT_TIMEOUT
+        )
 
         # Get file size
         file_size = buffer.tell()
@@ -167,7 +174,7 @@ class CloudBridge:
         # Upload file to cloud storage
         presigned_url: str = response
         with open(file_path, "rb") as f:
-            requests.put(presigned_url, data=f)
+            requests.put(presigned_url, data=f, timeout=REQUEST_PUT_TIMEOUT)
 
         # Get file size
         file_size = Path(file_path).stat().st_size
@@ -200,7 +207,7 @@ class CloudBridge:
         # Upload file to cloud storage
         presigned_url: str = response
         with open(file_path, "rb") as f:
-            requests.put(presigned_url, data=f)
+            requests.put(presigned_url, data=f, timeout=REQUEST_PUT_TIMEOUT)
 
         # Get file size
         file_size = Path(file_path).stat().st_size

@@ -52,30 +52,17 @@ def build_mesh_sample(vertex_arr, uv_arr):
     return mesh_samp
 
 
-def export_geometry(load_path, frame, output_path, filetype):
-    # Deprecated
-    # fourd_frame = FourdFrameManager.load(load_path)
-    #
-    # if filetype == ".obj":
-    #     with open(f"{output_path}/obj/{frame:04d}.obj", "w") as f:
-    #         f.write(fourd_frame.get_obj_data())
-    #
-    # with open(f"{output_path}/texture/{frame:04d}.jpg", "wb") as f:
-    #     f.write(fourd_frame.get_texture_data(raw=True))
-    pass
-
-
 def export_texture(frame_num: int, load_path: str, export_path: str):
-    # Deprecated
-    # frame = FourdFrameManager.load(load_path)
-    # data = frame.get_texture_data(raw=True)
-    # with open(export_path, "wb") as f:
-    #     f.write(data)
-    # return frame_num, None
-    pass
+    from common.fourdrec_frame import FourdrecFrame
+
+    frame = FourdrecFrame(load_path)
+    frame.export_texture(export_path)
+    return frame_num
 
 
-def decode_fourd_frame(frame_num: int, load_path: str):
+def convert_fourd_frame_to_alembic(
+    frame_num: int, load_path: str, export_path: str
+):
     from common.fourdrec_frame import FourdrecFrame
 
     # load 4D
@@ -86,7 +73,17 @@ def decode_fourd_frame(frame_num: int, load_path: str):
     uv_arr = uv_arr.copy()
     uv_arr = np.array(uv_arr, np.float64)
 
-    return frame_num, (vertex_arr, uv_arr)
+    # Build mesh sample
+    mesh_samp = build_mesh_sample(vertex_arr, uv_arr)
+
+    # Create alembic file
+    archive = alembic.Abc.OArchive(export_path, asOgawa=True)
+    archive.setCompressionHint(1)
+    mesh_obj = alembic.AbcGeom.OPolyMesh(archive.getTop(), "scan_model")
+    mesh = mesh_obj.getSchema()
+    mesh.set(mesh_samp)
+
+    return frame_num
 
 
 class MultiExecutor(threading.Thread):
@@ -124,28 +121,28 @@ class MultiExecutor(threading.Thread):
         (
             job_id,
             job_folder_path,
-            frame_range,
+            job_frame_range,  # [27755, 29015]
             shot_folder_path,
-            shot_frame_range,
+            shot_frame_range,  # [27754, 29015]
             export_path,
         ) = tasks
 
         # filter export_path
         export_path = Path(export_path)
-        filetype = export_path.suffix
         filename = export_path.stem
         export_path = export_path.parent
 
         folder_name = re.sub(r"[^\w\d-]", "_", filename)
         export_path = Path(f"{export_path}/{folder_name}/")
-        export_path.mkdir(parents=True, exist_ok=True)
+        export_alembic_path = export_path / "alembic"
+        export_texture_path = export_path / "texture"
+        export_alembic_path.mkdir(parents=True, exist_ok=True)
+        export_texture_path.mkdir(parents=True, exist_ok=True)
 
         # define
-        load_path = Path(job_folder_path) / setting.submit.output_folder_name
-        if not load_path.exists():
-            # old version
-            load_path = Path(job_folder_path) / "export"
-        offset_frame = frame_range[0]
+        output_path = Path(job_folder_path) / setting.submit.output_folder_name
+        start_frame = 0
+        end_frame = job_frame_range[1] - job_frame_range[0]
 
         # Export audio
         log.info("Export Audio")
@@ -153,10 +150,10 @@ class MultiExecutor(threading.Thread):
         if audio_source_path.exists():
             audio_target_path = export_path / "audio.wav"
             audio_start_time = (
-                frame_range[0] - shot_frame_range[0]
+                job_frame_range[0] - shot_frame_range[0]
             ) / setting.frame_rate
             audio_duration = (
-                frame_range[1] - frame_range[0]
+                job_frame_range[1] - job_frame_range[0]
             ) / setting.frame_rate
             cmd = (
                 f"ffmpeg -i {audio_source_path} "
@@ -177,114 +174,44 @@ class MultiExecutor(threading.Thread):
                 f"Audio {audio_source_path} not exists, skip audio conversion."
             )
 
-        log.info(f"Export Model: {filetype}")
-        # Export model
-        if filetype != ".abc":
-            # Export obj or 4dh
-            if filetype == ".obj":
-                (export_path / "obj").mkdir(parents=True, exist_ok=True)
-            elif filetype == ".4dh":
-                (export_path / "geo").mkdir(parents=True, exist_ok=True)
-            (export_path / "texture").mkdir(parents=True, exist_ok=True)
+        # Run
+        with ProcessPoolExecutor() as executor:
+            future_list = []
+            frame_complete = {}
 
-            with ProcessPoolExecutor() as executor:
-                future_list = []
-                for f in range(frame_range[0], frame_range[1] + 1):
-                    offset_f = f - offset_frame
-                    file_path = f"{load_path}/{f:06d}.4df"
+            for f in range(start_frame, end_frame + 1):
+                file_path = f"{output_path}/frame/{f:04d}.4dframe"
 
-                    if not os.path.isfile(file_path):
-                        self._manager.ui_tick_export()
-                        continue
-
-                    future = executor.submit(
-                        export_geometry,
-                        file_path,
-                        offset_f,
-                        str(export_path),
-                        filetype,
-                    )
-                    future_list.append(future)
-
-                for _ in as_completed(future_list):
+                if not os.path.isfile(file_path):
                     self._manager.ui_tick_export()
-        else:
-            fps = 1 / setting.frame_rate
+                    continue
 
-            # Export alembic
-            (export_path / "texture").mkdir(parents=True, exist_ok=True)
+                # Add geo decode task
+                future_geo = executor.submit(
+                    convert_fourd_frame_to_alembic,
+                    f,
+                    file_path,
+                    rf"{export_alembic_path}\{f:04d}.abc",
+                )
+                future_list.append(future_geo)
 
-            # Build alembic file
-            archive = alembic.Abc.OArchive(
-                str(export_path / f"{filename}.abc"), asOgawa=False
-            )
-            archive.setCompressionHint(1)
+                # Add texture export task
+                future_tex = executor.submit(
+                    export_texture,
+                    f,
+                    file_path,
+                    rf"{export_texture_path}\{f:04d}.jpg",
+                )
+                future_list.append(future_tex)
 
-            # Add TimeSampling
-            time_sampling = alembic.AbcCoreAbstract.TimeSampling(fps, 0.0)
-            mesh_obj = alembic.AbcGeom.OPolyMesh(archive.getTop(), filename)
-            mesh = mesh_obj.getSchema()
-            mesh.setTimeSampling(time_sampling)
+                frame_complete[f] = 0
 
-            # Run
-            with ProcessPoolExecutor() as executor:
-                future_list = []
-                frame_complete = {}
+            for task in as_completed(future_list):
+                task_done_frame = task.result()
+                frame_complete[task_done_frame] += 1
 
-                for f in range(frame_range[0], frame_range[1] + 1):
-                    offset_f = f - offset_frame
-                    file_path = f"{load_path}/{f:06d}.4df"
-
-                    if not os.path.isfile(file_path):
-                        self._manager.ui_tick_export()
-                        continue
-
-                    future_geo = executor.submit(
-                        decode_fourd_frame, offset_f, file_path
-                    )
-                    future_list.append(future_geo)
-
-                    future_tex = executor.submit(
-                        export_texture,
-                        offset_f,
-                        file_path,
-                        rf"{export_path}\texture\{offset_f:06d}.jpg",
-                    )
-                    future_list.append(future_tex)
-
-                    frame_complete[offset_f] = 0
-
-                frame_cache = {}
-                current_f = 0
-                for task in as_completed(future_list):
-                    frame_num, data = task.result()
-                    frame_complete[frame_num] += 1
-
-                    if data is not None:
-                        if current_f == frame_num:
-                            vertex_arr, uv_arr = data
-                            mesh_samp = build_mesh_sample(vertex_arr, uv_arr)
-                            mesh.set(mesh_samp)
-                        else:
-                            frame_cache[frame_num] = data
-
-                    if current_f in frame_cache:
-                        vertex_arr, uv_arr = frame_cache[current_f]
-                        mesh_samp = build_mesh_sample(vertex_arr, uv_arr)
-                        mesh.set(mesh_samp)
-                        del frame_cache[current_f]
-
-                    if frame_complete[frame_num] == 2:
-                        self._manager.ui_tick_export()
-                        current_f += 1
-                end_f = frame_range[1] - offset_frame
-                if current_f - 1 != end_f:
-                    for i in range(current_f, end_f + 1):
-                        vertex_arr, uv_arr = frame_cache[i]
-                        mesh_samp = build_mesh_sample(vertex_arr, uv_arr)
-                        mesh.set(mesh_samp)
-                        del frame_cache[i]
-                        self._manager.ui_tick_export()
+                if frame_complete[task_done_frame] == 2:
+                    self._manager.ui_tick_export()
 
     def run(self):
         while True:

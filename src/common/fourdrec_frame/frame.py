@@ -28,6 +28,7 @@ class FourdrecFrame:
             f.seek(HEADER_SIZE)
             pos_buf = f.read(self.pos_size)
             uv_buf = f.read(self.uv_size)
+
         # pos
         pos_data = zlib.decompress(pos_buf)
         pos_arr = np.frombuffer(pos_data, dtype=np.float32)
