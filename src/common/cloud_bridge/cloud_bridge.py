@@ -39,6 +39,7 @@ class CloudBridge:
         job_name: str,
         frame_count: int,
         frame_number: int,
+        is_disabled: bool = False,
     ):
         self.project_id = project_id
         self.project_name = project_name
@@ -48,6 +49,7 @@ class CloudBridge:
         self.job_name = job_name
         self.frame_count = frame_count
         self.frame_number = frame_number
+        self.is_disabled = is_disabled
 
         # Secrets
         self.roll_web_api_key = ""
@@ -83,6 +85,9 @@ class CloudBridge:
         return data
 
     def submit_job(self, thumbnail_frame_number: int = None):
+        if self.is_disabled:
+            return
+
         response = self.__api(
             "job.submit",
             {
@@ -152,6 +157,9 @@ class CloudBridge:
         )
 
     def update_job(self, status: JOB_STATUS, file_path: str = None):
+        if self.is_disabled:
+            return
+
         response = self.__api(
             "job.update",
             {
@@ -184,6 +192,9 @@ class CloudBridge:
         )
 
     def update_frame(self, status: FRAME_STATUS, file_path: str = None):
+        if self.is_disabled:
+            return
+
         response = self.__api(
             "frame.update",
             {

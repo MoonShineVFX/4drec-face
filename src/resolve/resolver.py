@@ -82,6 +82,7 @@ class Resolver:
             SETTINGS.job_name,
             SETTINGS.end_frame - SETTINGS.start_frame + 1,
             SETTINGS.output_frame_number,
+            SETTINGS.no_cloud_sync,
         )
 
     def __logging_progress(self, progress_step: float, message: str):

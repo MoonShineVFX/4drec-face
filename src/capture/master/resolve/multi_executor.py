@@ -141,8 +141,8 @@ class MultiExecutor(threading.Thread):
 
         # define
         output_path = Path(job_folder_path) / setting.submit.output_folder_name
-        start_frame = 0
-        end_frame = job_frame_range[1] - job_frame_range[0]
+        start_frame = job_frame_range[0] - shot_frame_range[0]
+        end_frame = job_frame_range[1] - shot_frame_range[0]
 
         # Export audio
         log.info("Export Audio")

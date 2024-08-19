@@ -17,6 +17,7 @@ class EntityEvent(Enum):
 
 class UIEventType(Enum):
     """事件類型"""
+
     UI_SHOW = auto()
     UI_CONNECT = auto()
     UI_STATUS = auto()
@@ -47,9 +48,9 @@ class UIEventType(Enum):
 
 
 class BodyMode(Enum):
-    LIVEVIEW = 'LIVE'
-    PLAYBACK = 'ROLL'
-    MODEL = '3D'
+    LIVEVIEW = "LIVE"
+    PLAYBACK = "ROLL"
+    MODEL = "3D"
 
 
 class CameraState(Enum):
@@ -62,9 +63,9 @@ class CameraState(Enum):
 
 
 class CameraRotation(Enum):
-    LEFT = 'LEFT'
-    RIGHT = 'RIGHT'
-    NONE = 'NONE'
+    LEFT = "LEFT"
+    RIGHT = "RIGHT"
+    NONE = "NONE"
 
 
 class CameraLibraryTask(Enum):
@@ -148,12 +149,15 @@ class SubmitOrder:
     offset_frame: int
     bypass_jpeg_transfer: bool
     resolve_only: bool
-    cali_path: str = ''
+    no_cloud_sync: bool
+    cali_path: str = ""
     parms: dict = field(default_factory=dict)
 
     def get_frame_length(self):
         return self.frame_range[1] - self.frame_range[0] + 1
 
     def get_offset_frame_range(self):
-        return self.frame_range[0] - self.offset_frame,\
-               self.frame_range[1] - self.offset_frame
+        return (
+            self.frame_range[0] - self.offset_frame,
+            self.frame_range[1] - self.offset_frame,
+        )

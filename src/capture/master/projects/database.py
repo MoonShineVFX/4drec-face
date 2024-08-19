@@ -473,6 +473,8 @@ class ShotEntity(Entity):
         yaml_data["shot_id"] = self.get_id()
         yaml_data["job_name"] = job.name
         yaml_data["job_id"] = job.get_id()
+        # Cloud sync
+        yaml_data["no_cloud_sync"] = submit_order.no_cloud_sync
         if submit_order.parms is not None:
             yaml_data.update(submit_order.parms)
         yaml_path = f"{job.get_folder_path()}/job.yml"
@@ -494,6 +496,7 @@ class ShotEntity(Entity):
             job_name=job.name,
             frame_count=offset_frame_range[1] - offset_frame_range[0] + 1,
             frame_number=0,
+            is_disabled=submit_order.no_cloud_sync,
         )
 
         try:

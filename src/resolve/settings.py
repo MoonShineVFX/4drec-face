@@ -67,6 +67,12 @@ class ResolveSettings:
         self.job_path = Path("")
         self.created_at = None
 
+        # Cloud sync
+        self.no_cloud_sync = False
+
+        # Debug
+        self.keep_temp_files = False
+
         # More Paths
         self.project_path = Path("")
         self.files_path = Path("")

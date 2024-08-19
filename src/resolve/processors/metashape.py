@@ -215,7 +215,7 @@ class MetashapeResolver:
         profiler.mark("Build UV")
         self.__logging_progress(30, "Build UV")
         frame.buildTexture(
-            blending_mode=Metashape.MosaicBlending,
+            # Blending mode must None, Mosaic has glitch
             texture_size=SETTINGS.texture_size,
             cameras=[
                 camera for camera in frame.cameras if camera.photo is not None
@@ -229,7 +229,15 @@ class MetashapeResolver:
         profiler.mark("Output result")
 
         # Clean data
-        shutil.rmtree(str(SETTINGS.temp_path), ignore_errors=True)
+        if not SETTINGS.keep_temp_files:
+            shutil.rmtree(str(SETTINGS.temp_path), ignore_errors=True)
+        else:
+            logging.info("Keep temp files")
+            self.__doc.save(
+                str(SETTINGS.temp_project_path),
+                [self.__doc.chunk],
+                absolute_paths=True,
+            )
 
         return output_path
 
