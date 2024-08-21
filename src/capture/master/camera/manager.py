@@ -44,21 +44,20 @@ class CameraManager:
         ui.dispatch_event(
             UIEventType.UI_CONNECT,
             {
-                'camera': self,
-                'project': project_manager,
-                'audio': audio_manager
-            }
+                "camera": self,
+                "project": project_manager,
+                "audio": audio_manager,
+            },
         )
 
-        self.load_parameters('Default')
+        self.load_parameters("Default")
 
     def _build_camera_proxies(self):
         """藉由 setting.get_working_camera_ids 創建相機 proxy 列表"""
         camera_list = {}
         for camera_id in setting.get_working_camera_ids():
             camera_list[camera_id] = CameraProxy(
-                camera_id,
-                self._on_state_changed
+                camera_id, self._on_state_changed
             )
         return camera_list
 
@@ -67,11 +66,7 @@ class CameraManager:
         parameters = {}
         for key, parm in setting.camera_parameters.items():
             parameters[key] = CameraParameter(
-                key,
-                parm['min'],
-                parm['max'],
-                parm['default'],
-                parm['type']
+                key, parm["min"], parm["max"], parm["default"], parm["type"]
             )
 
         return parameters
@@ -105,15 +100,12 @@ class CameraManager:
                 self.trigger()
 
         # 當擷取關閉，預覽卻未關閉的情況下，送出斷線圖像給 UI
-        if (
-            camera.state is not CameraState.CAPTURING and
-            self._is_live_view
-        ):
+        if camera.state is not CameraState.CAPTURING and self._is_live_view:
             self.receive_image(
                 Message(
                     MessageType.LIVE_VIEW_IMAGE,
-                    parms={'camera_id': camera.get_id()},
-                    payload=None
+                    parms={"camera_id": camera.get_id()},
+                    payload=None,
                 )
             )
 
@@ -132,30 +124,28 @@ class CameraManager:
             return
 
         # bypass parm check
-        if parm_name == 'LUTEnable':
-            log.debug(f'Parameter <{parm_name}> changes to {value}')
+        if parm_name == "LUTEnable":
+            log.debug(f"Parameter <{parm_name}> changes to {value}")
             message_manager.send_message(
-                MessageType.CAMERA_PARM,
-                {'camera_parm': (parm_name, value)}
+                MessageType.CAMERA_PARM, {"camera_parm": (parm_name, value)}
             )
             return
 
         parm = self._parameters[parm_name]
         result = parm.set(value)
 
-        if result == 'min':
-            log.error(f'{parm_name} value too small ({value})')
-        elif result == 'max':
-            log.error(f'{parm_name} value too big ({value})')
-        elif result == 'OK':
+        if result == "min":
+            log.error(f"{parm_name} value too small ({value})")
+        elif result == "max":
+            log.error(f"{parm_name} value too big ({value})")
+        elif result == "OK":
             message_manager.send_message(
                 MessageType.CAMERA_PARM,
-                {'camera_parm': (parm_name, parm.get_value())}
+                {"camera_parm": (parm_name, parm.get_value())},
             )
-            log.debug(f'Parameter <{parm_name}> changes to {value}')
+            log.debug(f"Parameter <{parm_name}> changes to {value}")
             ui.dispatch_event(
-                UIEventType.CAMERA_PARAMETER,
-                (parm_name, value, affect_slider)
+                UIEventType.CAMERA_PARAMETER, (parm_name, value, affect_slider)
             )
 
     def save_parameters(self):
@@ -177,44 +167,35 @@ class CameraManager:
 
     def trigger(self):
         """觸發相機擷取"""
-        log.info('Trigger camera capture')
+        log.info("Trigger camera capture")
         hardware_trigger.trigger()
 
         # 觸發後，將相機參數做統一設定
         for name, parm in self._parameters.items():
-            self.change_parameter(
-                name, parm.get_value()
-            )
+            self.change_parameter(name, parm.get_value())
 
-        ui.dispatch_event(
-            UIEventType.TRIGGER,
-            True
-        )
+        ui.dispatch_event(UIEventType.TRIGGER, True)
 
         self._is_capturing = True
 
     def retrigger(self):
-        log.info('Retrigger')
+        log.info("Retrigger")
 
-        message_manager.send_message(
-            MessageType.RETRIGGER
-        )
+        message_manager.send_message(MessageType.RETRIGGER)
 
         self.stop_capture()
 
     def load_parameters(self, preset_type):
-        if preset_type == 'Default':
+        if preset_type == "Default":
             if setting.has_user_parameters():
-                preset_type = 'User'
+                preset_type = "User"
             else:
-                preset_type = 'Base'
+                preset_type = "Base"
 
-        if preset_type == 'Base':
+        if preset_type == "Base":
             for name, parm in self._parameters.items():
-                self.change_parameter(
-                    name, parm.get_default(), True
-                )
-        elif preset_type == 'User':
+                self.change_parameter(name, parm.get_default(), True)
+        elif preset_type == "User":
             for name, parm in self._parameters.items():
                 if not setting.has_user_parameters():
                     return
@@ -222,9 +203,7 @@ class CameraManager:
                     name, setting.camera_user_parameters[name], True
                 )
 
-    def live_view(
-        self, toggle, scale_length=150, close_up=None
-    ):
+    def live_view(self, toggle, scale_length=150, close_up=None):
         """開關相機預覽
 
         開關指定的相機預覽，同時設定串流品質跟尺寸
@@ -237,36 +216,26 @@ class CameraManager:
         """
         if toggle:
             self._delay.execute(
-                lambda:
-                (
-                    log.info('Toggle LiveView on'),
+                lambda: (
+                    log.info("Toggle LiveView on"),
                     message_manager.send_message(
                         MessageType.TOGGLE_LIVE_VIEW,
                         {
-                            'quality': setting.jpeg.live_view.quality,
-                            'scale_length': scale_length,
-                            'close_up': close_up,
-                            'toggle': toggle
-                        }
+                            "quality": setting.jpeg.live_view.quality,
+                            "scale_length": scale_length,
+                            "close_up": close_up,
+                            "toggle": toggle,
+                        },
                     ),
-                    ui.dispatch_event(
-                        UIEventType.LIVE_VIEW,
-                        True
-                    )
+                    ui.dispatch_event(UIEventType.LIVE_VIEW, True),
                 )
             )
         else:
-            log.info('Toggle LiveView off')
+            log.info("Toggle LiveView off")
             message_manager.send_message(
-                MessageType.TOGGLE_LIVE_VIEW,
-                {
-                    'toggle': toggle
-                }
+                MessageType.TOGGLE_LIVE_VIEW, {"toggle": toggle}
             )
-            ui.dispatch_event(
-                UIEventType.LIVE_VIEW,
-                False
-            )
+            ui.dispatch_event(UIEventType.LIVE_VIEW, False)
 
     def record(self):
         """開關錄製
@@ -277,26 +246,23 @@ class CameraManager:
         """
         self._is_recording = not self._is_recording
 
-        ui.dispatch_event(
-            UIEventType.RECORDING,
-            self._is_recording
-        )
+        ui.dispatch_event(UIEventType.RECORDING, self._is_recording)
 
-        parms = {
-            'is_start': self._is_recording
-        }
+        parms = {"is_start": self._is_recording}
 
         shot_id = project_manager.current_shot.get_id()
         is_cali = project_manager.current_shot.is_cali()
 
         # 開啟錄製
         if self._is_recording:
-            parms['shot_id'] = shot_id
-            parms['is_cali'] = is_cali
-            log.info('Start recording: {} / {}'.format(
-                project_manager.current_project,
-                project_manager.current_shot
-            ))
+            parms["shot_id"] = shot_id
+            parms["is_cali"] = is_cali
+            log.info(
+                "Start recording: {} / {}".format(
+                    project_manager.current_project,
+                    project_manager.current_shot,
+                )
+            )
 
             # Record audio
             if not is_cali:
@@ -305,7 +271,7 @@ class CameraManager:
                 )
         # 關閉錄製
         else:
-            log.info('Stop recording')
+            log.info("Stop recording")
 
             # 取得這次錄製的相機參數
             parameters = {}
@@ -321,10 +287,7 @@ class CameraManager:
                 shot_id, parameters
             )
 
-        message_manager.send_message(
-            MessageType.TOGGLE_RECORDING,
-            parms
-        )
+        message_manager.send_message(MessageType.TOGGLE_RECORDING, parms)
 
         if self._is_recording and is_cali:
             self.record()
@@ -336,20 +299,17 @@ class CameraManager:
 
         """
         for camera in self._camera_list.values():
-            camera.update_status({'state': CameraState.CLOSE.value})
+            camera.update_status({"state": CameraState.CLOSE.value})
 
         if self._is_capturing and message is not None:
             node = message.unpack()
-            log.warning(f'Slave [{node.get_name()}] down, restart cameras')
+            log.warning(f"Slave [{node.get_name()}] down, restart cameras")
             time.sleep(1)
             message_manager.send_message(MessageType.MASTER_DOWN)
 
         self._is_capturing = False
 
-        ui.dispatch_event(
-            UIEventType.TRIGGER,
-            False
-        )
+        ui.dispatch_event(UIEventType.TRIGGER, False)
 
     def collect_report(self, message):
         """蒐集報告
@@ -373,9 +333,7 @@ class CameraManager:
         """
         parms, image_data = message.unpack()
 
-        self._camera_list[parms['camera_id']].on_image_received(
-            message
-        )
+        self._camera_list[parms["camera_id"]].on_image_received(message)
 
     def request_shot_image(
         self, shot_id, frame, closeup_camera=None, delay=False
@@ -393,6 +351,8 @@ class CameraManager:
 
         """
 
+        this_shot = project_manager.get_shot(shot_id)
+
         for camera_id, camera in self._camera_list.items():
             if closeup_camera == camera_id:
                 scale_length = None
@@ -400,35 +360,36 @@ class CameraManager:
                 scale_length = setting.jpeg.shot.scale_length
 
             camera.on_image_requested(
-                camera_id, shot_id, frame,
+                camera_id,
+                shot_id,
+                frame,
                 setting.jpeg.shot.quality,
-                scale_length, delay
+                scale_length,
+                delay,
+                shot_path=this_shot.get_folder_path(),
             )
 
     def submit_shot(self, submit_order: SubmitOrder):
         """到 deadline 放算"""
         shot = project_manager.current_shot
-        log.info(f'Preparing to submit shot: {shot}')
+        log.info(f"Preparing to submit shot: {shot}")
         offset_frame_range = submit_order.get_offset_frame_range()
 
-        self._report_collector.new_submit_report_container(
-            shot,
-            submit_order
-        )
+        self._report_collector.new_submit_report_container(shot, submit_order)
 
         if not submit_order.bypass_jpeg_transfer:
             # 通知 Slaves 傳輸轉檔 Shot
             message_manager.send_message(
                 MessageType.SUBMIT_SHOT,
                 {
-                    'project_id': shot.get_parent().get_id(),
-                    'shot_id': shot.get_id(),
-                    'job_name': submit_order.name,
-                    'frame_range': offset_frame_range,
-                    'offset_frame': submit_order.offset_frame,
-                    'is_cali': shot.is_cali(),
-                    'shot_path': shot.get_folder_path()
-                }
+                    "project_id": shot.get_parent().get_id(),
+                    "shot_id": shot.get_id(),
+                    "job_name": submit_order.name,
+                    "frame_range": offset_frame_range,
+                    "offset_frame": submit_order.offset_frame,
+                    "is_cali": shot.is_cali(),
+                    "shot_path": shot.get_folder_path(),
+                },
             )
 
     def cache_whole_shot(self, closeup_camera):
@@ -436,15 +397,12 @@ class CameraManager:
         sf, ef = shot.frame_range
 
         for f in range(sf, ef + 1):
-            self.request_shot_image(
-                shot.get_id(), f, closeup_camera
-            )
+            self.request_shot_image(shot.get_id(), f, closeup_camera)
 
     def _get_bias(self):
         """取得相機實際擷取的格數誤差的最大值"""
         frames = [
-            camera.current_frame
-            for camera in self._camera_list.values()
+            camera.current_frame for camera in self._camera_list.values()
         ]
         min_frame = min(frames)
         max_frame = max(frames)
@@ -454,32 +412,29 @@ class CameraManager:
         message_manager.send_message(
             MessageType.CAMERA_STATUS,
             {
-                'calibrate_frame': self._camera_list[
+                "calibrate_frame": self._camera_list[
                     setting.get_working_camera_ids()[0]
                 ].current_frame
-            }
+            },
         )
 
     def _send_ui_status(self):
         status = {
-            'bias': self._get_bias(),
-            'slaves': message_manager.get_nodes_count(),
-            'frames': -1,
-            'cache_size': project_manager.get_all_cache_size()
+            "bias": self._get_bias(),
+            "slaves": message_manager.get_nodes_count(),
+            "frames": -1,
+            "cache_size": project_manager.get_all_cache_size(),
         }
 
         if self._is_recording:
-            status['frames'] = min(
+            status["frames"] = min(
                 [
-                    camera.record_frames_count for camera
-                    in self._camera_list.values()
+                    camera.record_frames_count
+                    for camera in self._camera_list.values()
                 ]
             )
 
-        ui.dispatch_event(
-            UIEventType.UI_STATUS,
-            status
-        )
+        ui.dispatch_event(UIEventType.UI_STATUS, status)
 
     def offline(self):
         for camera in self._camera_list.values():

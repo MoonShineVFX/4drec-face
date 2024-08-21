@@ -4,12 +4,16 @@ import cv2
 import numpy as np
 import lz4framed
 from PyQt5.Qt import QPixmap, QImage
+from pathlib import Path
 
 from utility.setting import setting
 from utility.message import message_manager
 from common.jpeg_coder import jpeg_coder
 from utility.define import (
-    UIEventType, MessageType, CameraLibraryTask, CameraCacheType
+    UIEventType,
+    MessageType,
+    CameraLibraryTask,
+    CameraCacheType,
 )
 from utility.delay_executor import DelayExecutor
 
@@ -58,11 +62,9 @@ class CameraLibrary(threading.Thread):
 
     def _get_pixmap_from_cache(self, camera_pixmap):
         try:
-            pixmap = (
-                self._cache[camera_pixmap.shot_id]
-                [camera_pixmap.get_cache_type()]
-                [camera_pixmap.frame]
-            )
+            pixmap = self._cache[camera_pixmap.shot_id][
+                camera_pixmap.get_cache_type()
+            ][camera_pixmap.frame]
             return pixmap
         except KeyError:
             return None
@@ -77,13 +79,12 @@ class CameraLibrary(threading.Thread):
         if camera_pixmap.shot_id not in self._cache:
             self._cache[camera_pixmap.shot_id] = {
                 CameraCacheType.ORIGINAL: {},
-                CameraCacheType.THUMBNAIL: {}
+                CameraCacheType.THUMBNAIL: {},
             }
 
-        target_cache = (
-            self._cache[camera_pixmap.shot_id]
-            [camera_pixmap.get_cache_type()]
-        )
+        target_cache = self._cache[camera_pixmap.shot_id][
+            camera_pixmap.get_cache_type()
+        ]
 
         if camera_pixmap.frame in target_cache:
             if target_cache[camera_pixmap.frame] is not None:
@@ -98,15 +99,19 @@ class CameraLibrary(threading.Thread):
     def _slave_request(self, camera_pixmap):
         """向 slave 索取指定圖像
 
-        藉由 camera_pixmap 的資料去向 slave 索取圖像
+        先看 submit 的 shot 是否有該 frame 的圖像
+        沒有的話，藉由 camera_pixmap 的資料去向 slave 索取圖像
 
         Args:
             camera_pixmap: CameraPixmap
 
         """
+        if camera_pixmap.is_offline():
+            self.on_image_received(camera_pixmap.get_parms(), True)
+            return
+
         message_manager.send_message(
-            MessageType.GET_SHOT_IMAGE,
-            camera_pixmap.get_parms()
+            MessageType.GET_SHOT_IMAGE, camera_pixmap.get_parms()
         )
 
     def add_task(self, task_type, payload):
@@ -121,25 +126,19 @@ class CameraLibrary(threading.Thread):
         """
         if camera_pixmap.is_state():
             ui.dispatch_event(
-                UIEventType.CAMERA_STATE,
-                camera_pixmap.to_state()
+                UIEventType.CAMERA_STATE, camera_pixmap.to_state()
             )
         else:
             ui.dispatch_event(
                 UIEventType.CAMERA_PIXMAP,
                 camera_pixmap.to_payload(
-                    ui.get_state('Focus'),
-                    ui.get_state('caching'),
-                    save
-                )
+                    ui.get_state("Focus"), ui.get_state("caching"), save
+                ),
             )
 
             # 如果是 shot 圖像便存起來
             if save and camera_pixmap.is_shot():
-                self.add_task(
-                    CameraLibraryTask.IMPORT,
-                    camera_pixmap
-                )
+                self.add_task(CameraLibraryTask.IMPORT, camera_pixmap)
 
     def on_image_received(self, message, direct=False):
         """收到圖像的回調"""
@@ -150,7 +149,14 @@ class CameraLibrary(threading.Thread):
         self._encoder.add_task(pixmap)
 
     def on_image_requested(
-        self, camera_id, shot_id, frame, quality, scale_length, delay
+        self,
+        camera_id,
+        shot_id,
+        frame,
+        quality,
+        scale_length,
+        delay,
+        offline_path=None,
     ):
         """UI 顯示圖像的請求
 
@@ -163,15 +169,18 @@ class CameraLibrary(threading.Thread):
             frame: 影格
             quality: 轉檔品質
             scale_length: 最長邊長度
+            delay: 是否延遲
+            offline_path: 離線路徑
 
         """
         parms = {
-            'camera_id': camera_id,
-            'shot_id': shot_id,
-            'frame': frame,
-            'quality': quality,
-            'scale_length': scale_length,
-            'delay': delay
+            "camera_id": camera_id,
+            "shot_id": shot_id,
+            "frame": frame,
+            "quality": quality,
+            "scale_length": scale_length,
+            "delay": delay,
+            "offline_path": offline_path,
         }
 
         camera_pixmap = CameraPixmap(parms)
@@ -198,19 +207,27 @@ class CameraPixmapEncoder(threading.Thread):
             pixmap = self._queue.get()
 
             # 斷線產生 buf 會是 None 的情況不進行轉換
-            pixmap.decode()
+            decode_result = pixmap.decode()
 
             # 傳給 UI
-            self._library.send_ui(pixmap, save=True)
+            if decode_result:
+                self._library.send_ui(pixmap, save=True)
 
 
-class CameraPixmap():
+class CameraPixmap:
     """相機 UI 圖像
 
     UI 的 Pixmap 包裝，額外增加了 parms 的資訊
 
     Args:
-        parms: 圖像資訊 {camera_id, shot_id, frame, quality, scale_length}
+        parms: 圖像資訊 {
+            camera_id,
+            shot_id,
+            frame,
+            quality,
+            scale_length,
+            offline_path
+        }
 
     """
 
@@ -228,25 +245,25 @@ class CameraPixmap():
         if prop in self._parms:
             return self._parms[prop]
         else:
-            raise KeyError(f'No {prop} in parms')
+            raise KeyError(f"No {prop} in parms")
 
     def is_wait_cache(self):
         return self._wait_cache
 
     def is_delay(self):
-        return 'delay' in self._parms and self._parms['delay']
+        return "delay" in self._parms and self._parms["delay"]
 
     def is_live_view(self):
         """是否是即時預覽的圖像"""
-        return 'shot_id' not in self._parms
+        return "shot_id" not in self._parms
 
     def is_shot(self):
-        return 'shot_id' in self._parms
+        return "shot_id" in self._parms
 
     def is_original(self):
         return (
-            'scale_length' in self._parms and
-            self._parms['scale_length'] is None
+            "scale_length" in self._parms
+            and self._parms["scale_length"] is None
         )
 
     def is_converted(self):
@@ -256,18 +273,20 @@ class CameraPixmap():
         return self._cache is not None
 
     def is_state(self):
-        return 'state' in self._parms
+        return "state" in self._parms
+
+    def is_offline(self):
+        return (
+            "offline_path" in self._parms
+            and self._parms["offline_path"] is not None
+        )
 
     def to_payload(self, focus, caching, save):
         pixmap = self.convert_to_pixmap(focus, save) if not caching else None
-        return (
-            self._parms['camera_id'],
-            pixmap,
-            self.is_live_view()
-        )
+        return (self._parms["camera_id"], pixmap, self.is_live_view())
 
     def to_state(self):
-        return (self._parms['camera_id'], self._parms['state'])
+        return (self._parms["camera_id"], self._parms["state"])
 
     def get_cache_type(self):
         if self.is_original():
@@ -292,16 +311,36 @@ class CameraPixmap():
         """取得 QPixmap"""
         return self._pixmap
 
-    def decode(self):
+    def decode(self) -> bool:
         if self._buf is None:
-            return
+            if not self.is_offline():
+                return False
+
+            image_path = Path(self._parms["offline_path"])
+            if not image_path.exists():
+                return False
+
+            with open(image_path, "rb") as f:
+                self._buf = f.read()
 
         # 解碼 JPEG 成 cv2 跟正確顏色
         im = jpeg_coder.decode(self._buf)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+        # 縮放圖片
+        if (
+            not self.is_original()
+            and max(*im.shape[:2]) > self._parms["scale_length"]
+        ):
+            ratio = self._parms["scale_length"] / max(*im.shape[:2])
+            im = cv2.resize(
+                im, (int(im.shape[1] * ratio), int(im.shape[0] * ratio))
+            )
+
         self._buf = im
         self._shape = self._buf.shape
         self._type = self._buf.dtype
+        return True
 
     def save_cache(self):
         if self._buf is None:
@@ -326,10 +365,8 @@ class CameraPixmap():
 
         _height, _width, _ = buf.shape
 
-        if (
-            self.is_live_view() and
-            _width == self._ow
-        ):
+        # 如果是即時預覽以及原始尺寸圖片，做峰值對焦，並給網頁串流的會降解析度
+        if self.is_live_view() and _width == self._ow:
             if focus:
                 sim = cv2.resize(buf, (int(_width / 2), int(_height / 2)))
                 edges = cv2.Canny(sim, 280, 380)
@@ -344,11 +381,7 @@ class CameraPixmap():
 
         # 轉成 QImage
         q_image = QImage(
-            buf.data,
-            _width,
-            _height,
-            3 * _width,
-            QImage.Format_RGB888
+            buf.data, _width, _height, 3 * _width, QImage.Format_RGB888
         )
 
         # 轉成 QPixmap
