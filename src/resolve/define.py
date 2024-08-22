@@ -6,6 +6,7 @@ class ResolveStage(Enum):
     RESOLVE = "resolve"
     CONVERSION = "conversion"
     EXPORT = "export"
+    EXPORT_ALEMBIC = "export_alembic"
 
     def __str__(self):
         return self.value

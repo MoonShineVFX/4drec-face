@@ -1,12 +1,10 @@
-from PyQt5.Qt import Qt, QFileDialog
 import subprocess
 
-from master.ui.custom_widgets import LayoutWidget, PushButton
-from master.ui.dialog import ExportProgressDialog
-from master.ui.popup import popup
-from master.ui.state import state
+from PyQt5.Qt import Qt
 
-from utility.setting import setting
+from master.ui.custom_widgets import LayoutWidget, PushButton
+from master.ui.state import state
+from utility.define import UIEventType
 
 
 class ModelPanel(LayoutWidget):
@@ -39,14 +37,23 @@ class ModelPanel(LayoutWidget):
         subprocess.Popen(f'explorer "{job_path}"')
 
     def _export(self):
-        shot = state.get("current_shot")
+        job = state.get("current_job")
+        is_success = job.submit_for_alembic_export()
 
-        result = QFileDialog.getSaveFileName(
-            self,
-            "Export Model",
-            f"{setting.output.path}\\{shot.get_parent().name}-{shot.name}",
-            "Alembic (*.abc)",
-        )
-        file_path, ext = result
-        if file_path is not None and file_path != "":
-            popup(dialog=ExportProgressDialog, dialog_args=(file_path,))
+        from master.ui import ui
+        if is_success:
+            ui.dispatch_event(
+                UIEventType.NOTIFICATION,
+                {
+                    "title": "Export Success",
+                    "description": "Export job has been submitted successfully.",
+                },
+            )
+        else:
+            ui.dispatch_event(
+                UIEventType.NOTIFICATION,
+                {
+                    "title": "Export Failed",
+                    "description": "Export job submission failed.",
+                },
+            )

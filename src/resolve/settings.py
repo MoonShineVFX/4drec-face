@@ -77,6 +77,7 @@ class ResolveSettings:
         self.project_path = Path("")
         self.files_path = Path("")
         self.output_path = Path("")
+        self.export_path = Path(r"G:\export")
         self.archive_path = Path("")
         self.temp_path = Path("")
         self.temp_project_path = Path("")

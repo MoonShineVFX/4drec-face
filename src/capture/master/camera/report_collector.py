@@ -1,5 +1,3 @@
-from time import perf_counter
-
 from utility.setting import setting
 from utility.logger import log
 from utility.define import MessageType, UIEventType, SubmitOrder
@@ -30,11 +28,7 @@ class CameraReportCollector:
 
         """
         self._report_container_list.append(
-            RecordReportContainer(
-                self,
-                shot_id,
-                parameters
-            )
+            RecordReportContainer(self, shot_id, parameters)
         )
 
     def new_submit_report_container(self, shot, submit_order):
@@ -44,9 +38,7 @@ class CameraReportCollector:
 
         """
         self._report_container_list.append(
-            SubmitReportContainer(
-                self, shot, submit_order
-            )
+            SubmitReportContainer(self, shot, submit_order)
         )
 
     def import_message(self, message):
@@ -62,18 +54,18 @@ class CameraReportCollector:
         for report_container in self._report_container_list:
             # 如果是錄製報告
             if (
-                message.type is MessageType.RECORD_REPORT and
-                isinstance(report_container, RecordReportContainer) and
-                report_container.get_shot_id() == report['shot_id']
+                message.type is MessageType.RECORD_REPORT
+                and isinstance(report_container, RecordReportContainer)
+                and report_container.get_shot_id() == report["shot_id"]
             ):
                 report_container.import_report(report)
                 break
             # 如果是發佈報告
             if (
-                message.type is MessageType.SUBMIT_REPORT and
-                isinstance(report_container, SubmitReportContainer) and
-                report_container.get_shot_id() == report['shot_id'] and
-                report_container.get_job_name() == report['job_name']
+                message.type is MessageType.SUBMIT_REPORT
+                and isinstance(report_container, SubmitReportContainer)
+                and report_container.get_shot_id() == report["shot_id"]
+                and report_container.get_job_name() == report["job_name"]
             ):
                 report_container.import_report(report)
                 break
@@ -90,7 +82,7 @@ class CameraReportCollector:
         self._report_container_list.remove(report_container)
 
 
-class ReportContainer():
+class ReportContainer:
     """回報容器
 
     管理報告的容器，每個容器都有基本的預設流程
@@ -184,9 +176,9 @@ class RecordReportContainer(ReportContainer):
         size = 0
 
         for r in self._reports:
-            start_frames.append(r['frame_range'][0])
-            end_frames.append(r['frame_range'][1])
-            size += r['size']
+            start_frames.append(r["frame_range"][0])
+            end_frames.append(r["frame_range"][1])
+            size += r["size"]
 
         start_frame = max(start_frames)  # 讓開始格數齊頭
         end_frame = min(end_frames)  # 讓結束格數齊尾
@@ -194,21 +186,21 @@ class RecordReportContainer(ReportContainer):
         # 失蹤格數，藉由開始結尾跟相機編號所設立
         missing_frames = {}
         for r in self._reports:
-            frames = r['missing_frames']
-            missing_frames[r['camera_id']] = (
-                [f for f in frames if start_frame <= f <= end_frame]
-            )
+            frames = r["missing_frames"]
+            missing_frames[r["camera_id"]] = [
+                f for f in frames if start_frame <= f <= end_frame
+            ]
 
         data = {
-            'frame_range': (start_frame, end_frame),
-            'size': size,
-            'missing_frames': missing_frames,
-            'camera_parameters': self._parameters,
-            'state': 1
+            "frame_range": (start_frame, end_frame),
+            "size": size,
+            "missing_frames": missing_frames,
+            "camera_parameters": self._parameters,
+            "state": 1,
         }
 
         # 更新資料庫
-        log.info('Update shot with recorded data')
+        log.info("Update shot with recorded data")
         shot = project_manager.get_shot(self._shot_id)
         shot.update(data)
 
@@ -237,10 +229,11 @@ class SubmitReportContainer(ReportContainer):
         # 不傳檔直接發布
         if self._submit_order.bypass_jpeg_transfer:
             from master.ui import ui
+
             camera_count = len(setting.get_working_camera_ids())
             ui.dispatch_event(
                 UIEventType.TICK_SUBMIT,
-                self._submit_order.get_frame_length() * camera_count
+                self._submit_order.get_frame_length() * camera_count,
             )
             self._summarize_report()
 
@@ -248,13 +241,14 @@ class SubmitReportContainer(ReportContainer):
         """匯入報告"""
         from master.ui import ui
 
-        progress = report['progress']
-        self._progress_list[report['camera_id']] = progress[0]
-        self._complete_check_list[report['camera_id']] = progress[0] == progress[1]
+        progress = report["progress"]
+        self._progress_list[report["camera_id"]] = progress[0]
+        self._complete_check_list[report["camera_id"]] = (
+            progress[0] == progress[1]
+        )
 
         ui.dispatch_event(
-            UIEventType.TICK_SUBMIT,
-            sum(self._progress_list.values())
+            UIEventType.TICK_SUBMIT, sum(self._progress_list.values())
         )
 
     def _summarize_condition(self):
@@ -268,18 +262,19 @@ class SubmitReportContainer(ReportContainer):
     def _summarize_report(self):
         """總結"""
         from master.ui import ui
+
         # Export only
         if self._submit_order.transfer_only:
             offset_frame_range = self._submit_order.get_offset_frame_range()
             ui.dispatch_event(
                 UIEventType.NOTIFICATION,
                 {
-                    'title': f'[{self._shot.name}] Submit Success',
-                    'description': (
-                        f'Shot [{self._shot.name}] submitted frames '
-                        f'{offset_frame_range[0]}-{offset_frame_range[1]}.'
-                    )
-                }
+                    "title": f"[{self._shot.name}] Submit Success",
+                    "description": (
+                        f"Shot [{self._shot.name}] submitted frames "
+                        f"{offset_frame_range[0]}-{offset_frame_range[1]}."
+                    ),
+                },
             )
             return
         # Cali just update state and return
@@ -287,13 +282,11 @@ class SubmitReportContainer(ReportContainer):
             ui.dispatch_event(
                 UIEventType.NOTIFICATION,
                 {
-                    'title': f'[{self._shot.name}] Submit Success',
-                    'description': (
-                        f'Cali images submitted.'
-                    )
-                }
+                    "title": f"[{self._shot.name}] Submit Success",
+                    "description": (f"Cali images submitted."),
+                },
             )
-            self._shot.update({'state': 2})
+            self._shot.update({"state": 2})
             return
 
         # Deadline submit

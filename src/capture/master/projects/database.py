@@ -20,7 +20,11 @@ from utility.define import (
 from utility.setting import setting
 from utility.repeater import Repeater
 
-from .deadline import get_task_list, submit_deadline
+from .deadline import (
+    get_task_list,
+    submit_deadline,
+    submit_deadline_for_alembic_export,
+)
 
 
 # 資料庫設定
@@ -675,3 +679,6 @@ class JobEntity(Entity):
             shutil.rmtree(self.get_folder_path())
 
         super().remove()
+
+    def submit_for_alembic_export(self):
+        return submit_deadline_for_alembic_export(self.get_parent(), self)

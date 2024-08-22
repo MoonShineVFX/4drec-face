@@ -68,7 +68,10 @@ def submit_deadline(shot, job, resolve_only):
 
     # If resolve only, return
     if resolve_only:
-        return init_id, resolve_id,
+        return (
+            init_id,
+            resolve_id,
+        )
 
     job_info.update(
         {
@@ -105,6 +108,26 @@ def submit_deadline(shot, job, resolve_only):
     export_id = result["_id"]
 
     return init_id, resolve_id, conversion_id, export_id
+
+
+def submit_deadline_for_alembic_export(shot, job):
+    job_info = {
+        "Plugin": "4DREC",
+        "Name": f"{shot.name} - {job.name} (alembic)",
+        "UserName": "autobot",
+        "ChunkSize": "1",
+        "Frames": "0",
+        "OutputDirectory0": job.get_folder_path(),
+        "ExtraInfoKeyValue0": "resolve_stage=export_alembic",
+        "ExtraInfoKeyValue1": f"yaml_path={job.get_folder_path()}/job.yml",
+        "Priority": "55",
+    }
+
+    result = deadline.Jobs.SubmitJob(job_info, {})
+    if not (isinstance(result, dict) and "_id" in result):
+        log.error(result)
+        return False
+    return True
 
 
 def get_task_list(deadline_id):

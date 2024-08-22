@@ -52,6 +52,22 @@ class Resolver:
                 export_file_path = Conversion.export_fourdrec_roll()
 
                 cloud_bridge.update_job("COMPLETED", export_file_path)
+            elif SETTINGS.resolve_stage is ResolveStage.EXPORT_ALEMBIC:
+                logging.info("Project run: EXPORT_ALEMBIC")
+                from processors.export_abc import AlembicExporter
+                import re
+
+                # Get file name
+                folder_name = f"{SETTINGS.project_name}_{SETTINGS.shot_name}"
+                folder_name = re.sub(r"[^\w\d-]", "_", folder_name)
+
+                AlembicExporter.export(
+                    output_path=str(SETTINGS.output_path),
+                    start_frame=0,
+                    end_frame=SETTINGS.end_frame - SETTINGS.start_frame,
+                    export_path=str(SETTINGS.export_path / folder_name),
+                    on_progress=self.__logging_progress,
+                )
             else:
                 raise ValueError(
                     f"ResolveStage {SETTINGS.resolve_stage} not implemented"
@@ -63,7 +79,10 @@ class Resolver:
                 or SETTINGS.resolve_stage is ResolveStage.EXPORT
             ):
                 cloud_bridge.update_job("FAILED")
-            else:
+            elif (
+                SETTINGS.resolve_stage is ResolveStage.RESOLVE
+                or SETTINGS.resolve_stage is ResolveStage.CONVERSION
+            ):
                 cloud_bridge.update_frame("FAILED")
 
             logging.critical(f"Error: {e}", exc_info=True)

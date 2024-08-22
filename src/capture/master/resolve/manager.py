@@ -126,23 +126,3 @@ class ResolveManager(threading.Thread):
                 self._delay.execute(lambda: self._add_task(package))
             else:
                 self._add_task(package)
-
-    def export_model(self, job, frame_range, export_path):
-        job_id = job.get_id()
-        job_folder_path = job.get_folder_path()
-
-        shot = job.get_parent()
-        shot_folder_path = shot.get_folder_path()
-        shot_frame_range = shot.frame_range
-
-        self._multi_executor.add_task(
-            "export_all",
-            (
-                job_id,
-                job_folder_path,
-                frame_range,
-                shot_folder_path,
-                shot_frame_range,
-                export_path,
-            ),
-        )
