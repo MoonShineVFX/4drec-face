@@ -117,7 +117,7 @@ def submit_deadline_for_alembic_export(shot, job):
         "UserName": "autobot",
         "ChunkSize": "1",
         "Frames": "0",
-        "OutputDirectory0": job.get_folder_path(),
+        "OutputDirectory0": r"G:\export",
         "ExtraInfoKeyValue0": "resolve_stage=export_alembic",
         "ExtraInfoKeyValue1": f"yaml_path={job.get_folder_path()}/job.yml",
         "Priority": "55",

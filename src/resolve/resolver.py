@@ -58,7 +58,7 @@ class Resolver:
                 import re
 
                 # Get file name
-                folder_name = f"{SETTINGS.project_name}_{SETTINGS.shot_name}"
+                folder_name = f"{SETTINGS.project_name}-{SETTINGS.shot_name}"
                 folder_name = re.sub(r"[^\w\d-]", "_", folder_name)
 
                 AlembicExporter.export(

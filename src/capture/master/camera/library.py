@@ -330,6 +330,7 @@ class CameraPixmap:
         # 縮放圖片
         if (
             not self.is_original()
+            and "scale_length" in self._parms
             and max(*im.shape[:2]) > self._parms["scale_length"]
         ):
             ratio = self._parms["scale_length"] / max(*im.shape[:2])
