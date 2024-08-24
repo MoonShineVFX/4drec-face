@@ -188,7 +188,7 @@ class CloudBridge:
         file_size = Path(file_path).stat().st_size
         self.__api(
             "job.attachFile",
-            {"id": self.job_id, "size": file_size, "type": "4DR"},
+            {"id": self.job_id, "size": file_size, "type": "ROLL"},
         )
 
     def update_frame(self, status: FRAME_STATUS, file_path: str = None):
