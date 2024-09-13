@@ -313,6 +313,12 @@ class CameraPixmap:
 
     def decode(self) -> bool:
         if self._buf is None:
+            # if is camera state, bypass and return True
+            # XXX: this is a hack, should be refactored
+            #      proxy.py line 74
+            if "state" in self._parms:
+                return True
+
             if not self.is_offline():
                 return False
 
